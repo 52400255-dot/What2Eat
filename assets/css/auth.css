@@ -1,0 +1,780 @@
+/* ============================================================
+   What2Eat — AUTH (login.html + register.html)
+   ------------------------------------------------------------
+   Both screens load this one sheet so they cannot drift apart
+   again: one type ramp, one field height, one hairline, one
+   button. It is linked AFTER style.css and inherits every
+   token from it, so the palette stays the project's own
+   cream / brown / gold.
+
+   Apple-minimal rules applied here: no gradient textures, no
+   blurred decorative circles, no hover lift, no heavy shadow,
+   1px hairlines, weight never above 600.
+
+   Where the two pages historically used different class names
+   for the same thing (.w2e-err-msg / .w2e-error,
+   .w2e-pass-wrap / .w2e-input-wrap, .w2e-divider-or /
+   .w2e-divider) both names are kept as aliases on a single
+   declaration block, so each page's inline JS keeps working
+   untouched.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   1. STAGE
+   ------------------------------------------------------------ */
+html.w2e-auth-html,
+body.w2e-auth-page {
+  min-height: 100vh;
+  margin: 0;
+}
+
+body.w2e-auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  font-family: var(--font);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  letter-spacing: -0.005em;
+  color: var(--text);
+  background: var(--bg-alt);
+  -webkit-font-smoothing: antialiased;
+}
+
+.w2e-register-page {
+  width: min(660px, 100%);
+}
+
+/* ------------------------------------------------------------
+   2. SHARED SURFACES
+   ------------------------------------------------------------ */
+.w2e-auth-wrap,
+.w2e-register-card {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--card-radius);
+  box-shadow: 0 12px 34px rgba(74, 44, 26, 0.07);
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------
+   3. SHARED TYPE
+   ------------------------------------------------------------ */
+.w2e-auth-wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  color: var(--brown);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  text-decoration: none;
+}
+
+.w2e-auth-wordmark span {
+  color: var(--gold);
+}
+
+.w2e-auth-wordmark:hover {
+  color: var(--brown);
+}
+
+/* One ramp for both pages — previously login used clamp(2rem…)
+   at -.045em and register used clamp(1.55rem…) at -.02em, which
+   is exactly the mismatch that was reported. */
+.w2e-auth-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.75rem;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.022em;
+}
+
+.w2e-auth-sub {
+  margin: 8px 0 0;
+  color: var(--gray);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  font-weight: 400;
+}
+
+.w2e-auth-kicker {
+  color: var(--gold-soft);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ------------------------------------------------------------
+   4. SHARED FORM PRIMITIVES
+   ------------------------------------------------------------ */
+.w2e-form-group {
+  margin-bottom: 16px;
+}
+
+.w2e-label {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--ink);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.w2e-input {
+  width: 100%;
+  height: 50px;
+  padding: 0 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--input-radius);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.w2e-input::placeholder {
+  color: var(--gray-2);
+}
+
+.w2e-input:focus {
+  border-color: var(--gold-dark);
+  box-shadow: 0 0 0 4px rgba(212, 160, 23, 0.16);
+  background: var(--surface);
+}
+
+.w2e-input.invalid,
+.w2e-input.is-invalid {
+  border-color: var(--red);
+  box-shadow: 0 0 0 4px rgba(224, 90, 90, 0.10);
+}
+
+.w2e-pass-wrap,
+.w2e-input-wrap {
+  position: relative;
+}
+
+.w2e-pass-wrap .w2e-input,
+.w2e-input-wrap .w2e-input {
+  padding-right: 46px;
+}
+
+.w2e-pass-toggle {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--gray-2);
+  font-family: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.w2e-pass-toggle:hover {
+  background: var(--cream-2);
+  color: var(--brown);
+}
+
+.w2e-err-msg,
+.w2e-error {
+  display: none;
+  margin-top: 6px;
+  color: var(--red);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.w2e-err-msg.is-on,
+.w2e-error.show,
+.w2e-err-msg.show {
+  display: block;
+}
+
+.w2e-check,
+.w2e-terms {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--gray);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  cursor: pointer;
+  user-select: none;
+}
+
+.w2e-check input,
+.w2e-terms input {
+  width: 16px;
+  height: 16px;
+  margin: 3px 0 0;
+  flex: 0 0 auto;
+  accent-color: var(--gold-dark);
+}
+
+/* ------------------------------------------------------------
+   5. SHARED BUTTONS
+   ------------------------------------------------------------ */
+.w2e-btn-primary,
+.w2e-btn-outline,
+.w2e-social-btn {
+  width: 100%;
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 18px;
+  border-radius: var(--btn-radius);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease,
+              color 0.18s ease, opacity 0.18s ease;
+}
+
+.w2e-btn-primary {
+  background: var(--gold);
+  border: 1px solid var(--gold);
+  color: #fff;
+}
+
+.w2e-btn-primary:hover:not(:disabled) {
+  background: var(--gold-dark);
+  border-color: var(--gold-dark);
+  color: #fff;
+}
+
+.w2e-btn-outline,
+.w2e-social-btn {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  color: var(--ink);
+}
+
+.w2e-btn-outline:hover:not(:disabled),
+.w2e-social-btn:hover:not(:disabled) {
+  border-color: var(--gray-2);
+  background: var(--cream);
+  color: var(--ink);
+}
+
+.w2e-btn-primary:disabled,
+.w2e-btn-outline:disabled,
+.w2e-social-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.w2e-btn-primary svg,
+.w2e-btn-outline svg,
+.w2e-social-btn svg {
+  flex: 0 0 auto;
+}
+
+/* ------------------------------------------------------------
+   6. SHARED DIVIDERS, LINKS, FOOTER
+   ------------------------------------------------------------ */
+.w2e-divider-or,
+.w2e-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: var(--gray-2);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.w2e-divider-or::before,
+.w2e-divider::before,
+.w2e-divider-or::after,
+.w2e-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--hairline);
+}
+
+.w2e-forgot-link {
+  color: var(--gray);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.w2e-forgot-link:hover {
+  color: var(--gold-dark);
+  text-decoration: underline;
+}
+
+.w2e-auth-back,
+.w2e-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--gray);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.w2e-auth-back i,
+.w2e-back-link i {
+  font-size: 0.9375rem;
+}
+
+.w2e-auth-back:hover,
+.w2e-back-link:hover {
+  color: var(--ink);
+}
+
+.w2e-auth-footer-link,
+.w2e-footer {
+  margin-top: 20px;
+  text-align: center;
+  color: var(--gray);
+  font-size: 0.8125rem;
+}
+
+.w2e-auth-footer-link a,
+.w2e-footer a {
+  color: var(--brown);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.w2e-auth-footer-link a:hover,
+.w2e-footer a:hover {
+  color: var(--gold-dark);
+  text-decoration: underline;
+}
+
+.w2e-auth-legal {
+  margin: 16px auto 0;
+  max-width: 360px;
+  text-align: center;
+  color: var(--gray-2);
+  font-size: 0.6875rem;
+  line-height: 1.6;
+}
+
+.w2e-auth-legal a {
+  color: var(--brown-2);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.w2e-auth-legal a:hover {
+  text-decoration: underline;
+}
+
+/* ------------------------------------------------------------
+   7. TOASTS
+   app.js supplies the site-wide toast; these styles only cover
+   the inline fallback used when app.js has not loaded, plus the
+   register page's own container geometry.
+   ------------------------------------------------------------ */
+body.w2e-auth-page .w2e-toast-container {
+  top: 20px;
+  right: 20px;
+  width: min(360px, calc(100vw - 40px));
+  max-width: none;
+  z-index: 3000;
+}
+
+.w2e-auth-toast {
+  padding: 12px 15px;
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 10px 26px rgba(43, 33, 24, 0.12);
+  color: var(--ink);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.w2e-auth-toast--error {
+  border-left-color: var(--red);
+  color: var(--red);
+}
+
+/* ------------------------------------------------------------
+   8. LOGIN LAYOUT — split card
+   ------------------------------------------------------------ */
+.w2e-auth-wrap {
+  width: min(1040px, 100%);
+  display: grid;
+  grid-template-columns: 1.02fr 1fr;
+}
+
+.w2e-auth-visual {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40px;
+  padding: 34px;
+  background: var(--brown);
+  color: #fff;
+}
+
+.w2e-auth-visual .w2e-auth-back {
+  color: rgba(255, 255, 255, 0.66);
+}
+
+.w2e-auth-visual .w2e-auth-back:hover {
+  color: #fff;
+}
+
+.w2e-auth-visual__content h2 {
+  margin: 14px 0 12px;
+  color: #fff;
+  font-size: clamp(1.6rem, 2.4vw, 2rem);
+  line-height: 1.18;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.w2e-auth-visual__content p {
+  margin: 0;
+  max-width: 42ch;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+.w2e-auth-points {
+  margin-top: 28px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.w2e-auth-point {
+  padding: 11px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.w2e-auth-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 44px;
+  background: var(--surface);
+}
+
+.w2e-auth-form {
+  width: min(400px, 100%);
+}
+
+/* Forgot-password modal */
+.w2e-auth-modal .modal-content {
+  border: 1px solid var(--hairline);
+  border-radius: var(--card-radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-modal);
+}
+
+.w2e-auth-modal .modal-header,
+.w2e-auth-modal .modal-footer {
+  border: 0;
+}
+
+.w2e-auth-modal .modal-title {
+  color: var(--ink);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.w2e-auth-modal__intro {
+  margin: 0 0 16px;
+  color: var(--gray);
+  font-size: 0.875rem;
+  line-height: 1.65;
+}
+
+.w2e-auth-modal .w2e-btn-primary,
+.w2e-auth-modal .w2e-btn-outline {
+  width: auto;
+  min-height: 44px;
+  padding: 0 20px;
+}
+
+/* ------------------------------------------------------------
+   9. REGISTER LAYOUT — single card
+   ------------------------------------------------------------ */
+.w2e-register-top {
+  padding: 30px 34px 26px;
+  text-align: center;
+  border-bottom: 1px solid var(--hairline-2);
+  background: var(--cream);
+}
+
+.w2e-register-body {
+  padding: 28px 34px 30px;
+}
+
+.w2e-back-link {
+  margin-bottom: 18px;
+}
+
+.w2e-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+
+.w2e-strength {
+  display: flex;
+  gap: 5px;
+  margin-top: 9px;
+}
+
+.w2e-strength span {
+  height: 3px;
+  flex: 1;
+  border-radius: 999px;
+  background: var(--hairline);
+  transition: background 0.25s ease;
+}
+
+.w2e-strength span.active.weak   { background: var(--red); }
+.w2e-strength span.active.medium { background: var(--gold); }
+.w2e-strength span.active.strong { background: var(--green); }
+
+.w2e-strength-text {
+  min-height: 18px;
+  margin-top: 6px;
+  color: var(--gray-2);
+  font-size: 0.75rem;
+}
+
+.w2e-section-label {
+  margin: 4px 0 6px;
+  color: var(--ink);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.w2e-section-help {
+  margin-bottom: 10px;
+  color: var(--gray-2);
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+.w2e-pref-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.w2e-pref-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 11px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--gray);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.18s ease, background 0.18s ease,
+              color 0.18s ease;
+}
+
+.w2e-pref-item:hover {
+  border-color: var(--gray-2);
+}
+
+.w2e-pref-item:has(input:checked) {
+  border-color: var(--gold);
+  background: var(--gold-wash);
+  color: var(--brown);
+}
+
+.w2e-pref-item input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  flex: 0 0 auto;
+  accent-color: var(--gold-dark);
+}
+
+/* Success screen */
+.w2e-success-screen {
+  display: none;
+  padding: 12px 4px 4px;
+  text-align: center;
+}
+
+.w2e-success-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: var(--gold-wash);
+  color: var(--gold-deep);
+  font-size: 1.5rem;
+}
+
+.w2e-success-title {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.022em;
+}
+
+.w2e-success-copy {
+  margin: 0 0 4px;
+  color: var(--gray);
+  font-size: 0.875rem;
+}
+
+.w2e-confirm-email {
+  margin: 0 0 22px;
+  color: var(--brown);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.w2e-success-box {
+  margin-bottom: 22px;
+  padding: 16px 18px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  background: var(--cream-2);
+  text-align: left;
+}
+
+.w2e-success-box strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.w2e-success-box ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--gray);
+  font-size: 0.8125rem;
+  line-height: 1.8;
+}
+
+/* ------------------------------------------------------------
+   10. RESPONSIVE
+   ------------------------------------------------------------ */
+@media (max-width: 900px) {
+  .w2e-auth-wrap {
+    grid-template-columns: 1fr;
+  }
+
+  .w2e-auth-visual {
+    gap: 26px;
+    padding: 26px 28px;
+  }
+
+  .w2e-auth-points {
+    display: none;
+  }
+
+  .w2e-auth-visual__content h2 {
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+  }
+
+  .w2e-auth-visual__content p {
+    font-size: 0.8125rem;
+    line-height: 1.6;
+  }
+
+  .w2e-auth-panel {
+    padding: 34px 28px 30px;
+  }
+}
+
+@media (max-width: 560px) {
+  body.w2e-auth-page {
+    padding: 16px;
+    align-items: flex-start;
+  }
+
+  .w2e-auth-title {
+    font-size: 1.5rem;
+  }
+
+  .w2e-register-top {
+    padding: 24px 20px 20px;
+  }
+
+  .w2e-register-body {
+    padding: 22px 18px 24px;
+  }
+
+  .w2e-auth-panel {
+    padding: 26px 20px;
+  }
+
+  .w2e-auth-visual {
+    padding: 22px 20px;
+  }
+
+  .w2e-form-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .w2e-pref-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .w2e-pref-grid {
+    grid-template-columns: 1fr;
+  }
+
+  body.w2e-auth-page .w2e-toast-container {
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.w2e-auth-page *,
+  body.w2e-auth-page *::before,
+  body.w2e-auth-page *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
