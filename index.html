@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>What2Eat – Hôm nay ăn gì?</title>
+  <meta name="description" content="Khám phá ẩm thực, lưu giữ kỷ niệm. Tìm quán ăn, ghi chú trải nghiệm, lên kế hoạch ăn uống cùng bạn bè.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+
+  <style>
+    /* ===== DESIGN TOKENS ===== */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { text-decoration: none; color: inherit; transition: all .2s; }
+    img { max-width: 100%; display: block; }
+
+    /* ===== NAVBAR ===== */
+    .w2e-nav {
+      position: sticky; top: 0; z-index: 1000;
+      background: rgba(255,253,248,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 0;
+      height: 68px;
+    }
+    .w2e-nav .container { display: flex; align-items: center; height: 100%; }
+    .w2e-nav-logo {
+    font-size: 1.35rem; font-weight: 600; color: var(--secondary);
+      display: flex; align-items: center; gap: 6px; white-space: nowrap;
+    }
+    .w2e-nav-logo span { color: var(--primary); }
+    .w2e-nav-links {
+      display: flex; align-items: center; gap: 8px;
+      margin: 0 auto; list-style: none; padding: 0;
+    }
+    .w2e-nav-links a {
+      padding: 8px 16px; border-radius: var(--radius-sm);
+      font-size: .88rem; font-weight: 500; color: var(--text-muted);
+    }
+    .w2e-nav-links a:hover, .w2e-nav-links a.active {
+      color: var(--primary); background: rgba(212,160,23,0.08);
+    }
+    .w2e-nav-auth { display: flex; gap: 8px; align-items: center; }
+    .btn-login {
+      padding: 8px 20px; border-radius: var(--radius-sm);
+      font-size: .85rem; font-weight: 500; color: var(--secondary);
+      border: 1px solid var(--border); background: transparent;
+    }
+    .btn-login:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-signup {
+      padding: 8px 20px; border-radius: var(--radius-sm);
+      font-size: .85rem; font-weight: 600; color: #fff;
+      background: var(--primary); border: none;
+    }
+    .btn-signup:hover{ background: var(--primary-dark) }
+    .nav-toggle { display: none; background: none; border: none; font-size: 1.5rem; color: var(--secondary); }
+
+    /* ===== HERO ===== */
+    .hero {
+      padding: 80px 0 60px;
+      background: var(--bg);
+      position: relative; overflow: hidden;
+    }
+    .hero-title {
+    font-size: 3.2rem; font-weight: 600; color: var(--secondary);
+      line-height: 1.15; margin-bottom: 16px;
+    }
+    .hero-title span { color: var(--primary); display: block; }
+    .hero-sub {
+      font-size: 1.05rem; color: var(--text-muted);
+      line-height: 1.7; margin-bottom: 28px; max-width: 480px;
+    }
+    .hero-search {
+      display: flex; background: #fff; border-radius: 14px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+      overflow: hidden; max-width: 500px; border: 1px solid var(--border);
+    }
+    .hero-search input {
+      flex: 1; border: none; padding: 16px 20px;
+      font-family: var(--font); font-size: .95rem; outline: none;
+      background: transparent; color: var(--text);
+    }
+    .hero-search input::placeholder { color: var(--text-light); }
+    .hero-search button {
+      padding: 14px 24px; background: var(--primary);
+      color: #fff; border: none; font-weight: 600;
+      font-family: var(--font); font-size: .9rem; cursor: pointer;
+      transition: background .2s;
+    }
+    .hero-search button:hover { background: var(--primary-dark); }
+    .hero-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; align-items: center; }
+    .hero-tag {
+      padding: 5px 14px; background: rgba(212,160,23,0.1);
+      border-radius: 20px; font-size: .8rem; font-weight: 500; color: var(--primary-dark);
+    }
+    .hero-tag:hover { background: var(--primary); color: #fff; }
+    .hero-visual { position: relative; }
+    .hero-img-main {
+      width: 100%; height: 380px; object-fit: cover;
+      border-radius: 24px; box-shadow: var(--shadow-hover);
+    }
+    .hero-img-sm {
+      width: 160px; height: 110px; object-fit: cover;
+      border-radius: 14px; border: 3px solid #fff;
+      box-shadow: var(--shadow); position: absolute;
+    }
+    .hero-img-sm.sm1 { bottom: -20px; left: -30px; }
+    .hero-img-sm.sm2 { top: 30px; right: -20px; }
+    .hero-badge {
+      position: absolute; bottom: 40px; right: 20px;
+      background: #fff; border-radius: 14px; padding: 10px 16px;
+      box-shadow: var(--shadow); display: flex; align-items: center; gap: 10px;
+    }
+    .hero-badge-rating { font-size: .9rem; font-weight: 500; color: var(--secondary); }
+    .hero-badge-sub { font-size: .72rem; color: var(--text-light); }
+    .hero-badge-rec {
+      position: absolute; top: 20px; left: -10px;
+      background: var(--primary); color: #fff;
+      padding: 6px 16px; border-radius: 10px;
+      font-size: .75rem; font-weight: 600;
+      box-shadow: 0 4px 12px rgba(212,160,23,0.3);
+    }
+
+    /* ===== SECTIONS ===== */
+    .section { padding: 80px 0; }
+    .section-alt { background: var(--bg-alt); }
+    .section-title {
+    font-size: 1.8rem; font-weight: 500; color: var(--secondary);
+      margin-bottom: 8px;
+    }
+    .section-sub {
+      font-size: .95rem; color: var(--text-muted); margin-bottom: 0;
+    }
+
+    /* ===== CATEGORY CARDS ===== */
+    .cat-card {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      padding: 28px 16px; background: #fff; border-radius: var(--radius);
+      border: 1px solid var(--border); text-align: center;
+      transition: all .25s; cursor: pointer;
+    }
+    .cat-card:hover{ border-color: var(--primary);
+    box-shadow: var(--shadow-hover) }
+    .cat-card:hover .cat-icon { transform: scale(1.15); }
+    .cat-card:hover .cat-name { color: var(--primary); }
+    .cat-icon { font-size: 2.2rem; transition: transform .25s; }
+    .cat-name { font-size: .85rem; font-weight: 600; color: var(--text); margin: 0; }
+
+    /* ===== RANDOM FOOD ===== */
+    .random-section {
+      background: var(--secondary); color: #fff;
+      padding: 80px 0; position: relative; overflow: hidden;
+    }
+    .random-section::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23D4A017' fill-opacity='0.04'%3E%3Cpath d='m36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .random-section .section-title { color: #fff; }
+    .random-section .section-sub { color: rgba(255,255,255,0.65); }
+    .filter-row {
+      display: flex; gap: 16px; flex-wrap: wrap;
+      justify-content: center; margin-bottom: 24px;
+    }
+    .filter-group label {
+      font-size: .75rem; font-weight: 500; text-transform: uppercase;
+      letter-spacing: .5px; color: rgba(255,255,255,0.5); display: block; margin-bottom: 6px;
+    }
+    .filter-select {
+      padding: 10px 16px; border-radius: var(--radius-sm);
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.08);
+      color: #fff; font-family: var(--font); font-size: .88rem;
+      min-width: 160px; outline: none; cursor: pointer;
+    }
+    .filter-select option { color: var(--text); background: #fff; }
+    .btn-random {
+      padding: 14px 32px; background: var(--primary); color: #fff;
+      border: none; border-radius: var(--radius-sm); font-family: var(--font);
+      font-size: 1rem; font-weight: 600; cursor: pointer;
+      transition: all .2s; margin-top: auto;
+    }
+    .btn-random:hover{ background: var(--primary); box-shadow: 0 6px 20px rgba(212,160,23,0.4) }
+    .result-card {
+      background: #fff; border-radius: var(--radius); padding: 0;
+      box-shadow: var(--shadow-hover); display: flex; overflow: hidden;
+      animation: popIn .4s cubic-bezier(.34,1.56,.64,1);
+      color: var(--text);
+    }
+    .result-card img {
+      width: 200px; min-height: 180px; object-fit: cover; flex-shrink: 0;
+    }
+    .result-info { padding: 24px; flex: 1; }
+    .result-info h4 { font-size: 1.15rem; font-weight: 500; color: var(--secondary); margin-bottom: 6px; }
+    .result-info .addr { font-size: .85rem; color: var(--text-muted); margin-bottom: 10px; }
+    .result-meta { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+    .rating-badge { font-weight: 500; color: var(--primary-dark); font-size: .9rem; }
+    .open-badge {
+      background: rgba(45,155,111,0.1); color: var(--success);
+      padding: 3px 10px; border-radius: 20px; font-size: .78rem; font-weight: 600;
+    }
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(.9) translateY(20px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* ===== RESTAURANT CARDS ===== */
+    .rest-card {
+      background: #fff; border-radius: var(--radius); overflow: hidden;
+      box-shadow: var(--shadow); transition: all .3s; display: block; height: 100%;
+      border: 1px solid var(--border);
+    }
+    .rest-card:hover{ box-shadow: var(--shadow-hover);
+    border-color: var(--primary-light) }
+    .rest-img-wrap { position: relative; overflow: hidden; }
+    .rest-img {
+      width: 100%; height: 200px; object-fit: cover;
+      transition: transform .4s;
+    }
+    .rest-card:hover .rest-img { transform: scale(1.05); }
+    .rest-heart {
+      position: absolute; top: 12px; right: 12px;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.92); border: none;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; cursor: pointer; transition: all .2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .rest-heart:hover { transform: scale(1.1); }
+    .rest-heart.liked { background: var(--error); color: #fff; }
+    .rest-status {
+      position: absolute; bottom: 12px; left: 12px;
+      padding: 4px 12px; border-radius: 20px;
+      font-size: .72rem; font-weight: 600;
+    }
+    .rest-status.open { background: rgba(45,155,111,0.9); color: #fff; }
+    .rest-status.closed { background: rgba(224,90,90,0.9); color: #fff; }
+    .rest-body { padding: 16px; }
+    .rest-name {
+    font-size: .95rem; font-weight: 500; color: var(--secondary);
+      margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .rest-cat {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: .72rem; font-weight: 600;
+      background: rgba(212,160,23,0.1); color: var(--primary-dark);
+      margin-bottom: 8px;
+    }
+    .rest-meta {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      font-size: .82rem; color: var(--text-muted);
+    }
+    .rest-rating { font-weight: 500; color: var(--primary-dark); }
+    .rest-divider { color: var(--border); }
+
+    /* ===== NOTE CARDS ===== */
+    .note-card {
+      background: #fff; border-radius: var(--radius);
+      padding: 24px; box-shadow: var(--shadow);
+      border-left: 4px solid var(--primary);
+    }
+    .note-name { font-size: 1rem; font-weight: 500; color: var(--secondary); }
+    .note-stars { color: var(--primary); font-size: .9rem; letter-spacing: 2px; }
+    .note-quote {
+      font-size: .88rem; color: var(--text-muted); font-style: italic;
+      margin: 10px 0; line-height: 1.6;
+    }
+    .note-tag {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: .72rem; font-weight: 500;
+      background: var(--bg-alt); color: var(--text-muted); margin: 2px;
+    }
+
+    /* ===== PLAN CARD ===== */
+    .plan-card {
+      background: #fff; border-radius: var(--radius);
+      padding: 28px; box-shadow: var(--shadow-hover);
+    }
+    .plan-title { font-size: 1.1rem; font-weight: 500; color: var(--secondary); }
+    .avatar-stack { display: flex; }
+    .avatar-stack img {
+      width: 36px; height: 36px; border-radius: 50%; border: 2px solid #fff;
+      margin-left: -10px; object-fit: cover;
+    }
+    .avatar-stack img:first-child { margin-left: 0; }
+    .vote-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+    }
+    .vote-item:last-child { border-bottom: none; }
+    .vote-name { font-size: .88rem; font-weight: 600; min-width: 130px; color: var(--secondary); }
+    .vote-bar { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+    .vote-fill { height: 100%; background: var(--primary); border-radius: 4px; transition: width .6s; }
+    .vote-count { font-size: .82rem; font-weight: 500; color: var(--primary); min-width: 32px; text-align: right; }
+
+    /* ===== STAT BOXES ===== */
+    .stat-box {
+      background: #fff; border-radius: var(--radius); padding: 24px;
+      box-shadow: var(--shadow); text-align: center;
+      border: 1px solid var(--border);
+    }
+    .stat-number { font-size: 1.8rem; font-weight: 600; color: var(--primary); }
+    .stat-label { font-size: .82rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* ===== PWA BOXES ===== */
+    .pwa-box {
+      background: #fff; border-radius: var(--radius); padding: 32px 24px;
+      text-align: center; box-shadow: var(--shadow);
+      border: 1px solid var(--border); height: 100%;
+    }
+    .pwa-box h5 { font-size: .95rem; font-weight: 500; color: var(--secondary); margin-bottom: 8px; }
+    .pwa-box p { font-size: .85rem; color: var(--text-muted); margin: 0; line-height: 1.6; }
+
+    /* ===== CTA ===== */
+    .cta-section {
+    background: var(--primary);
+      padding: 80px 0; text-align: center; color: #fff;
+    }
+    .cta-section h2 { font-size: 2.2rem; font-weight: 600; margin-bottom: 12px; }
+    .cta-section p { font-size: 1.05rem; opacity: .9; margin-bottom: 28px; }
+    .btn-cta {
+      padding: 14px 36px; border-radius: var(--radius-sm); font-family: var(--font);
+      font-size: 1rem; font-weight: 600; cursor: pointer; transition: all .2s;
+      border: none;
+    }
+    .btn-cta-white { background: #fff; color: var(--secondary); }
+    .btn-cta-white:hover{ background: var(--bg); box-shadow: 0 6px 20px rgba(0,0,0,0.15) }
+    .btn-cta-outline {
+      background: transparent; color: #fff; border: 2px solid rgba(255,255,255,0.5);
+    }
+    .btn-cta-outline:hover { border-color: #fff; background: rgba(255,255,255,0.1); }
+
+    /* ===== FOOTER ===== */
+    .w2e-ft {
+      background: var(--secondary); padding: 60px 0 24px; color: rgba(255,255,255,0.7);
+    }
+    .ft-logo { font-size: 1.3rem; font-weight: 600; color: #fff; margin-bottom: 12px; }
+    .ft-logo span { color: var(--primary); }
+    .ft-desc { font-size: .85rem; line-height: 1.7; margin-bottom: 16px; }
+    .ft-heading {
+    font-size: .78rem; font-weight: 500; text-transform: uppercase;
+      letter-spacing: 1px; color: rgba(255,255,255,0.4); margin-bottom: 16px;
+    }
+    .ft-link {
+      display: block; font-size: .85rem; color: rgba(255,255,255,0.6);
+      margin-bottom: 10px; transition: color .2s;
+    }
+    .ft-link:hover { color: var(--primary); }
+    .ft-divider { border-color: rgba(255,255,255,0.08); margin: 32px 0 20px; }
+    .ft-copy { font-size: .78rem; color: rgba(255,255,255,0.35); }
+
+    /* ===== BUTTONS COMMON ===== */
+    .btn-primary-w2e {
+      display: inline-block; padding: 12px 28px; background: var(--primary);
+      color: #fff; border: none; border-radius: var(--radius-sm);
+      font-family: var(--font); font-size: .9rem; font-weight: 600;
+      cursor: pointer; transition: all .2s;
+    }
+    .btn-primary-w2e:hover{ background: var(--primary-dark); color: #fff; box-shadow: 0 4px 16px rgba(212,160,23,0.3) }
+    .btn-outline-w2e {
+      display: inline-block; padding: 12px 28px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--secondary); border-radius: var(--radius-sm);
+      font-family: var(--font); font-size: .9rem; font-weight: 500;
+      cursor: pointer; transition: all .2s;
+    }
+    .btn-outline-w2e:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* ===== FEATURE LIST ===== */
+    .feature-item { display: flex; gap: 16px; margin-bottom: 20px; }
+    .feature-title { font-size: .9rem; font-weight: 600; color: var(--secondary); margin-bottom: 2px; }
+    .feature-desc { font-size: .82rem; color: var(--text-muted); line-height: 1.5; margin: 0; }
+
+    /* ===== MOBILE NAV ===== */
+    .mobile-nav {
+      display: none; position: fixed; bottom: 0; left: 0; right: 0;
+      background: #fff; border-top: 1px solid var(--border);
+      z-index: 1000; padding: 6px 0;
+      box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+    }
+    .mobile-nav-inner { display: flex; justify-content: space-around; }
+    .mobile-nav-item {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 6px 0; font-size: .68rem; color: var(--text-light);
+      text-decoration: none; transition: color .2s;
+    }
+    .mobile-nav-item i { font-size: 1.2rem; margin-bottom: 2px; }
+    .mobile-nav-item.active { color: var(--primary); }
+    .mobile-nav-item.add-btn i {
+      background: var(--primary); color: #fff; width: 42px; height: 42px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; margin-top: -16px; box-shadow: 0 4px 12px rgba(212,160,23,0.3);
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 991px) {
+      .hero-title { font-size: 2.4rem; }
+      .hero-visual { margin-top: 40px; }
+      .hero-img-sm { display: none; }
+      .hero-badge-rec { display: none; }
+      .w2e-nav-links, .w2e-nav-auth { display: none; }
+      .nav-toggle { display: block; }
+      .mobile-nav { display: block; }
+      .section { padding: 60px 0; }
+      body { padding-bottom: 70px; }
+    }
+    @media (max-width: 767px) {
+      .hero { padding: 48px 0 40px; }
+      .hero-title { font-size: 2rem; }
+      .hero-sub { font-size: .92rem; }
+      .hero-search { max-width: 100%; }
+      .hero-img-main { height: 260px; border-radius: 16px; }
+      .section-title { font-size: 1.4rem; }
+      .result-card { flex-direction: column; }
+      .result-card img { width: 100%; height: 180px; }
+      .filter-row { flex-direction: column; align-items: stretch; }
+      .filter-select { min-width: 100%; }
+      .rest-img { height: 170px; }
+    }
+    @media (max-width: 430px) {
+      .hero-title { font-size: 1.7rem; }
+      .cat-card { padding: 20px 12px; }
+      .cat-icon { font-size: 1.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ======== NAVBAR ======== -->
+<nav class="w2e-nav">
+  <div class="container">
+  <a href="./index.html" class="w2e-nav-logo">What<span>2</span>Eat</a>
+    <ul class="w2e-nav-links">
+      <li><a href="./pages/discovery.html">Khám phá</a></li>
+      <li><a href="./pages/food-notes.html">Food Note</a></li>
+      <li><a href="./pages/food-plans.html">Food Plan</a></li>
+      <li><a href="./pages/dashboard.html">Dashboard</a></li>
+    </ul>
+    <div class="w2e-nav-auth">
+      <a href="./pages/login.html" class="btn-login">Đăng nhập</a>
+      <a href="./pages/register.html" class="btn-signup">Đăng ký</a>
+    </div>
+    <button class="nav-toggle" onclick="document.querySelector('.mobile-menu').classList.toggle('show')">
+      <i class="bi bi-list"></i>
+    </button>
+  </div>
+</nav>
+
+<!-- ======== HERO ======== -->
+<section class="hero">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-lg-6">
+        <p style="display:inline-block;padding:5px 14px;background:rgba(212,160,23,0.1);border-radius:20px;font-size:.8rem;font-weight:600;color:var(--primary-dark);margin-bottom:16px;">
+            Khám phá ẩm thực Việt Nam
+        </p>
+        <h1 class="hero-title">Hôm nay<span>ăn gì?</span></h1>
+        <p class="hero-sub">
+          Khám phá quán ăn ngon, ghi lại kỷ niệm ẩm thực, lên kế hoạch ăn uống cùng bạn bè — tất cả chỉ trong một nền tảng.
+        </p>
+        <div class="hero-search">
+        <input type="text" placeholder="Bạn muốn ăn gì hôm nay?" id="heroSearch">
+          <button onclick="heroSearchGo()">Khám phá</button>
+        </div>
+        <div class="hero-tags">
+          <span style="font-size:.8rem;color:var(--text-light);">Phổ biến:</span>
+          <a href="./pages/discovery.html?q=pho" class="hero-tag">Phở</a>
+          <a href="./pages/discovery.html?q=bun-bo" class="hero-tag">Bún Bò</a>
+          <a href="./pages/discovery.html?q=bbq" class="hero-tag">BBQ</a>
+          <a href="./pages/discovery.html?q=ca-phe" class="hero-tag">Cà phê</a>
+          <a href="./pages/discovery.html?q=sushi" class="hero-tag">Món ăn quốc gia khác</a>
+        </div>
+      </div>
+      <div class="col-lg-6 d-none d-lg-block">
+        <div class="hero-visual">
+          <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=400&fit=crop" alt="Ẩm thực Việt Nam" class="hero-img-main">
+          <img src="https://images.unsplash.com/photo-1555126634-323283e090fa?w=300&h=200&fit=crop" alt="Phở Hà Nội" class="hero-img-sm sm1">
+          <img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300&h=200&fit=crop" alt="Bánh Mì" class="hero-img-sm sm2">
+          <div class="hero-badge">
+          <span class="w2e-stars-text" style="font-size:1.125rem;">★</span>
+            <div>
+              <div class="hero-badge-rating">4.8 / 5.0</div>
+              <div class="hero-badge-sub">2.341 đánh giá</div>
+            </div>
+          </div>
+          <div class="hero-badge-rec">Được đề xuất</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======== QUICK DISCOVERY ======== -->
+<section class="section">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 class="section-title">Bạn đang muốn ăn gì?</h2>
+      <p class="section-sub">Chọn danh mục yêu thích để tìm quán phù hợp</p>
+    </div>
+    <div class="row g-3 g-md-4">
+      <div class="col-6 col-md-3"><a href="./pages/discovery.html?category=viet" class="cat-card"><span class="cat-icon"></span><p class="cat-name">Món Việt</p></a></div>
+      <div class="col-6 col-md-3"><a href="./pages/discovery.html?category=bbq" class="cat-card"><span class="cat-icon"></span><p class="cat-name">BBQ / Lẩu</p></a></div>
+      <div class="col-6 col-md-3"><a href="./pages/discovery.html?category=cafe" class="cat-card"><span class="cat-icon"></span><p class="cat-name">Cà phê</p></a></div>
+      <div class="col-6 col-md-3"><a href="./pages/discovery.html?category=nhat" class="cat-card"><span class="cat-icon"></span><p class="cat-name">Nhật Bản</p></a></div>
+      <div class="col-6 col-md-3"><a href="./pages/discovery.html?category=han" class="cat-card"><span class="cat-icon"></span><p class="cat-name">Hàn Quốc</p></a></div>
+      <div class="col-6 col-md-3"><a href="./pages/discovery.html?category=fast" class="cat-card"><span class="cat-icon"></span><p class="cat-name">Ăn nhanh</p></a></div>
+      <div class="col-6 col-md-3"><a href="./pages/discovery.html?category=dessert" class="cat-card"><span class="cat-icon"></span><p class="cat-name">Tráng miệng</p></a></div>
+      <div class="col-6 col-md-3"><a href="./pages/discovery.html?category=drink" class="cat-card"><span class="cat-icon"></span><p class="cat-name">Đồ uống</p></a></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======== RANDOM FOOD ======== -->
+<section class="random-section" id="random">
+  <div class="container position-relative" style="z-index:1;">
+    <div class="text-center mb-5">
+      <h2 class="section-title">Không biết ăn gì?</h2>
+      <p class="section-sub">Để What2Eat chọn giúp bạn một quán hoàn toàn ngẫu nhiên!</p>
+    </div>
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>Loại món</label>
+        <select class="filter-select" id="filterType">
+          <option value="">Tất cả</option>
+          <option>Món Việt</option><option>BBQ / Lẩu</option>
+          <option>Nhật Bản</option><option>Hàn Quốc</option>
+          <option>Ăn nhanh</option><option>Cà phê</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Ngân sách</label>
+        <select class="filter-select" id="filterBudget">
+          <option value="">Không giới hạn</option>
+          <option>Dưới 50.000đ</option><option>50k – 100k</option>
+          <option>100k – 200k</option><option>Trên 200k</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Khoảng cách</label>
+        <select class="filter-select" id="filterDist">
+          <option value="">Tất cả</option>
+          <option>Dưới 1 km</option><option>1 – 3 km</option><option>Trên 3 km</option>
+        </select>
+      </div>
+      <div class="filter-group" style="display:flex;align-items:flex-end;">
+      <button class="btn-random" onclick="randomFood()">Chọn ngẫu nhiên</button>
+      </div>
+    </div>
+    <div id="randomResult" style="display:none;">
+      <div class="row justify-content-center">
+        <div class="col-lg-7">
+          <div class="result-card" id="resultCard">
+            <img id="rImg" src="" alt="Quán ăn">
+            <div class="result-info">
+              <h4 id="rName"></h4>
+              <p class="addr" id="rAddr"></p>
+              <div class="result-meta">
+                <span class="rating-badge" id="rRating"></span>
+                <span style="color:var(--text-muted);font-size:.85rem;" id="rPrice"></span>
+                <span class="open-badge">Đang mở</span>
+              </div>
+              <div class="d-flex gap-2">
+                <a href="./pages/restaurant.html" class="btn-primary-w2e" style="font-size:.85rem;padding:8px 18px;">Xem quán</a>
+                <button class="btn-outline-w2e" style="font-size:.85rem;padding:8px 18px;" onclick="randomFood()">Chọn lại</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======== RESTAURANT DISCOVERY ======== -->
+<section class="section section-alt">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-end mb-4 flex-wrap gap-3">
+      <div>
+        <h2 class="section-title">Quán ăn được yêu thích</h2>
+        <p class="section-sub">Được đánh giá cao bởi cộng đồng What2Eat</p>
+      </div>
+      <a href="./pages/discovery.html" class="btn-outline-w2e">Xem tất cả →</a>
+    </div>
+    <div class="row g-4">
+      <!-- Card 1 -->
+      <div class="col-sm-6 col-xl-3">
+        <a href="./pages/restaurant.html" class="rest-card">
+          <div class="rest-img-wrap">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQirgkSyg5aP8iKQOX77Rj6vUTsuEYqT9OztaQYoIAzfQ&s=10" alt="Phở Thìn" class="rest-img">
+            <button class="rest-heart" onclick="event.preventDefault();toggleHeart(this)"><i class="bi bi-heart"></i></button>
+            <span class="rest-status open">Đang mở</span>
+          </div>
+          <div class="rest-body">
+            <h3 class="rest-name">Phở Thìn Lò Đúc</h3>
+            <span class="rest-cat">Món Việt</span>
+            <div class="rest-meta">
+            <span class="rest-rating">★ 4.8</span>
+              <span>(2.341)</span>
+              <span class="rest-divider">·</span>
+              <span>45k – 70k</span>
+              <span class="rest-divider">·</span>
+              <span> 0.5km</span>
+            </div>
+          </div>
+        </a>
+      </div>
+      <!-- Card 2 -->
+      <div class="col-sm-6 col-xl-3">
+        <a href="./pages/restaurant.html" class="rest-card">
+          <div class="rest-img-wrap">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQj27KzkDOON_1ds9SCgHuPfdDc-ZowFhHFzE9XwDW9Wg&s=10" alt="BBQ" class="rest-img">
+            <button class="rest-heart" onclick="event.preventDefault();toggleHeart(this)"><i class="bi bi-heart"></i></button>
+            <span class="rest-status open">Đang mở</span>
+          </div>
+          <div class="rest-body">
+            <h3 class="rest-name">Bếp Nhà BBQ & Lẩu</h3>
+            <span class="rest-cat">BBQ / Lẩu</span>
+            <div class="rest-meta">
+            <span class="rest-rating">★ 4.6</span>
+              <span>(1.892)</span>
+              <span class="rest-divider">·</span>
+              <span>150k – 300k</span>
+              <span class="rest-divider">·</span>
+              <span> 1.2km</span>
+            </div>
+          </div>
+        </a>
+      </div>
+      <!-- Card 3 -->
+      <div class="col-sm-6 col-xl-3">
+        <a href="./pages/restaurant.html" class="rest-card">
+          <div class="rest-img-wrap">
+            <img src="https://cdn.hstatic.net/themes/200001193925/1001500650/14/home_time_img.jpg?v=130" alt="Cà phê" class="rest-img">
+            <button class="rest-heart" onclick="event.preventDefault();toggleHeart(this)"><i class="bi bi-heart"></i></button>
+            <span class="rest-status open">Đang mở</span>
+          </div>
+          <div class="rest-body">
+            <h3 class="rest-name">Cà phê Trứng Giảng</h3>
+            <span class="rest-cat">Cà phê</span>
+            <div class="rest-meta">
+            <span class="rest-rating">★ 4.7</span>
+              <span>(3.104)</span>
+              <span class="rest-divider">·</span>
+              <span>30k – 60k</span>
+              <span class="rest-divider">·</span>
+              <span> 0.8km</span>
+            </div>
+          </div>
+        </a>
+      </div>
+      <!-- Card 4 -->
+      <div class="col-sm-6 col-xl-3">
+        <a href="./pages/restaurant.html" class="rest-card">
+          <div class="rest-img-wrap">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTjWTzppF7iUdo-Q8RpDn5CLgPpKAzvNR5AuvHfIpNylg&s=10" alt="Sushi" class="rest-img">
+            <button class="rest-heart" onclick="event.preventDefault();toggleHeart(this)"><i class="bi bi-heart"></i></button>
+            <span class="rest-status open">Đang mở</span>
+          </div>
+          <div class="rest-body">
+            <h3 class="rest-name">Sushi Hokkaido Sachi</h3>
+            <span class="rest-cat">Nhật Bản</span>
+            <div class="rest-meta">
+            <span class="rest-rating">★ 4.5</span>
+              <span>(987)</span>
+              <span class="rest-divider">·</span>
+              <span>200k – 500k</span>
+              <span class="rest-divider">·</span>
+              <span> 2.1km</span>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======== FOOD NOTE INTRO ======== -->
+<section class="section" style="background:var(--bg);">
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-6">
+      <p style="display:inline-block;padding:5px 14px;background:rgba(212,160,23,0.1);border-radius:20px;font-size:.8rem;font-weight:600;color:var(--primary-dark);margin-bottom:16px;">Food Note</p>
+        <h2 class="section-title" style="margin-bottom:16px;">Lưu lại mọi trải nghiệm ăn uống</h2>
+        <p style="color:var(--text-muted);line-height:1.8;margin-bottom:28px;">
+          Ghi lại cảm nhận sau mỗi bữa ăn: từ hương vị, giá cả đến không khí quán. Xem lại và chia sẻ cùng bạn bè bất cứ lúc nào.
+        </p>
+        <div class="feature-item">
+          <div><p class="feature-title">Đánh giá chi tiết</p><p class="feature-desc">Ghi chú hương vị, không gian, giá cả và trải nghiệm thực tế</p></div>
+        </div>
+        <div class="feature-item">
+          <div><p class="feature-title">Gắn hashtag thông minh</p><p class="feature-desc">Phân loại ghi chú dễ dàng, tìm lại nhanh chóng</p></div>
+        </div>
+        <div class="feature-item">
+          <div><p class="feature-title">Thống kê thói quen</p><p class="feature-desc">Hiểu rõ sở thích ăn uống qua biểu đồ trực quan</p></div>
+        </div>
+        <a href="./pages/create-food-note.html" class="btn-primary-w2e" style="margin-top:12px;">Tạo Food Note đầu tiên</a>
+      </div>
+      <div class="col-lg-6">
+        <div class="note-card mb-4">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div><p class="note-name mb-1">Bún Bò Huế Mệ Kính</p><p class="note-stars mb-0">★★★★★</p></div>
+            <div class="text-end"><p style="font-weight: 500;color:var(--primary);margin:0;">65.000đ</p><p style="font-size:.75rem;color:var(--text-light);margin:0;">20/09/2026</p></div>
+          </div>
+          <p class="note-quote">"Cực ngon! Nước dùng đậm đà, thịt mềm, sả thơm lừng. Chắc chắn sẽ quay lại."</p>
+          <div><span class="note-tag">#bún_bò</span><span class="note-tag">#cay</span><span class="note-tag">#Huế</span><span class="note-tag">#must_try</span></div>
+        </div>
+        <div class="note-card">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div><p class="note-name mb-1">Bít Tết Phố Cổ</p><p class="note-stars mb-0">★★★★<span style="color:var(--star-track);">★</span></p></div>
+            <div class="text-end"><p style="font-weight: 500;color:var(--primary);margin:0;">95.000đ</p><p style="font-size:.75rem;color:var(--text-light);margin:0;">15/09/2026</p></div>
+          </div>
+          <p class="note-quote">"Bít tết ngon, thịt mềm vừa. Không gian phố cổ rất chill. Nước sốt tiêu đen xuất sắc!"</p>
+          <div><span class="note-tag">#bít_tết</span><span class="note-tag">#phố_cổ</span><span class="note-tag">#date_night</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======== FOOD PLAN ======== -->
+<section class="section section-alt">
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-5 order-lg-1 order-2">
+        <div class="plan-card">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+            <p class="plan-title mb-0">Weekend Food Plan</p>
+              <p style="font-size:.8rem;color:var(--text-muted);margin:4px 0 0;">Chủ nhật, 28/09/2026 • 12:00</p>
+            </div>
+            <span style="padding:4px 12px;background:rgba(212,160,23,0.1);border-radius:20px;font-size:.75rem;font-weight:600;color:var(--primary-dark);">Đang vote</span>
+          </div>
+          <div style="margin-bottom:20px;">
+            <p style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);margin-bottom:10px;">Thành viên (4)</p>
+            <div class="d-flex align-items-center gap-3">
+              <div class="avatar-stack">
+                <img src="https://scontent-sin11-1.xx.fbcdn.net/v/t39.30808-1/475572687_1328278638520631_4734511898669020671_n.jpg?stp=cp6_dst-jpg_tt6&cstp=mx2048x2048&ctp=s200x200&_nc_cat=104&ccb=1-7&_nc_sid=e99d92&_nc_ohc=Ii7adnbMy_cQ7kNvwGPjwfa&_nc_oc=Adov3h11A4x9_b9WmlVjBPx_e66lCLE-ZZTu6SmBmvg-qo8JwUxr3WLcz-Ac1nldzfoa6fQe41JzaFQ2HLfpOSk0&_nc_zt=24&_nc_ht=scontent-sin11-1.xx&_nc_gid=FaLP4lEkOxu4RDZMY30lXQ&_nc_ss=7b2a8&oh=00_AQNhcUfdAoJUzW_VvD4DyKFQaq0thBcmthJhkAmyuP1xtg&oe=6ABF8F37" alt=""><img src="https://scontent-sin2-1.xx.fbcdn.net/v/t39.30808-1/763824605_1063545469680386_1654431198435829509_n.jpg?stp=dst-jpg_tt6&cstp=mx641x641&ctp=s200x200&_nc_cat=100&ccb=1-7&_nc_sid=1d2534&_nc_ohc=0ugIpzg2LTgQ7kNvwHZEbLp&_nc_oc=AdocPZceJ-AQqYoyBu0jnJxQtyk7B7pr65eMq0tGcMiFsKVd90zwoh54uyWNl-POhJ2MR6UuYEgwixZ2bb9_-5-s&_nc_zt=24&_nc_ht=scontent-sin2-1.xx&_nc_gid=hPNtghPD3zB5gca4jVh_7A&_nc_ss=7b2a8&oh=00_AQNGu3QoNchkOYmNdSCaUvoGNtrYrcKGva0C2m9Zu3Fj4w&oe=6ABF88D4" alt="">
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSN-Q5ovmFbvrXc1aLctq4IOP9yuVU1PYiotslxNT9nsg&s=10" alt=""><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTYoVVKZsNJEIcQ0H9mDwzZHiLdm4Hin2BWdL7dmCeurQ&s=10" alt="">
+              </div>
+              <span style="font-size:.82rem;color:var(--text-muted);">Minh + 3 người</span>
+            </div>
+          </div>
+          <p style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);margin-bottom:10px;">Kết quả bình chọn</p>
+          <div class="vote-item"><span class="vote-name">Phở Thìn</span><div class="vote-bar"><div class="vote-fill" style="width:75%;"></div></div><span class="vote-count">3/4</span></div>
+          <div class="vote-item"><span class="vote-name">Bếp Nhà BBQ</span><div class="vote-bar"><div class="vote-fill" style="width:25%;"></div></div><span class="vote-count">1/4</span></div>
+          <div class="vote-item"><span class="vote-name">Sushi Hokkaido</span><div class="vote-bar"><div class="vote-fill" style="width:0%;"></div></div><span class="vote-count" style="color:var(--text-light);">0/4</span></div>
+        </div>
+      </div>
+      <div class="col-lg-7 order-lg-2 order-1">
+      <p style="display:inline-block;padding:5px 14px;background:rgba(212,160,23,0.1);border-radius:20px;font-size:.8rem;font-weight:600;color:var(--primary-dark);margin-bottom:16px;">Food Plan</p>
+        <h2 class="section-title" style="margin-bottom:16px;">Đi ăn cùng bạn bè?</h2>
+        <p style="color:var(--text-muted);line-height:1.8;margin-bottom:28px;">
+          Tạo kế hoạch ăn uống chung, mời bạn bè tham gia vote, và quyết định điểm đến trong tích tắc.
+        </p>
+        <div class="feature-item"><div><p class="feature-title">Mời bạn bè dễ dàng</p><p class="feature-desc">Gửi link hoặc mã mời, tham gia trong 1 click</p></div></div>
+        <div class="feature-item"><div><p class="feature-title">Vote thời gian thực</p><p class="feature-desc">Bình chọn quán ăn và xem kết quả ngay lập tức</p></div></div>
+        <div class="feature-item"><div><p class="feature-title">Quyết định theo đa số</p><p class="feature-desc">Hệ thống tự tổng hợp và thông báo quán thắng</p></div></div>
+        <a href="./pages/food-plans.html" class="btn-primary-w2e" style="margin-top:12px;">Tạo Food Plan</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======== STATISTICS ======== -->
+<section class="section">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 class="section-title">Hiểu hơn về thói quen ăn uống</h2>
+      <p class="section-sub">Thống kê thông minh từ Food Note của bạn</p>
+    </div>
+    <div class="row g-3 g-md-4 mb-5">
+    <div class="col-6 col-lg-3"><div class="stat-box"><div class="stat-number">128</div><div class="stat-label">Ghi chú đã tạo</div></div></div>
+    <div class="col-6 col-lg-3"><div class="stat-box"><div class="stat-number" style="font-size:1.4rem;">4.250.000đ</div><div class="stat-label">Tổng chi tiêu</div></div></div>
+    <div class="col-6 col-lg-3"><div class="stat-box"><div class="stat-number">4.3 ★</div><div class="stat-label">Đánh giá TB</div></div></div>
+    <div class="col-6 col-lg-3"><div class="stat-box"><div class="stat-number" style="font-size:1.3rem;">Phở Thìn</div><div class="stat-label">Yêu thích nhất</div></div></div>
+    </div>
+    <div class="row g-4">
+      <div class="col-lg-7">
+        <div style="background:#fff;border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);">
+        <h5 style="font-weight: 500;color:var(--secondary);margin-bottom:16px;font-size:1rem;">Chi tiêu theo tháng (VNĐ)</h5>
+          <canvas id="statsChart" height="120"></canvas>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div style="background:#fff;border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);">
+        <h5 style="font-weight: 500;color:var(--secondary);margin-bottom:16px;font-size:1rem;">Phân loại món ăn</h5>
+          <canvas id="categoryChart" height="180"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="text-center mt-5">
+      <a href="./pages/dashboard.html" class="btn-primary-w2e">Xem thống kê đầy đủ</a>
+    </div>
+  </div>
+</section>
+
+<!-- ======== PWA ======== -->
+<section class="section section-alt">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 class="section-title">What2Eat luôn bên bạn</h2>
+      <p class="section-sub">Dùng được mọi lúc, mọi nơi – ngay cả khi không có mạng</p>
+    </div>
+    <div class="row g-4">
+    <div class="col-md-4"><div class="pwa-box"><h5>Cài đặt như App</h5><p>Thêm vào màn hình chính và trải nghiệm như ứng dụng thật sự</p></div></div>
+    <div class="col-md-4"><div class="pwa-box"><h5>Tốc độ cực nhanh</h5><p>Cache thông minh giúp tải trang gần như tức thì</p></div></div>
+    <div class="col-md-4"><div class="pwa-box"><h5>Thông báo thông minh</h5><p>Nhận gợi ý bữa ăn, nhắc nhở Food Plan và cập nhật từ bạn bè</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======== CTA ======== -->
+<section class="cta-section">
+  <div class="container">
+    <h2>Hôm nay ăn gì?</h2>
+    <p>Bắt đầu hành trình ẩm thực của bạn cùng What2Eat — hoàn toàn miễn phí!</p>
+    <div class="d-flex gap-3 justify-content-center flex-wrap">
+      <a href="./pages/discovery.html" class="btn-cta btn-cta-white">Bắt đầu khám phá</a>
+      <a href="./pages/register.html" class="btn-cta btn-cta-outline">Tạo tài khoản miễn phí</a>
+    </div>
+  </div>
+</section>
+
+<!-- ======== FOOTER ======== -->
+<footer class="w2e-ft">
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-lg-4 col-md-6">
+      <div class="ft-logo">What<span>2</span>Eat</div>
+        <p class="ft-desc">Nền tảng khám phá ẩm thực và ghi chú trải nghiệm hàng đầu Việt Nam. Giúp bạn trả lời câu hỏi "Hôm nay ăn gì?" mỗi ngày.</p>
+      </div>
+      <div class="col-lg-2 col-md-3 col-6">
+        <p class="ft-heading">Khám phá</p>
+        <a href="./pages/discovery.html" class="ft-link">Tất cả quán ăn</a>
+        <a href="./pages/discovery.html?category=viet" class="ft-link">Món Việt</a>
+        <a href="./pages/discovery.html?category=bbq" class="ft-link">BBQ / Lẩu</a>
+        <a href="./pages/discovery.html?category=cafe" class="ft-link">Cà phê</a>
+        <a href="./pages/discovery.html?category=nhat" class="ft-link">Ẩm thực Nhật</a>
+      </div>
+      <div class="col-lg-2 col-md-3 col-6">
+        <p class="ft-heading">Cá nhân</p>
+        <a href="./pages/food-notes.html" class="ft-link">Food Note</a>
+        <a href="./pages/create-food-note.html" class="ft-link">Tạo ghi chú</a>
+        <a href="./pages/food-plans.html" class="ft-link">Food Plan</a>
+        <a href="./pages/dashboard.html" class="ft-link">Dashboard</a>
+        <a href="./pages/profile.html" class="ft-link">Hồ sơ</a>
+      </div>
+      <div class="col-lg-4 col-md-6">
+        <p class="ft-heading">Hỗ trợ</p>
+        <a href="#" class="ft-link">Trung tâm trợ giúp</a>
+        <a href="#" class="ft-link">Điều khoản dịch vụ</a>
+        <a href="#" class="ft-link">Chính sách bảo mật</a>
+        <a href="#" class="ft-link">Liên hệ</a>
+      </div>
+    </div>
+    <hr class="ft-divider">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <p class="ft-copy mb-0">© 2026 What2Eat · Được làm tại Việt Nam.</p>
+    <p class="ft-copy mb-0">Ăn ngon mỗi ngày</p>
+    </div>
+  </div>
+</footer>
+
+<!-- ======== MOBILE BOTTOM NAV ======== -->
+<nav class="mobile-nav">
+  <div class="mobile-nav-inner">
+    <a href="./index.html" class="mobile-nav-item active"><i class="bi bi-house-fill"></i>Home</a>
+    <a href="./pages/discovery.html" class="mobile-nav-item"><i class="bi bi-search"></i>Khám phá</a>
+    <a href="./pages/create-food-note.html" class="mobile-nav-item add-btn"><i class="bi bi-plus-lg"></i></a>
+    <a href="./pages/food-notes.html" class="mobile-nav-item"><i class="bi bi-journal-text"></i>Notes</a>
+    <a href="./pages/profile.html" class="mobile-nav-item"><i class="bi bi-person"></i>Profile</a>
+  </div>
+</nav>
+
+<!-- ======== SCRIPTS ======== -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+/* Search */
+function heroSearchGo(){
+  const q=document.getElementById('heroSearch').value.trim();
+  if(q) window.location.href='./pages/discovery.html?q='+encodeURIComponent(q);
+}
+document.getElementById('heroSearch').addEventListener('keydown',e=>{if(e.key==='Enter')heroSearchGo();});
+
+/* Heart toggle */
+function toggleHeart(btn){
+const icon = btn.querySelector('i');
+const liked = btn.classList.toggle('liked');
+if (icon) icon.className = 'bi ' + (liked ? 'bi-heart-fill' : 'bi-heart');
+}
+
+/* Random Food */
+const foods=[
+{name:'Phở Bò Tái – Phở Thìn Lò Đúc',addr:'13 Lò Đúc, Đống Đa, Hà Nội',img:'https://images.unsplash.com/photo-1555126634-323283e090fa?w=300&h=240&fit=crop',rating:' 4.8',price:'45.000đ – 70.000đ'},
+{name:'Bún Bò Huế Mệ Kính',addr:'116 Đinh Tiên Hoàng, Bình Thạnh, TP.HCM',img:'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=300&h=240&fit=crop',rating:' 4.7',price:'50.000đ – 75.000đ'},
+{name:'Cơm Tấm Sườn Bì Chả',addr:'73 Đặng Văn Ngữ, Phú Nhuận, TP.HCM',img:'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=300&h=240&fit=crop',rating:' 4.6',price:'40.000đ – 65.000đ'},
+{name:'Bánh Mì Phương Hội An',addr:'2B Phan Châu Trinh, Hội An',img:'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300&h=240&fit=crop',rating:' 4.9',price:'20.000đ – 35.000đ'},
+{name:'Chả Cá Lã Vọng',addr:'14 Chả Cá, Hoàn Kiếm, Hà Nội',img:'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=300&h=240&fit=crop',rating:' 4.7',price:'180.000đ – 280.000đ'},
+{name:'Lẩu Thái Hải Sản',addr:'Royal City, Hà Nội',img:'https://images.unsplash.com/photo-1544025162-d76694265947?w=300&h=240&fit=crop',rating:' 4.4',price:'250.000đ – 450.000đ'},
+];
+function randomFood(){
+  const item=foods[Math.floor(Math.random()*foods.length)];
+  document.getElementById('rName').textContent=item.name;
+  document.getElementById('rAddr').textContent=item.addr;
+  document.getElementById('rImg').src=item.img;
+  document.getElementById('rRating').textContent=item.rating;
+  document.getElementById('rPrice').textContent=item.price;
+  const r=document.getElementById('randomResult');
+  r.style.display='block';
+  const c=document.getElementById('resultCard');
+  c.style.animation='none';c.offsetHeight;c.style.animation='popIn .4s cubic-bezier(.34,1.56,.64,1)';
+}
+
+/* Charts */
+document.addEventListener('DOMContentLoaded',()=>{
+  const sCtx=document.getElementById('statsChart');
+  if(sCtx){
+    new Chart(sCtx,{
+      type:'line',
+      data:{
+        labels:['T4','T5','T6','T7','T8','T9'],
+        datasets:[{
+          label:'Chi tiêu',data:[680,920,750,1100,850,680],
+          borderColor:'#D4A017',backgroundColor:'rgba(212,160,23,0.08)',
+          borderWidth:2.5,tension:.4,fill:true,pointBackgroundColor:'#D4A017',pointRadius:4
+        }]
+      },
+      options:{responsive:true,plugins:{legend:{display:false}},
+      scales:{y:{ticks:{font:{family: "'Be Vietnam Pro', sans-serif",size:11},callback:v=>v+'k'},grid:{color:'#f0e8d8'}},
+      x:{ticks:{font:{family: "'Be Vietnam Pro', sans-serif",size:11}},grid:{display:false}}}}
+    });
+  }
+  const cCtx=document.getElementById('categoryChart');
+  if(cCtx){
+    new Chart(cCtx,{
+      type:'doughnut',
+      data:{
+        labels:['Món Việt','BBQ/Lẩu','Cà phê','Nhật','Khác'],
+        datasets:[{data:[42,18,15,12,13],
+          backgroundColor:['#D4A017','#4A2C1A','#6B3E26','#B8860B','#E8DED2'],
+          borderWidth:0}]
+      },
+      options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{family: "'Be Vietnam Pro', sans-serif",size:11},padding:16,usePointStyle:true}}}}
+    });
+  }
+});
+</script>
+</body>
+</html>
