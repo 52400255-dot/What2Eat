@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đăng ký – What2Eat</title>
+  <meta name="description" content="Tạo tài khoản What2Eat miễn phí để khám phá ẩm thực và lưu giữ kỷ niệm." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/auth.css" />
+
+</head>
+
+<body class="w2e-auth-page">
+  <div class="w2e-toast-container" id="toastContainer"></div>
+
+  <main class="w2e-register-page">
+    <section class="w2e-register-card">
+
+      <header class="w2e-register-top">
+        <a href="../index.html" class="w2e-auth-wordmark" aria-label="Về trang chủ What2Eat">What<span>2</span>Eat</a>
+
+        <h1 class="w2e-auth-title">Tạo tài khoản mới</h1>
+        <p class="w2e-auth-sub">Miễn phí, nhanh chóng và giúp What2Eat gợi ý món ăn phù hợp hơn.</p>
+      </header>
+
+      <div class="w2e-register-body">
+
+        <a href="../index.html" class="w2e-back-link">
+          <i class="bi bi-arrow-left"></i>
+          Về trang chủ
+        </a>
+
+        <button class="w2e-social-btn" type="button" onclick="w2eToast('Đăng ký Google chưa khả dụng', 'info')">
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9L38.6 8C34.9 4.7 29.7 2.5 24 2.5 11.8 2.5 2 11.8 2 24s9.8 21.5 22 21.5c11 0 21-8 21-21.5 0-1.3-.2-2.7-.5-4z"/>
+            <path fill="#34A853" d="M6.3 14.7l7 5.1C15 17 19.2 14 24 14c3.1 0 5.9 1.1 8.1 2.9L38.6 8C34.9 4.7 29.7 2.5 24 2.5c-7.5 0-14 4.1-17.7 10.2z"/>
+            <path fill="#FBBC05" d="M24 46.5c5.5 0 10.5-1.9 14.4-5l-6.6-5.4C29.8 37.8 27 38.9 24 38.9c-6.1 0-10.6-4.1-12.3-9.6l-7 5.4C8 41.2 15.4 46.5 24 46.5z"/>
+            <path fill="#EA4335" d="M44.5 20H24v8.5h11.8c-1 3-3.3 5.4-6.3 7l6.6 5.4C40.1 37.3 44.5 31.1 44.5 24c0-1.3-.2-2.7-.5-4z"/>
+          </svg>
+          Tiếp tục với Google
+        </button>
+
+        <div class="w2e-divider-or">hoặc đăng ký bằng email</div>
+
+        <div id="successScreen" class="w2e-success-screen">
+          <div class="w2e-success-icon"><i class="bi bi-check2-circle"></i></div>
+          <h2 class="w2e-success-title">Tài khoản đã được tạo!</h2>
+          <p class="w2e-success-copy">Chúng tôi đã gửi email xác nhận đến</p>
+          <p id="confirmedEmail" class="w2e-confirm-email">your@email.com</p>
+
+          <div class="w2e-success-box">
+          <strong>Kiểm tra hộp thư của bạn</strong>
+            <ul>
+              <li>Nhấn vào link xác nhận trong email</li>
+              <li>Link có hiệu lực trong 24 giờ</li>
+              <li>Kiểm tra thư mục Spam nếu không thấy</li>
+            </ul>
+          </div>
+
+          <a href="./login.html" class="w2e-btn-primary d-flex align-items-center justify-content-center text-decoration-none">
+            Đăng nhập ngay
+          </a>
+
+          <div class="w2e-footer">
+            Không nhận được email?
+            <a href="#" onclick="resendEmail(event)">Gửi lại</a>
+          </div>
+        </div>
+
+        <div id="registerFormWrap">
+          <form id="registerForm" novalidate>
+            <div class="w2e-form-grid">
+
+              <div class="w2e-form-group">
+                <label class="w2e-label" for="regName">Họ và tên</label>
+                <input type="text" id="regName" class="w2e-input" placeholder="Nguyễn Văn A" autocomplete="name" required />
+                <div class="w2e-err-msg" id="nameError">Vui lòng nhập họ và tên (ít nhất 2 ký tự)</div>
+              </div>
+
+              <div class="w2e-form-group">
+                <label class="w2e-label" for="regEmail">Địa chỉ email</label>
+                <input type="email" id="regEmail" class="w2e-input" placeholder="example@gmail.com" autocomplete="email" required />
+                <div class="w2e-err-msg" id="regEmailError">Vui lòng nhập email hợp lệ</div>
+              </div>
+
+              <div class="w2e-form-group">
+                <label class="w2e-label" for="regPassword">Mật khẩu</label>
+                <div class="w2e-input-wrap">
+                  <input type="password" id="regPassword" class="w2e-input" placeholder="Ít nhất 8 ký tự" autocomplete="new-password" required />
+                  <button type="button" class="w2e-pass-toggle" id="regPassToggle" aria-label="Hiện mật khẩu">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                </div>
+
+                <div class="w2e-strength" aria-hidden="true">
+                  <span id="seg1"></span>
+                  <span id="seg2"></span>
+                  <span id="seg3"></span>
+                  <span id="seg4"></span>
+                </div>
+                <div class="w2e-strength-text" id="strengthText">Nhập mật khẩu để kiểm tra độ mạnh</div>
+                <div class="w2e-err-msg" id="passErr">Mật khẩu phải có ít nhất 8 ký tự</div>
+              </div>
+
+              <div class="w2e-form-group">
+                <label class="w2e-label" for="regConfirm">Xác nhận mật khẩu</label>
+                <div class="w2e-input-wrap">
+                  <input type="password" id="regConfirm" class="w2e-input" placeholder="Nhập lại mật khẩu" autocomplete="new-password" required />
+                  <button type="button" class="w2e-pass-toggle" id="confirmPassToggle" aria-label="Hiện mật khẩu xác nhận">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                </div>
+                <div class="w2e-err-msg" id="confirmErr">Mật khẩu xác nhận không khớp</div>
+              </div>
+            </div>
+
+            <div class="w2e-form-group">
+              <div class="w2e-section-label">Sở thích ẩm thực của bạn</div>
+              <div class="w2e-section-help">Chọn một hoặc nhiều loại để What2Eat gợi ý phù hợp hơn.</div>
+
+              <div class="w2e-pref-grid">
+                <label class="w2e-pref-item">
+                  <input type="checkbox" name="pref" value="viet" checked />
+                  <span>Món Việt</span>
+                </label>
+                <label class="w2e-pref-item">
+                  <input type="checkbox" name="pref" value="bbq" />
+                  <span>BBQ / Lẩu</span>
+                </label>
+                <label class="w2e-pref-item">
+                  <input type="checkbox" name="pref" value="cafe" checked />
+                  <span>Cà phê</span>
+                </label>
+                <label class="w2e-pref-item">
+                  <input type="checkbox" name="pref" value="nhat" />
+                  <span>Nhật Bản</span>
+                </label>
+                <label class="w2e-pref-item">
+                  <input type="checkbox" name="pref" value="han" />
+                  <span>Hàn Quốc</span>
+                </label>
+                <label class="w2e-pref-item">
+                  <input type="checkbox" name="pref" value="fast" />
+                  <span>Ăn nhanh</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="w2e-form-group">
+              <label class="w2e-terms">
+                <input type="checkbox" id="agreeTerms" />
+                <span>
+                  Tôi đã đọc và đồng ý với
+                  <a href="#">Điều khoản dịch vụ</a>
+                  và
+                  <a href="#">Chính sách bảo mật</a>
+                  của What2Eat.
+                </span>
+              </label>
+              <div class="w2e-err-msg" id="termsErr">Vui lòng đồng ý với điều khoản để tiếp tục</div>
+            </div>
+
+            <button type="submit" class="w2e-btn-primary" id="registerBtn">
+              Tạo tài khoản miễn phí
+            </button>
+          </form>
+
+          <div class="w2e-footer">
+            Đã có tài khoản?
+            <a href="./login.html">Đăng nhập</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../assets/js/app.js"></script>
+
+  <script>
+    // Dùng lại đúng hệ thống toast của app.js cho giống các trang khác,
+    // chỉ giữ nguyên chữ ký w2eToast() để mọi lời gọi hiện có chạy như cũ.
+    function w2eToast(message, type = 'success', duration = 3500) {
+      if (typeof showToast === 'function') {
+        showToast({ message, type, duration });
+        return;
+      }
+
+      const container = document.getElementById('toastContainer');
+      const item = document.createElement('div');
+      item.className = `w2e-auth-toast w2e-auth-toast--${type}`;
+      item.textContent = message;
+      container.appendChild(item);
+
+      setTimeout(() => {
+        item.style.transition = 'opacity .3s ease, transform .3s ease';
+        item.style.opacity = '0';
+        item.style.transform = 'translateX(18px)';
+        setTimeout(() => item.remove(), 300);
+      }, duration);
+    }
+
+    function setupPassToggle(inputId, toggleId) {
+      document.getElementById(toggleId).addEventListener('click', function () {
+        const input = document.getElementById(inputId);
+        const icon = this.querySelector('i');
+        const hidden = input.type === 'password';
+
+        input.type = hidden ? 'text' : 'password';
+
+        if (icon) {
+          icon.className = hidden ? 'bi bi-eye-slash' : 'bi bi-eye';
+        }
+      });
+    }
+
+    setupPassToggle('regPassword', 'regPassToggle');
+    setupPassToggle('regConfirm', 'confirmPassToggle');
+
+    const passwordInput = document.getElementById('regPassword');
+    const strengthText = document.getElementById('strengthText');
+    const strengthSegments = [
+      document.getElementById('seg1'),
+      document.getElementById('seg2'),
+      document.getElementById('seg3'),
+      document.getElementById('seg4')
+    ];
+
+    passwordInput.addEventListener('input', function () {
+      const val = this.value;
+
+      strengthSegments.forEach(segment => {
+        segment.className = '';
+      });
+
+      if (!val) {
+        strengthText.textContent = 'Nhập mật khẩu để kiểm tra độ mạnh';
+        strengthText.style.color = 'var(--gray-2)';
+        return;
+      }
+
+      let score = 0;
+      if (val.length >= 8) score++;
+      if (/[A-Z]/.test(val)) score++;
+      if (/[0-9]/.test(val)) score++;
+      if (/[^A-Za-z0-9]/.test(val)) score++;
+
+      if (score <= 1) {
+        strengthSegments[0].classList.add('active', 'weak');
+        strengthText.textContent = 'Yếu – nên thêm ký tự';
+        strengthText.style.color = 'var(--red)';
+      } else if (score === 2) {
+        strengthSegments[0].classList.add('active', 'medium');
+        strengthSegments[1].classList.add('active', 'medium');
+        strengthText.textContent = 'Trung bình – có thể mạnh hơn';
+        strengthText.style.color = 'var(--gold-dark)';
+      } else if (score === 3) {
+        for (let i = 0; i < 3; i++) {
+          strengthSegments[i].classList.add('active', 'strong');
+        }
+        strengthText.textContent = 'Mạnh – khá an toàn';
+        strengthText.style.color = 'var(--green)';
+      } else {
+        strengthSegments.forEach(segment => segment.classList.add('active', 'strong'));
+        strengthText.textContent = 'Rất mạnh – xuất sắc!';
+        strengthText.style.color = 'var(--green)';
+      }
+    });
+
+    ['regName', 'regEmail', 'regPassword', 'regConfirm'].forEach(id => {
+      document.getElementById(id).addEventListener('input', function () {
+        this.classList.remove('invalid');
+      });
+    });
+
+    document.getElementById('registerForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      let valid = true;
+
+      const name = document.getElementById('regName');
+      const email = document.getElementById('regEmail');
+      const pass = document.getElementById('regPassword');
+      const confirm = document.getElementById('regConfirm');
+      const agreed = document.getElementById('agreeTerms');
+
+      const nameError = document.getElementById('nameError');
+      const emailError = document.getElementById('regEmailError');
+      const passError = document.getElementById('passErr');
+      const confirmError = document.getElementById('confirmErr');
+      const termsError = document.getElementById('termsErr');
+
+      function setError(input, errorEl, show) {
+        if (show) {
+          input.classList.add('invalid');
+          errorEl.classList.add('show');
+          valid = false;
+        } else {
+          input.classList.remove('invalid');
+          errorEl.classList.remove('show');
+        }
+      }
+
+      const emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      setError(name, nameError, name.value.trim().length < 2);
+      setError(email, emailError, !emailRx.test(email.value.trim()));
+      setError(pass, passError, pass.value.length < 8);
+      setError(confirm, confirmError, confirm.value.length < 1 || pass.value !== confirm.value);
+
+      termsError.classList.toggle('show', !agreed.checked);
+      if (!agreed.checked) valid = false;
+
+      if (!valid) return;
+
+      const btn = document.getElementById('registerBtn');
+      btn.disabled = true;
+      btn.textContent = 'Đang tạo tài khoản…';
+
+      setTimeout(function () {
+        document.getElementById('registerFormWrap').style.display = 'none';
+
+        const screen = document.getElementById('successScreen');
+        screen.style.display = 'block';
+
+        document.getElementById('confirmedEmail').textContent = email.value.trim();
+        w2eToast('Tài khoản tạo thành công! Kiểm tra email nhé.', 'success', 5000);
+      }, 2000);
+    });
+
+    function resendEmail(e) {
+      e.preventDefault();
+      w2eToast('Đã gửi lại email xác nhận.', 'success');
+    }
+  </script>
+</body>
+</html>
