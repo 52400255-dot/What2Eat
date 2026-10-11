@@ -1,0 +1,40 @@
+/* Keep authored mockups out of the live UI until the relevant real API data loads. */
+body:not(.w2e-live-ready) .rest-card,
+body:not(.w2e-live-ready) .w2e-card-item,
+body:not(.w2e-live-ready) .w2e-note-card,
+body:not(.w2e-live-ready) .w2e-plan-card,
+body:not(.w2e-live-ready) .w2e-detail-section,
+body:not(.w2e-live-ready) .w2e-fav-card,
+body:not(.w2e-live-ready) .w2e-note-item,
+body:not(.w2e-live-ready) #tableBody > tr,
+body:not(.w2e-live-ready) #userTableBody > tr {
+  display: none !important;
+}
+body:not(.w2e-live-ready) #resultCount { visibility: hidden !important; }
+body:not(.w2e-live-ready) .admin-content .admin-card,
+body:not(.w2e-live-ready) #fnTable tbody > tr,
+body:not(.w2e-live-ready) .admin-table tbody > tr,
+body:not(.w2e-live-ready) .admin-content canvas {
+  display: none !important;
+}
+.rest-card { display: none !important; }
+.note-card, .plan-card { display: none !important; }
+section:has(#statsChart) { display: none !important; }
+body:not(.w2e-favorites-ready) .w2e-fav-card,
+body:not(.w2e-profile-stats-ready) .w2e-profile-stat-num {
+  visibility: hidden !important;
+}
+body:not(.w2e-live-ready) .w2e-stats-bar,
+body:not(.w2e-live-ready) .w2e-profile-stats,
+body:not(.w2e-live-ready) .w2e-stat-value,
+body:not(.w2e-live-ready) .admin-stat-card .stat-value,
+body:not(.w2e-live-ready) .admin-topbar-right,
+body:not(.w2e-live-ready) .w2e-topbar-admin {
+  visibility: hidden !important;
+}
+
+.w2e-live-place-card[hidden] { display: none !important; }
+.w2e-live-place-card__source { display: inline-block; margin-top: 5px; }
+#emptyState:not(.w2e-hidden) { display: block; }
+.shared-food-note-media { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 20px; }
+.shared-food-note-media img, .shared-food-note-media video { display: block; width: 100%; border-radius: 12px; }

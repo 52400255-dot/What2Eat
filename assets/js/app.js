@@ -9,43 +9,9 @@
 // GLOBAL STATE
 // ============================================================
 const W2E = {
-  favorites: getLS('w2e_favorites') || [],
-  user: getLS('w2e_user') || { name: 'Nguyễn Văn An', avatar: null },
   toastTimeout: {},
   modalStack: [],
 };
-
-// ============================================================
-// LOCAL STORAGE HELPERS
-// ============================================================
-function getLS(key) {
-  try {
-    const val = localStorage.getItem(key);
-    return val ? JSON.parse(val) : null;
-  } catch (e) {
-    console.warn('[W2E] getLS error:', e);
-    return null;
-  }
-}
-
-function setLS(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-    return true;
-  } catch (e) {
-    console.warn('[W2E] setLS error:', e);
-    return false;
-  }
-}
-
-function removeLS(key) {
-  try {
-    localStorage.removeItem(key);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
 
 // ============================================================
 // FORMAT CURRENCY VND
@@ -243,69 +209,6 @@ function showConfirm({ title = 'Xác nhận', message = '', confirmText = 'Xác 
   });
 
   showModal('w2e-confirm-overlay');
-}
-
-// ============================================================
-// FAVORITE TOGGLE
-// ============================================================
-
-/**
- * Toggle trạng thái yêu thích
- * @param {string} id - ID của restaurant/note
- * @param {HTMLElement} btn - Nút heart button
- * @param {string} name - Tên để hiển thị toast
- */
-function toggleFavorite(id, btn, name = '') {
-  const favorites = getLS('w2e_favorites') || [];
-  const idx = favorites.indexOf(id);
-
-  if (idx === -1) {
-    favorites.push(id);
-    btn.classList.add('active');
-    btn.innerHTML = '<i class="bi bi-heart-fill"></i>';
-    toast.success(`Đã thêm vào danh sách yêu thích${name ? ': ' + name : ''}!`);
-  } else {
-    favorites.splice(idx, 1);
-    btn.classList.remove('active');
-    btn.innerHTML = '<i class="bi bi-heart"></i>';
-    toast.info(`Đã xóa${name ? ' ' + name : ''} khỏi danh sách yêu thích.`);
-  }
-
-  setLS('w2e_favorites', favorites);
-  W2E.favorites = favorites;
-
-  // Heart animation
-  btn.style.transform = 'scale(1.3)';
-  setTimeout(() => {
-    btn.style.transform = '';
-    btn.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
-  }, 150);
-}
-
-/**
- * Khởi tạo tất cả nút yêu thích trên trang
- */
-function initFavoriteButtons() {
-  const favorites = getLS('w2e_favorites') || [];
-
-  document.querySelectorAll('[data-fav-id]').forEach(btn => {
-    const id = btn.getAttribute('data-fav-id');
-    const name = btn.getAttribute('data-fav-name') || '';
-
-    // Set initial state
-    if (favorites.includes(id)) {
-      btn.classList.add('active');
-      btn.innerHTML = '<i class="bi bi-heart-fill"></i>';
-    } else {
-      btn.innerHTML = '<i class="bi bi-heart"></i>';
-    }
-
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      toggleFavorite(id, btn, name);
-    });
-  });
 }
 
 // ============================================================
@@ -749,51 +652,6 @@ function initStarRatingInputs() {
 }
 
 // ============================================================
-// AUTOSAVE DRAFT TO LOCALSTORAGE
-// ============================================================
-function initAutosave(formId, storageKey, interval = 3000) {
-  const form = document.getElementById(formId);
-  if (!form) return;
-
-  // Restore draft
-  const draft = getLS(storageKey);
-  if (draft) {
-    Object.entries(draft).forEach(([name, value]) => {
-      const field = form.querySelector(`[name="${name}"]`);
-      if (field && field.type !== 'file') field.value = value;
-    });
-
-    const banner = document.createElement('div');
-    banner.className = 'w2e-draft-banner';
-    banner.style.cssText = 'padding:.625rem 1rem;background:#FEF3DC;border-radius:8px;font-size:.8rem;color:#B8861B;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;';
-    banner.innerHTML = `<i class="bi bi-clock-history"></i> Đã khôi phục bản nháp. <button onclick="clearDraft('${storageKey}', this.parentElement)" style="margin-left:auto;background:none;border:none;color:#B8861B;cursor:pointer;font-weight:600;">Xóa nháp</button>`;
-    form.prepend(banner);
-  }
-
-  // Save draft periodically
-  let saveTimer;
-  form.addEventListener('input', () => {
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-      const data = {};
-      new FormData(form).forEach((val, key) => {
-        if (typeof val === 'string') data[key] = val;
-      });
-      setLS(storageKey, data);
-    }, interval);
-  });
-
-  // Clear draft on submit
-  form.addEventListener('submit', () => removeLS(storageKey));
-}
-
-function clearDraft(storageKey, banner) {
-  removeLS(storageKey);
-  if (banner) banner.remove();
-  toast.info('Đã xóa bản nháp.');
-}
-
-// ============================================================
 // SMOOTH SCROLL TO SECTION
 // ============================================================
 function scrollToSection(sectionId) {
@@ -972,7 +830,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initNavbarScroll();
   initMobileNavbarToggle();
   initDropdowns();
-  initFavoriteButtons();
   initBottomNav();
   initLazyImages();
   initImageUpload();
@@ -998,15 +855,11 @@ window.toast = toast;
 window.showModal = showModal;
 window.hideModal = hideModal;
 window.showConfirm = showConfirm;
-window.toggleFavorite = toggleFavorite;
 window.formatVND = formatVND;
 window.formatVNDShort = formatVNDShort;
 window.renderStars = renderStars;
 window.toggleSkeleton = toggleSkeleton;
 window.createSkeletonCards = createSkeletonCards;
-window.getLS = getLS;
-window.setLS = setLS;
-window.removeLS = removeLS;
 window.validate = validate;
 window.validateForm = validateForm;
 window.formatDateVN = formatDateVN;
@@ -1017,6 +870,4 @@ window.throttle = throttle;
 window.spinPicker = spinPicker;
 window.scrollToSection = scrollToSection;
 window.copyToClipboard = copyToClipboard;
-window.initAutosave = initAutosave;
-window.clearDraft = clearDraft;
 window.estimateReadingTime = estimateReadingTime;
