@@ -1,0 +1,27 @@
+<?php
+declare(strict_types=1);
+require_once dirname(__DIR__) . '/includes/page-template.php';
+$pageTitle = 'Food Note được chia sẻ | What2Eat';
+?>
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title><?= w2e_escape($pageTitle) ?></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>body{background:#fcfaf6;color:#30261e}.share-shell{max-width:760px;margin:7vh auto;padding:clamp(22px,5vw,48px);background:#fff;border:1px solid #eadfce;border-radius:20px;box-shadow:0 12px 36px #3020100b}.share-shell h1{font-size:clamp(1.5rem,4vw,2.2rem)}.shared-food-note-media{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:22px}.shared-food-note-media img,.shared-food-note-media video{width:100%;border-radius:12px}</style>
+  <link rel="stylesheet" href="../assets/css/live-data.css">
+</head>
+<body>
+  <main class="share-shell">
+    <a class="navbar-brand text-decoration-none fw-bold" href="../index.php">What<span style="color:#bd8c11">2</span>Eat</a>
+    <hr>
+    <section id="sharedFoodNote" aria-live="polite">Đang tải Food Note được chia sẻ…</section>
+  </main>
+  <script src="../assets/js/app.js"></script>
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,808 @@
+<?php
+declare(strict_types=1);
+require_once dirname(__DIR__) . '/includes/page-template.php';
+$pageTitle = 'Dashboard Của Tôi – What2Eat';
+?>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><?= w2e_escape($pageTitle) ?></title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+  <!-- What2Eat Global CSS -->
+  <link rel="stylesheet" href="../assets/css/style.css" />
+
+  <style>
+    /* ===== DASHBOARD PAGE STYLES ===== */
+    body {
+      background-color: var(--w2e-bg);
+      font-family: var(--font);
+      padding-bottom: 90px; /* space for mobile bottom nav */
+    }
+
+    /* ---- Navbar ---- */
+    .w2e-navbar {
+      background: #fff;
+      border-bottom: 1px solid var(--w2e-border);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+      padding: 0 0;
+      position: sticky;
+      top: 0;
+      z-index: 1030;
+    }
+    .w2e-navbar .navbar-brand {
+    font-weight: 600;
+      font-size: 1.5rem;
+      color: var(--w2e-secondary) !important;
+      letter-spacing: -0.5px;
+    }
+    .w2e-navbar .navbar-brand span {
+      color: var(--w2e-primary);
+    }
+    .w2e-navbar .nav-link {
+      font-weight: 500;
+      color: var(--w2e-text-muted) !important;
+      padding: 0.6rem 1rem !important;
+      border-radius: 8px;
+      transition: color 0.2s, background 0.2s;
+      font-size: 0.93rem;
+    }
+    .w2e-navbar .nav-link:hover,
+    .w2e-navbar .nav-link.active {
+      color: var(--w2e-primary) !important;
+      background: rgba(212,160,23,0.08);
+    }
+    .w2e-navbar .nav-link.active {
+      font-weight: 600;
+    }
+    .w2e-avatar-btn {
+      background: none;
+      border: 2px solid var(--w2e-border);
+      border-radius: 50px;
+      padding: 4px 12px 4px 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .w2e-avatar-btn:hover { border-color: var(--w2e-primary); }
+    .w2e-avatar-btn img {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .w2e-avatar-btn .w2e-avatar-name {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--w2e-text);
+    }
+
+    /* ---- Page Header ---- */
+    .w2e-page-header {
+    background: var(--secondary);
+      color: #fff;
+      padding: 2.5rem 0 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .w2e-page-header::before {
+      content: '';
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 300px;
+      height: 300px;
+      background: rgba(212,160,23,0.12);
+      border-radius: 50%;
+    }
+    .w2e-page-header::after {
+      content: '';
+      position: absolute;
+      bottom: -80px;
+      left: 20%;
+      width: 200px;
+      height: 200px;
+      background: rgba(212,160,23,0.08);
+      border-radius: 50%;
+    }
+    .w2e-page-header h1 {
+      font-size: 2rem;
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+    }
+    .w2e-page-header p {
+      font-size: 0.95rem;
+      opacity: 0.8;
+      margin-bottom: 0;
+    }
+    .w2e-date-range-label {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 10px;
+      color: #fff;
+      padding: 8px 16px;
+      font-size: 0.88rem;
+      font-family: inherit;
+      cursor: default;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s;
+    }
+
+    /* ---- Stat Cards ---- */
+    .w2e-stat-card {
+      background: #fff;
+      border-radius: var(--w2e-card-radius);
+      box-shadow: var(--w2e-shadow);
+      padding: 1.5rem 1.4rem;
+      height: 100%;
+      border: 1px solid var(--w2e-border);
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .w2e-stat-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--w2e-primary);
+      border-radius: 4px 0 0 4px;
+    }
+    .w2e-stat-card:hover{ box-shadow: var(--w2e-shadow-md) }
+
+    .w2e-stat-value {
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--w2e-secondary);
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+    .w2e-stat-label {
+      font-size: 0.85rem;
+      color: var(--w2e-text-muted);
+      margin-bottom: 0.6rem;
+    }
+    .w2e-stat-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+    .w2e-stat-badge.up { background: rgba(45,155,111,0.12); color: var(--success); }
+    .w2e-stat-badge.info { background: rgba(212,160,23,0.12); color: var(--primary-dark); }
+    .w2e-stat-badge.fav { background: rgba(74,44,26,0.10); color: var(--w2e-secondary); }
+
+    /* ---- Section Title ---- */
+    .w2e-section-title {
+      font-size: 1.15rem;
+      font-weight: 500;
+      color: var(--w2e-secondary);
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .w2e-section-title .w2e-title-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--w2e-primary);
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* ---- Chart Cards ---- */
+    .w2e-chart-card {
+      background: #fff;
+      border-radius: var(--w2e-card-radius);
+      box-shadow: var(--w2e-shadow);
+      border: 1px solid var(--w2e-border);
+      padding: 1.5rem;
+      height: 100%;
+    }
+    .w2e-chart-card canvas {
+      max-height: 280px;
+    }
+
+    /* ---- Recent Food Notes List ---- */
+    .w2e-note-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--w2e-border);
+      transition: background 0.15s;
+    }
+    .w2e-note-item:last-child { border-bottom: none; }
+    .w2e-note-item:hover { background: rgba(212,160,23,0.04); border-radius: 10px; padding-left: 8px; }
+    .w2e-note-thumb {
+      width: 58px;
+      height: 58px;
+      border-radius: 12px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .w2e-note-info { flex: 1; min-width: 0; }
+    .w2e-note-name {
+      font-weight: 600;
+      font-size: 0.92rem;
+      color: var(--w2e-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .w2e-note-meta {
+      font-size: 0.8rem;
+      color: var(--w2e-text-muted);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 3px;
+      flex-wrap: wrap;
+    }
+    .w2e-note-price { font-weight: 600; color: var(--w2e-primary); }
+    .w2e-note-rating { color: var(--warning); }
+    .w2e-note-date { color: var(--w2e-text-muted); }
+
+    /* ---- Favorite Restaurants Grid ---- */
+    .w2e-fav-card {
+      background: #fff;
+      border-radius: var(--w2e-card-radius);
+      box-shadow: var(--w2e-shadow);
+      border: 1px solid var(--w2e-border);
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+    }
+    .w2e-fav-card:hover{ box-shadow: var(--w2e-shadow-md) }
+    .w2e-fav-card-img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+    }
+    .w2e-fav-card-body {
+      padding: 1rem;
+    }
+    .w2e-fav-card-name {
+    font-weight: 500;
+      font-size: 0.95rem;
+      color: var(--w2e-secondary);
+      margin-bottom: 4px;
+    }
+    .w2e-fav-card-rating {
+      font-size: 0.82rem;
+      color: var(--warning);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 10px;
+    }
+    .w2e-fav-card-rating span { color: var(--w2e-text-muted); }
+    .w2e-btn-unfav {
+      background: none;
+      border: 1px solid var(--w2e-border);
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 0.8rem;
+      color: var(--w2e-text-muted);
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+      width: 100%;
+    }
+    .w2e-btn-unfav:hover {
+    border-color: var(--error);
+    color: var(--error);
+      background: rgba(224,90,90,0.06);
+    }
+
+    /* ---- Mobile Bottom Nav ---- */
+    .w2e-bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border-top: 1px solid var(--w2e-border);
+      z-index: 1040;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+    }
+    .w2e-bottom-nav-inner {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 8px 0 6px;
+    }
+    .w2e-bottom-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      text-decoration: none;
+      color: var(--w2e-text-muted);
+      font-size: 0.7rem;
+      font-weight: 500;
+      padding: 4px 12px;
+      border-radius: 10px;
+      transition: color 0.2s;
+    }
+    .w2e-bottom-nav-item i { font-size: 1.3rem; }
+    .w2e-bottom-nav-item.active { color: var(--w2e-primary); }
+    .w2e-bottom-nav-item:hover { color: var(--w2e-primary); }
+
+    /* ---- Responsive ---- */
+    @media (max-width: 767.98px) {
+      .w2e-bottom-nav { display: block; }
+      .w2e-page-header h1 { font-size: 1.5rem; }
+      .w2e-stat-value { font-size: 1.6rem; }
+      .w2e-navbar .d-none-mobile { display: none !important; }
+    }
+    @media (max-width: 575.98px) {
+      .w2e-page-header { padding: 1.5rem 0 1.2rem; }
+    }
+  </style>
+  <link rel="stylesheet" href="../assets/css/live-data.css">
+</head>
+
+<body>
+
+<!-- ====================== NAVBAR ====================== -->
+<nav class="navbar navbar-expand-lg w2e-navbar">
+  <div class="container">
+    <!-- Brand -->
+    <a class="navbar-brand" href="../index.php">
+      What<span>2</span>Eat
+    </a>
+
+    <!-- Mobile toggle -->
+    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Links -->
+    <div class="collapse navbar-collapse" id="mainNav">
+      <ul class="navbar-nav mx-auto gap-1">
+        <li class="nav-item">
+          <a class="nav-link" href="../index.php">
+            <i class="bi bi-house-door me-1"></i>Trang chủ
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="./discovery.php">
+            <i class="bi bi-compass me-1"></i>Khám phá
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="./food-notes.php">
+            <i class="bi bi-journal-bookmark me-1"></i>Food Notes
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="./food-plans.php">
+            <i class="bi bi-calendar3 me-1"></i>Food Plans
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" href="./dashboard.php">
+            <i class="bi bi-bar-chart-line me-1"></i>Dashboard
+          </a>
+        </li>
+      </ul>
+
+      <!-- Avatar Dropdown -->
+      <div class="dropdown">
+        <button class="w2e-avatar-btn dropdown-toggle-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+          <img alt="Ảnh đại diện" hidden />
+          <span class="w2e-avatar-name d-none-mobile">Tài khoản</span>
+          <i class="bi bi-chevron-down" style="font-size:0.75rem; color:var(--w2e-text-muted);"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius:12px; min-width:200px; margin-top:8px;">
+          <li>
+            <div class="px-4 pt-3 pb-2 border-bottom">
+            <div data-w2e-user-name style="font-weight:600; font-size:0.93rem; color:var(--w2e-text);">Tài khoản</div>
+              <div data-w2e-user-email style="font-size:0.8rem; color:var(--w2e-text-muted);">Đang tải…</div>
+            </div>
+          </li>
+          <li><a class="dropdown-item py-2" href="./profile.php"><i class="bi bi-person me-2"></i>Hồ sơ cá nhân</a></li>
+          <li><a class="dropdown-item py-2" href="./dashboard.php"><i class="bi bi-bar-chart-line me-2"></i>Dashboard</a></li>
+          <li><a class="dropdown-item py-2" href="./food-plans.php"><i class="bi bi-calendar3 me-2"></i>Food Plans</a></li>
+          <li><hr class="dropdown-divider" /></li>
+          <li><a class="dropdown-item py-2 text-danger" href="./login.php"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ====================== PAGE HEADER ====================== -->
+<section class="w2e-page-header">
+  <div class="container position-relative" style="z-index:1;">
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-md-between gap-3">
+      <div>
+        <h1 class="mb-1"><i class="bi bi-bar-chart-line-fill me-2" style="color:var(--w2e-primary);"></i>Dashboard Của Tôi</h1>
+        <p class="mb-0">Thống kê được tổng hợp từ dữ liệu Food Note trên tài khoản của bạn.</p>
+      </div>
+      <div>
+        <div class="w2e-date-range-label" id="dateRangeBtn" aria-label="Khoảng thời gian thống kê">
+          <i class="bi bi-calendar-range"></i>
+          <span>6 tháng gần đây</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================== MAIN CONTENT ====================== -->
+<main class="container py-4">
+
+  <!-- ===== STAT CARDS ===== -->
+  <section class="mb-5" aria-label="Thống kê tổng quan">
+    <div class="row g-3">
+
+      <!-- Card 1: Food Notes -->
+      <div class="col-12 col-sm-6 col-xl-3">
+        <article class="w2e-stat-card" role="region" aria-label="Tổng Food Notes">
+          <div class="w2e-stat-value">—</div>
+          <div class="w2e-stat-label">Food Notes đã viết</div>
+        </article>
+      </div>
+
+      <!-- Card 2: Chi tiêu -->
+      <div class="col-12 col-sm-6 col-xl-3">
+        <article class="w2e-stat-card" role="region" aria-label="Tổng chi tiêu">
+          <div class="w2e-stat-value" style="font-size:1.65rem;">—</div>
+          <div class="w2e-stat-label">Tổng chi tiêu ăn uống</div>
+        </article>
+      </div>
+
+      <!-- Card 3: Rating -->
+      <div class="col-12 col-sm-6 col-xl-3">
+        <article class="w2e-stat-card" role="region" aria-label="Rating trung bình">
+          <div class="w2e-stat-value">—</div>
+          <div class="w2e-stat-label">Điểm đánh giá trung bình</div>
+        </article>
+      </div>
+
+      <!-- Card 4: Yêu thích -->
+      <div class="col-12 col-sm-6 col-xl-3">
+        <article class="w2e-stat-card" role="region" aria-label="Quán yêu thích">
+          <div class="w2e-stat-value" style="font-size:1.3rem; padding-top:4px;">—</div>
+          <div class="w2e-stat-label">Quán ghé nhiều nhất</div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CHARTS ROW 1: Line + Pie ===== -->
+  <section class="mb-5" aria-label="Biểu đồ chi tiêu và phân loại">
+    <div class="row g-4">
+
+      <!-- Line Chart: Chi tiêu theo tháng -->
+      <div class="col-12 col-lg-7">
+        <div class="w2e-chart-card">
+          <div class="w2e-section-title">
+            <span class="w2e-title-dot"></span>
+            Chi tiêu theo tháng
+            <span class="ms-auto" style="font-size:0.8rem; font-weight:400; color:var(--w2e-text-muted);">6 tháng gần đây</span>
+          </div>
+          <canvas id="spendingLineChart" aria-label="Biểu đồ chi tiêu theo tháng" role="img"></canvas>
+        </div>
+      </div>
+
+      <!-- Pie Chart: Phân loại món ăn -->
+      <div class="col-12 col-lg-5">
+        <div class="w2e-chart-card">
+          <div class="w2e-section-title">
+            <span class="w2e-title-dot"></span>
+            Phân loại món ăn
+          </div>
+          <canvas id="foodCatPieChart" aria-label="Biểu đồ phân loại món ăn" role="img"></canvas>
+          <!-- Legend -->
+          <div class="d-flex flex-wrap gap-2 mt-3 justify-content-center" id="pieLegend"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CHARTS ROW 2: Bar + Recent Notes ===== -->
+  <section class="mb-5" aria-label="Quán hay ghé và food notes gần đây">
+    <div class="row g-4">
+
+      <!-- Bar Chart: Quán ghé nhiều nhất -->
+      <div class="col-12 col-lg-7">
+        <div class="w2e-chart-card">
+          <div class="w2e-section-title">
+            <span class="w2e-title-dot"></span>
+            Quán ghé nhiều nhất
+          </div>
+          <canvas id="topRestoBarChart" aria-label="Biểu đồ quán ghé nhiều nhất" role="img"></canvas>
+        </div>
+      </div>
+
+      <!-- Recent Food Notes List -->
+      <div class="col-12 col-lg-5">
+        <div class="w2e-chart-card">
+          <div class="w2e-section-title d-flex align-items-center">
+            <span class="w2e-title-dot"></span>
+            Food Notes Gần Đây
+            <a href="./food-notes.php" class="ms-auto" style="font-size:0.8rem; font-weight:500; color:var(--w2e-primary);">Xem tất cả →</a>
+          </div>
+
+          <div id="dashboardRecentNotes" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FAVORITE RESTAURANTS ===== -->
+  <section class="mb-5" aria-label="Quán ăn yêu thích">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+      <h2 class="w2e-section-title mb-0">
+        <span class="w2e-title-dot"></span>
+        Quán Ăn Yêu Thích
+        <span id="favoriteCountBadge" class="badge ms-2" style="background:rgba(212,160,23,0.15); color:var(--w2e-primary); font-size:0.8rem; font-weight:600; border-radius:20px;">Địa điểm yêu thích</span>
+      </h2>
+      <a href="./discovery.php" style="font-size:0.88rem; font-weight:500; color:var(--w2e-primary);">Khám phá thêm →</a>
+    </div>
+
+    <div class="row g-3">
+
+      <!-- Fav Card 1 -->
+
+      <!-- Fav Card 2 -->
+
+      <!-- Fav Card 3 -->
+
+      <!-- Fav Card 4 -->
+    </div>
+  </section>
+</main>
+
+<!-- ====================== MOBILE BOTTOM NAV ====================== -->
+<nav class="w2e-bottom-nav" aria-label="Mobile navigation">
+  <div class="w2e-bottom-nav-inner">
+    <a class="w2e-bottom-nav-item" href="../index.php">
+      <i class="bi bi-house-door"></i>
+      <span>Trang chủ</span>
+    </a>
+    <a class="w2e-bottom-nav-item" href="./discovery.php">
+      <i class="bi bi-compass"></i>
+      <span>Khám phá</span>
+    </a>
+    <a class="w2e-bottom-nav-item" href="./food-notes.php">
+      <i class="bi bi-journal-bookmark"></i>
+      <span>Food Notes</span>
+    </a>
+    <a class="w2e-bottom-nav-item active" href="./dashboard.php">
+      <i class="bi bi-bar-chart-line-fill"></i>
+      <span>Dashboard</span>
+    </a>
+    <a class="w2e-bottom-nav-item" href="./profile.php">
+      <i class="bi bi-person-circle"></i>
+      <span>Hồ sơ</span>
+    </a>
+  </div>
+</nav>
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Dashboard JS -->
+
+<script>
+/* ===================== CHARTS ===================== */
+
+// ---- 1. Line Chart: Chi tiêu theo tháng ----
+(function() {
+  const ctx = document.getElementById('spendingLineChart').getContext('2d');
+
+  // Gradient fill
+  const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+  gradient.addColorStop(0, 'rgba(212,160,23,0.35)');
+  gradient.addColorStop(0.7, 'rgba(212,160,23,0.08)');
+  gradient.addColorStop(1, 'rgba(212,160,23,0)');
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Chi tiêu (đồng)',
+        data: [],
+        borderColor: '#D4A017',
+        backgroundColor: gradient,
+        borderWidth: 3,
+        pointBackgroundColor: '#D4A017',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#fff',
+          titleColor: '#2B2118',
+          bodyColor: '#6F6258',
+          borderColor: '#E8DED2',
+          borderWidth: 1,
+          padding: 12,
+          cornerRadius: 10,
+          callbacks: {
+            label: function(ctx) {
+              return ' ' + ctx.parsed.y.toLocaleString('vi-VN') + 'đ';
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { family: "'Be Vietnam Pro', sans-serif", size: 12 }, color: '#6F6258' }
+        },
+        y: {
+          grid: { color: 'rgba(0,0,0,0.05)' },
+          ticks: {
+          font: { family: "'Be Vietnam Pro', sans-serif", size: 11 },
+            color: '#6F6258',
+            callback: function(v) {
+              return (v / 1000) + 'K';
+            }
+          }
+        }
+      }
+    }
+  });
+})();
+
+// ---- 2. Pie Chart: Phân loại món ăn ----
+(function() {
+  const ctx = document.getElementById('foodCatPieChart').getContext('2d');
+  const labels = [];
+  const data = [];
+  const colors = ['#D4A017', '#4A2C1A', '#2D9B6F', '#5B8DEF', '#C47E5A'];
+
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: colors,
+        borderColor: '#fff',
+        borderWidth: 3,
+        hoverOffset: 10
+      }]
+    },
+    options: {
+      responsive: true,
+      cutout: '60%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#fff',
+          titleColor: '#2B2118',
+          bodyColor: '#6F6258',
+          borderColor: '#E8DED2',
+          borderWidth: 1,
+          padding: 12,
+          cornerRadius: 10,
+          callbacks: {
+            label: function(ctx) {
+              return ' ' + ctx.label + ': ' + ctx.parsed + ' ghi chú';
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Custom legend
+  const legendEl = document.getElementById('pieLegend');
+  labels.forEach(function(label, i) {
+    const item = document.createElement('div');
+    item.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:0.78rem;font-weight:500;color:#2B2118;';
+    item.innerHTML =
+      '<span style="width:12px;height:12px;border-radius:3px;background:' + colors[i] + ';flex-shrink:0;"></span>' +
+      label + ' <strong>' + data[i] + '%</strong>';
+    legendEl.appendChild(item);
+  });
+})();
+
+// ---- 3. Bar Chart: Quán ghé nhiều nhất ----
+(function() {
+  const ctx = document.getElementById('topRestoBarChart').getContext('2d');
+  const labels = [];
+  const data = [];
+
+  // Gradient per bar
+  const barColors = data.map(function(v, i) {
+    const alpha = 1 - (i * 0.14);
+    return 'rgba(212,160,23,' + alpha + ')';
+  });
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Số lần ghé',
+        data: data,
+        backgroundColor: barColors,
+        borderColor: barColors.map(function(c) { return c.replace(/[\d.]+\)$/, '1)'); }),
+        borderWidth: 0,
+        borderRadius: 8,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#fff',
+          titleColor: '#2B2118',
+          bodyColor: '#6F6258',
+          borderColor: '#E8DED2',
+          borderWidth: 1,
+          padding: 12,
+          cornerRadius: 10,
+          callbacks: {
+            label: function(ctx) {
+              return ' ' + ctx.parsed.y + ' lần';
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { family: "'Be Vietnam Pro', sans-serif", size: 11 }, color: '#6F6258' }
+        },
+        y: {
+          grid: { color: 'rgba(0,0,0,0.05)' },
+          beginAtZero: true,
+          ticks: {
+          font: { family: "'Be Vietnam Pro', sans-serif", size: 11 },
+            color: '#6F6258',
+            stepSize: 3
+          }
+        }
+      }
+    }
+  });
+})();
+
+</script>
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>
