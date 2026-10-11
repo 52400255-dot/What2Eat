@@ -436,22 +436,23 @@
       .cat-icon { font-size: 1.8rem; }
     }
   </style>
+  <link rel="stylesheet" href="./assets/css/live-data.css">
 </head>
 <body>
 
 <!-- ======== NAVBAR ======== -->
 <nav class="w2e-nav">
   <div class="container">
-  <a href="./index.html" class="w2e-nav-logo">What<span>2</span>Eat</a>
+  <a href="./index.php" class="w2e-nav-logo">What<span>2</span>Eat</a>
     <ul class="w2e-nav-links">
-      <li><a href="./pages/discovery.html">Khám phá</a></li>
-      <li><a href="./pages/food-notes.html">Food Note</a></li>
-      <li><a href="./pages/food-plans.html">Food Plan</a></li>
-      <li><a href="./pages/dashboard.html">Dashboard</a></li>
+      <li><a href="./pages/discovery.php">Khám phá</a></li>
+      <li><a href="./pages/food-notes.php">Food Note</a></li>
+      <li><a href="./pages/food-plans.php">Food Plan</a></li>
+      <li><a href="./pages/dashboard.php">Dashboard</a></li>
     </ul>
     <div class="w2e-nav-auth">
-      <a href="./pages/login.html" class="btn-login">Đăng nhập</a>
-      <a href="./pages/register.html" class="btn-signup">Đăng ký</a>
+      <a href="./pages/login.php" class="btn-login">Đăng nhập</a>
+      <a href="./pages/register.php" class="btn-signup">Đăng ký</a>
     </div>
     <button class="nav-toggle" onclick="document.querySelector('.mobile-menu').classList.toggle('show')">
       <i class="bi bi-list"></i>
@@ -476,27 +477,26 @@
           <button onclick="heroSearchGo()">Khám phá</button>
         </div>
         <div class="hero-tags">
-          <span style="font-size:.8rem;color:var(--text-light);">Phổ biến:</span>
-          <a href="./pages/discovery.html?q=pho" class="hero-tag">Phở</a>
-          <a href="./pages/discovery.html?q=bun-bo" class="hero-tag">Bún Bò</a>
-          <a href="./pages/discovery.html?q=bbq" class="hero-tag">BBQ</a>
-          <a href="./pages/discovery.html?q=ca-phe" class="hero-tag">Cà phê</a>
-          <a href="./pages/discovery.html?q=sushi" class="hero-tag">Món ăn quốc gia khác</a>
+          <span style="font-size:.8rem;color:var(--text-light);">Gợi ý tìm kiếm:</span>
+          <a href="./pages/discovery.php?q=pho" class="hero-tag">Phở</a>
+          <a href="./pages/discovery.php?q=bun-bo" class="hero-tag">Bún Bò</a>
+          <a href="./pages/discovery.php?q=bbq" class="hero-tag">BBQ</a>
+          <a href="./pages/discovery.php?q=ca-phe" class="hero-tag">Cà phê</a>
+          <a href="./pages/discovery.php?q=sushi" class="hero-tag">Sushi</a>
         </div>
       </div>
       <div class="col-lg-6 d-none d-lg-block">
         <div class="hero-visual">
-          <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=400&fit=crop" alt="Ẩm thực Việt Nam" class="hero-img-main">
-          <img src="https://images.unsplash.com/photo-1555126634-323283e090fa?w=300&h=200&fit=crop" alt="Phở Hà Nội" class="hero-img-sm sm1">
-          <img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300&h=200&fit=crop" alt="Bánh Mì" class="hero-img-sm sm2">
+          <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=400&fit=crop" alt="Món ăn minh họa" class="hero-img-main">
+          <img src="https://images.unsplash.com/photo-1555126634-323283e090fa?w=300&h=200&fit=crop" alt="Món ăn minh họa" class="hero-img-sm sm1">
+          <img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300&h=200&fit=crop" alt="Món ăn minh họa" class="hero-img-sm sm2">
           <div class="hero-badge">
-          <span class="w2e-stars-text" style="font-size:1.125rem;">★</span>
+          <i class="bi bi-geo-alt-fill" style="font-size:1.125rem;"></i>
             <div>
-              <div class="hero-badge-rating">4.8 / 5.0</div>
-              <div class="hero-badge-sub">2.341 đánh giá</div>
+              <div class="hero-badge-rating">OpenStreetMap</div>
+              <div class="hero-badge-sub">Dữ liệu cộng đồng</div>
             </div>
           </div>
-          <div class="hero-badge-rec">Được đề xuất</div>
         </div>
       </div>
     </div>
@@ -511,14 +511,14 @@
       <p class="section-sub">Chọn danh mục yêu thích để tìm quán phù hợp</p>
     </div>
     <div class="row g-3 g-md-4">
-      <div class="col-6 col-md-3"><a href="./pages/discovery.html?category=viet" class="cat-card"><span class="cat-icon"></span><p class="cat-name">Món Việt</p></a></div>
-      <div class="col-6 col-md-3"><a href="./pages/discovery.html?category=bbq" class="cat-card"><span class="cat-icon"></span><p class="cat-name">BBQ / Lẩu</p></a></div>
-      <div class="col-6 col-md-3"><a href="./pages/discovery.html?category=cafe" class="cat-card"><span class="cat-icon"></span><p class="cat-name">Cà phê</p></a></div>
-      <div class="col-6 col-md-3"><a href="./pages/discovery.html?category=nhat" class="cat-card"><span class="cat-icon"></span><p class="cat-name">Nhật Bản</p></a></div>
-      <div class="col-6 col-md-3"><a href="./pages/discovery.html?category=han" class="cat-card"><span class="cat-icon"></span><p class="cat-name">Hàn Quốc</p></a></div>
-      <div class="col-6 col-md-3"><a href="./pages/discovery.html?category=fast" class="cat-card"><span class="cat-icon"></span><p class="cat-name">Ăn nhanh</p></a></div>
-      <div class="col-6 col-md-3"><a href="./pages/discovery.html?category=dessert" class="cat-card"><span class="cat-icon"></span><p class="cat-name">Tráng miệng</p></a></div>
-      <div class="col-6 col-md-3"><a href="./pages/discovery.html?category=drink" class="cat-card"><span class="cat-icon"></span><p class="cat-name">Đồ uống</p></a></div>
+      <div class="col-6 col-md-3"><a href="./pages/discovery.php?category=viet" class="cat-card"><span class="cat-icon"></span><p class="cat-name">Món Việt</p></a></div>
+      <div class="col-6 col-md-3"><a href="./pages/discovery.php?category=bbq" class="cat-card"><span class="cat-icon"></span><p class="cat-name">BBQ / Lẩu</p></a></div>
+      <div class="col-6 col-md-3"><a href="./pages/discovery.php?category=cafe" class="cat-card"><span class="cat-icon"></span><p class="cat-name">Cà phê</p></a></div>
+      <div class="col-6 col-md-3"><a href="./pages/discovery.php?category=nhat" class="cat-card"><span class="cat-icon"></span><p class="cat-name">Nhật Bản</p></a></div>
+      <div class="col-6 col-md-3"><a href="./pages/discovery.php?category=han" class="cat-card"><span class="cat-icon"></span><p class="cat-name">Hàn Quốc</p></a></div>
+      <div class="col-6 col-md-3"><a href="./pages/discovery.php?category=fast" class="cat-card"><span class="cat-icon"></span><p class="cat-name">Ăn nhanh</p></a></div>
+      <div class="col-6 col-md-3"><a href="./pages/discovery.php?category=dessert" class="cat-card"><span class="cat-icon"></span><p class="cat-name">Tráng miệng</p></a></div>
+      <div class="col-6 col-md-3"><a href="./pages/discovery.php?category=drink" class="cat-card"><span class="cat-icon"></span><p class="cat-name">Đồ uống</p></a></div>
     </div>
   </div>
 </section>
@@ -535,24 +535,22 @@
         <label>Loại món</label>
         <select class="filter-select" id="filterType">
           <option value="">Tất cả</option>
-          <option>Món Việt</option><option>BBQ / Lẩu</option>
-          <option>Nhật Bản</option><option>Hàn Quốc</option>
-          <option>Ăn nhanh</option><option>Cà phê</option>
+          <option value="viet">Món Việt</option><option value="bbq">BBQ / Lẩu</option>
+          <option value="japanese">Nhật Bản</option><option value="korean">Hàn Quốc</option>
+          <option value="fastfood">Ăn nhanh</option><option value="cafe">Cà phê</option>
         </select>
       </div>
       <div class="filter-group">
-        <label>Ngân sách</label>
-        <select class="filter-select" id="filterBudget">
-          <option value="">Không giới hạn</option>
-          <option>Dưới 50.000đ</option><option>50k – 100k</option>
-          <option>100k – 200k</option><option>Trên 200k</option>
+        <label for="filterBudget">Ngân sách</label>
+        <select class="filter-select" id="filterBudget" disabled title="OpenStreetMap không cung cấp dữ liệu giá nhất quán.">
+          <option value="">Chưa có dữ liệu giá</option>
         </select>
       </div>
       <div class="filter-group">
         <label>Khoảng cách</label>
         <select class="filter-select" id="filterDist">
           <option value="">Tất cả</option>
-          <option>Dưới 1 km</option><option>1 – 3 km</option><option>Trên 3 km</option>
+          <option value="under1">Dưới 1 km</option><option value="1to3">1 – 3 km</option><option value="over3">Trên 3 km</option>
         </select>
       </div>
       <div class="filter-group" style="display:flex;align-items:flex-end;">
@@ -570,10 +568,10 @@
               <div class="result-meta">
                 <span class="rating-badge" id="rRating"></span>
                 <span style="color:var(--text-muted);font-size:.85rem;" id="rPrice"></span>
-                <span class="open-badge">Đang mở</span>
+                <span class="open-badge" hidden></span>
               </div>
               <div class="d-flex gap-2">
-                <a href="./pages/restaurant.html" class="btn-primary-w2e" style="font-size:.85rem;padding:8px 18px;">Xem quán</a>
+                <a href="./pages/discovery.php" id="rLink" class="btn-primary-w2e" style="font-size:.85rem;padding:8px 18px;">Mở nguồn OpenStreetMap</a>
                 <button class="btn-outline-w2e" style="font-size:.85rem;padding:8px 18px;" onclick="randomFood()">Chọn lại</button>
               </div>
             </div>
@@ -589,100 +587,13 @@
   <div class="container">
     <div class="d-flex justify-content-between align-items-end mb-4 flex-wrap gap-3">
       <div>
-        <h2 class="section-title">Quán ăn được yêu thích</h2>
-        <p class="section-sub">Được đánh giá cao bởi cộng đồng What2Eat</p>
+        <h2 class="section-title">Địa điểm ăn uống quanh khu vực</h2>
+        <p class="section-sub">Dữ liệu được truy vấn từ OpenStreetMap; mức độ chi tiết tùy theo dữ liệu cộng đồng.</p>
       </div>
-      <a href="./pages/discovery.html" class="btn-outline-w2e">Xem tất cả →</a>
+      <a href="./pages/discovery.php" class="btn-outline-w2e">Xem tất cả →</a>
     </div>
-    <div class="row g-4">
-      <!-- Card 1 -->
-      <div class="col-sm-6 col-xl-3">
-        <a href="./pages/restaurant.html" class="rest-card">
-          <div class="rest-img-wrap">
-            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQirgkSyg5aP8iKQOX77Rj6vUTsuEYqT9OztaQYoIAzfQ&s=10" alt="Phở Thìn" class="rest-img">
-            <button class="rest-heart" onclick="event.preventDefault();toggleHeart(this)"><i class="bi bi-heart"></i></button>
-            <span class="rest-status open">Đang mở</span>
-          </div>
-          <div class="rest-body">
-            <h3 class="rest-name">Phở Thìn Lò Đúc</h3>
-            <span class="rest-cat">Món Việt</span>
-            <div class="rest-meta">
-            <span class="rest-rating">★ 4.8</span>
-              <span>(2.341)</span>
-              <span class="rest-divider">·</span>
-              <span>45k – 70k</span>
-              <span class="rest-divider">·</span>
-              <span> 0.5km</span>
-            </div>
-          </div>
-        </a>
-      </div>
-      <!-- Card 2 -->
-      <div class="col-sm-6 col-xl-3">
-        <a href="./pages/restaurant.html" class="rest-card">
-          <div class="rest-img-wrap">
-            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQj27KzkDOON_1ds9SCgHuPfdDc-ZowFhHFzE9XwDW9Wg&s=10" alt="BBQ" class="rest-img">
-            <button class="rest-heart" onclick="event.preventDefault();toggleHeart(this)"><i class="bi bi-heart"></i></button>
-            <span class="rest-status open">Đang mở</span>
-          </div>
-          <div class="rest-body">
-            <h3 class="rest-name">Bếp Nhà BBQ & Lẩu</h3>
-            <span class="rest-cat">BBQ / Lẩu</span>
-            <div class="rest-meta">
-            <span class="rest-rating">★ 4.6</span>
-              <span>(1.892)</span>
-              <span class="rest-divider">·</span>
-              <span>150k – 300k</span>
-              <span class="rest-divider">·</span>
-              <span> 1.2km</span>
-            </div>
-          </div>
-        </a>
-      </div>
-      <!-- Card 3 -->
-      <div class="col-sm-6 col-xl-3">
-        <a href="./pages/restaurant.html" class="rest-card">
-          <div class="rest-img-wrap">
-            <img src="https://cdn.hstatic.net/themes/200001193925/1001500650/14/home_time_img.jpg?v=130" alt="Cà phê" class="rest-img">
-            <button class="rest-heart" onclick="event.preventDefault();toggleHeart(this)"><i class="bi bi-heart"></i></button>
-            <span class="rest-status open">Đang mở</span>
-          </div>
-          <div class="rest-body">
-            <h3 class="rest-name">Cà phê Trứng Giảng</h3>
-            <span class="rest-cat">Cà phê</span>
-            <div class="rest-meta">
-            <span class="rest-rating">★ 4.7</span>
-              <span>(3.104)</span>
-              <span class="rest-divider">·</span>
-              <span>30k – 60k</span>
-              <span class="rest-divider">·</span>
-              <span> 0.8km</span>
-            </div>
-          </div>
-        </a>
-      </div>
-      <!-- Card 4 -->
-      <div class="col-sm-6 col-xl-3">
-        <a href="./pages/restaurant.html" class="rest-card">
-          <div class="rest-img-wrap">
-            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTjWTzppF7iUdo-Q8RpDn5CLgPpKAzvNR5AuvHfIpNylg&s=10" alt="Sushi" class="rest-img">
-            <button class="rest-heart" onclick="event.preventDefault();toggleHeart(this)"><i class="bi bi-heart"></i></button>
-            <span class="rest-status open">Đang mở</span>
-          </div>
-          <div class="rest-body">
-            <h3 class="rest-name">Sushi Hokkaido Sachi</h3>
-            <span class="rest-cat">Nhật Bản</span>
-            <div class="rest-meta">
-            <span class="rest-rating">★ 4.5</span>
-              <span>(987)</span>
-              <span class="rest-divider">·</span>
-              <span>200k – 500k</span>
-              <span class="rest-divider">·</span>
-              <span> 2.1km</span>
-            </div>
-          </div>
-        </a>
-      </div>
+    <div class="row g-4" id="homePlacesGrid" aria-live="polite">
+      <p class="text-secondary">Đang tải địa điểm có dữ liệu từ OpenStreetMap…</p>
     </div>
   </div>
 </section>
@@ -692,144 +603,47 @@
   <div class="container">
     <div class="row align-items-center g-5">
       <div class="col-lg-6">
-      <p style="display:inline-block;padding:5px 14px;background:rgba(212,160,23,0.1);border-radius:20px;font-size:.8rem;font-weight:600;color:var(--primary-dark);margin-bottom:16px;">Food Note</p>
-        <h2 class="section-title" style="margin-bottom:16px;">Lưu lại mọi trải nghiệm ăn uống</h2>
-        <p style="color:var(--text-muted);line-height:1.8;margin-bottom:28px;">
-          Ghi lại cảm nhận sau mỗi bữa ăn: từ hương vị, giá cả đến không khí quán. Xem lại và chia sẻ cùng bạn bè bất cứ lúc nào.
-        </p>
-        <div class="feature-item">
-          <div><p class="feature-title">Đánh giá chi tiết</p><p class="feature-desc">Ghi chú hương vị, không gian, giá cả và trải nghiệm thực tế</p></div>
-        </div>
-        <div class="feature-item">
-          <div><p class="feature-title">Gắn hashtag thông minh</p><p class="feature-desc">Phân loại ghi chú dễ dàng, tìm lại nhanh chóng</p></div>
-        </div>
-        <div class="feature-item">
-          <div><p class="feature-title">Thống kê thói quen</p><p class="feature-desc">Hiểu rõ sở thích ăn uống qua biểu đồ trực quan</p></div>
-        </div>
-        <a href="./pages/create-food-note.html" class="btn-primary-w2e" style="margin-top:12px;">Tạo Food Note đầu tiên</a>
+        <p class="section-sub">Food Note</p>
+        <h2 class="section-title">Lưu lại trải nghiệm do chính bạn ghi nhận</h2>
+        <p class="text-secondary">Thêm món ăn, thời gian, chi phí, ảnh và nhận xét từ trải nghiệm thật. Mỗi ghi chú thuộc tài khoản của bạn và có thể đặt riêng tư hoặc chia sẻ.</p>
+        <a href="./pages/create-food-note.php" class="btn-primary-w2e">Tạo Food Note</a>
       </div>
       <div class="col-lg-6">
-        <div class="note-card mb-4">
-          <div class="d-flex justify-content-between align-items-start mb-2">
-            <div><p class="note-name mb-1">Bún Bò Huế Mệ Kính</p><p class="note-stars mb-0">★★★★★</p></div>
-            <div class="text-end"><p style="font-weight: 500;color:var(--primary);margin:0;">65.000đ</p><p style="font-size:.75rem;color:var(--text-light);margin:0;">20/09/2026</p></div>
-          </div>
-          <p class="note-quote">"Cực ngon! Nước dùng đậm đà, thịt mềm, sả thơm lừng. Chắc chắn sẽ quay lại."</p>
-          <div><span class="note-tag">#bún_bò</span><span class="note-tag">#cay</span><span class="note-tag">#Huế</span><span class="note-tag">#must_try</span></div>
-        </div>
-        <div class="note-card">
-          <div class="d-flex justify-content-between align-items-start mb-2">
-            <div><p class="note-name mb-1">Bít Tết Phố Cổ</p><p class="note-stars mb-0">★★★★<span style="color:var(--star-track);">★</span></p></div>
-            <div class="text-end"><p style="font-weight: 500;color:var(--primary);margin:0;">95.000đ</p><p style="font-size:.75rem;color:var(--text-light);margin:0;">15/09/2026</p></div>
-          </div>
-          <p class="note-quote">"Bít tết ngon, thịt mềm vừa. Không gian phố cổ rất chill. Nước sốt tiêu đen xuất sắc!"</p>
-          <div><span class="note-tag">#bít_tết</span><span class="note-tag">#phố_cổ</span><span class="note-tag">#date_night</span></div>
+        <div class="p-4 rounded-4 bg-white shadow-sm h-100">
+          <h3 class="h5">Ghi chú của bạn</h3>
+          <p class="text-secondary mb-0">Chưa có nội dung mẫu. Food Note chỉ xuất hiện sau khi bạn tự tạo.</p>
         </div>
       </div>
     </div>
   </div>
 </section>
-
 <!-- ======== FOOD PLAN ======== -->
 <section class="section section-alt">
   <div class="container">
     <div class="row align-items-center g-5">
-      <div class="col-lg-5 order-lg-1 order-2">
-        <div class="plan-card">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <div>
-            <p class="plan-title mb-0">Weekend Food Plan</p>
-              <p style="font-size:.8rem;color:var(--text-muted);margin:4px 0 0;">Chủ nhật, 28/09/2026 • 12:00</p>
-            </div>
-            <span style="padding:4px 12px;background:rgba(212,160,23,0.1);border-radius:20px;font-size:.75rem;font-weight:600;color:var(--primary-dark);">Đang vote</span>
-          </div>
-          <div style="margin-bottom:20px;">
-            <p style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);margin-bottom:10px;">Thành viên (4)</p>
-            <div class="d-flex align-items-center gap-3">
-              <div class="avatar-stack">
-                <img src="https://scontent-sin11-1.xx.fbcdn.net/v/t39.30808-1/475572687_1328278638520631_4734511898669020671_n.jpg?stp=cp6_dst-jpg_tt6&cstp=mx2048x2048&ctp=s200x200&_nc_cat=104&ccb=1-7&_nc_sid=e99d92&_nc_ohc=Ii7adnbMy_cQ7kNvwGPjwfa&_nc_oc=Adov3h11A4x9_b9WmlVjBPx_e66lCLE-ZZTu6SmBmvg-qo8JwUxr3WLcz-Ac1nldzfoa6fQe41JzaFQ2HLfpOSk0&_nc_zt=24&_nc_ht=scontent-sin11-1.xx&_nc_gid=FaLP4lEkOxu4RDZMY30lXQ&_nc_ss=7b2a8&oh=00_AQNhcUfdAoJUzW_VvD4DyKFQaq0thBcmthJhkAmyuP1xtg&oe=6ABF8F37" alt=""><img src="https://scontent-sin2-1.xx.fbcdn.net/v/t39.30808-1/763824605_1063545469680386_1654431198435829509_n.jpg?stp=dst-jpg_tt6&cstp=mx641x641&ctp=s200x200&_nc_cat=100&ccb=1-7&_nc_sid=1d2534&_nc_ohc=0ugIpzg2LTgQ7kNvwHZEbLp&_nc_oc=AdocPZceJ-AQqYoyBu0jnJxQtyk7B7pr65eMq0tGcMiFsKVd90zwoh54uyWNl-POhJ2MR6UuYEgwixZ2bb9_-5-s&_nc_zt=24&_nc_ht=scontent-sin2-1.xx&_nc_gid=hPNtghPD3zB5gca4jVh_7A&_nc_ss=7b2a8&oh=00_AQNGu3QoNchkOYmNdSCaUvoGNtrYrcKGva0C2m9Zu3Fj4w&oe=6ABF88D4" alt="">
-                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSN-Q5ovmFbvrXc1aLctq4IOP9yuVU1PYiotslxNT9nsg&s=10" alt=""><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTYoVVKZsNJEIcQ0H9mDwzZHiLdm4Hin2BWdL7dmCeurQ&s=10" alt="">
-              </div>
-              <span style="font-size:.82rem;color:var(--text-muted);">Minh + 3 người</span>
-            </div>
-          </div>
-          <p style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);margin-bottom:10px;">Kết quả bình chọn</p>
-          <div class="vote-item"><span class="vote-name">Phở Thìn</span><div class="vote-bar"><div class="vote-fill" style="width:75%;"></div></div><span class="vote-count">3/4</span></div>
-          <div class="vote-item"><span class="vote-name">Bếp Nhà BBQ</span><div class="vote-bar"><div class="vote-fill" style="width:25%;"></div></div><span class="vote-count">1/4</span></div>
-          <div class="vote-item"><span class="vote-name">Sushi Hokkaido</span><div class="vote-bar"><div class="vote-fill" style="width:0%;"></div></div><span class="vote-count" style="color:var(--text-light);">0/4</span></div>
-        </div>
-      </div>
-      <div class="col-lg-7 order-lg-2 order-1">
-      <p style="display:inline-block;padding:5px 14px;background:rgba(212,160,23,0.1);border-radius:20px;font-size:.8rem;font-weight:600;color:var(--primary-dark);margin-bottom:16px;">Food Plan</p>
-        <h2 class="section-title" style="margin-bottom:16px;">Đi ăn cùng bạn bè?</h2>
-        <p style="color:var(--text-muted);line-height:1.8;margin-bottom:28px;">
-          Tạo kế hoạch ăn uống chung, mời bạn bè tham gia vote, và quyết định điểm đến trong tích tắc.
-        </p>
-        <div class="feature-item"><div><p class="feature-title">Mời bạn bè dễ dàng</p><p class="feature-desc">Gửi link hoặc mã mời, tham gia trong 1 click</p></div></div>
-        <div class="feature-item"><div><p class="feature-title">Vote thời gian thực</p><p class="feature-desc">Bình chọn quán ăn và xem kết quả ngay lập tức</p></div></div>
-        <div class="feature-item"><div><p class="feature-title">Quyết định theo đa số</p><p class="feature-desc">Hệ thống tự tổng hợp và thông báo quán thắng</p></div></div>
-        <a href="./pages/food-plans.html" class="btn-primary-w2e" style="margin-top:12px;">Tạo Food Plan</a>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ======== STATISTICS ======== -->
-<section class="section">
-  <div class="container">
-    <div class="text-center mb-5">
-      <h2 class="section-title">Hiểu hơn về thói quen ăn uống</h2>
-      <p class="section-sub">Thống kê thông minh từ Food Note của bạn</p>
-    </div>
-    <div class="row g-3 g-md-4 mb-5">
-    <div class="col-6 col-lg-3"><div class="stat-box"><div class="stat-number">128</div><div class="stat-label">Ghi chú đã tạo</div></div></div>
-    <div class="col-6 col-lg-3"><div class="stat-box"><div class="stat-number" style="font-size:1.4rem;">4.250.000đ</div><div class="stat-label">Tổng chi tiêu</div></div></div>
-    <div class="col-6 col-lg-3"><div class="stat-box"><div class="stat-number">4.3 ★</div><div class="stat-label">Đánh giá TB</div></div></div>
-    <div class="col-6 col-lg-3"><div class="stat-box"><div class="stat-number" style="font-size:1.3rem;">Phở Thìn</div><div class="stat-label">Yêu thích nhất</div></div></div>
-    </div>
-    <div class="row g-4">
-      <div class="col-lg-7">
-        <div style="background:#fff;border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);">
-        <h5 style="font-weight: 500;color:var(--secondary);margin-bottom:16px;font-size:1rem;">Chi tiêu theo tháng (VNĐ)</h5>
-          <canvas id="statsChart" height="120"></canvas>
-        </div>
-      </div>
       <div class="col-lg-5">
-        <div style="background:#fff;border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);">
-        <h5 style="font-weight: 500;color:var(--secondary);margin-bottom:16px;font-size:1rem;">Phân loại món ăn</h5>
-          <canvas id="categoryChart" height="180"></canvas>
+        <div class="p-4 rounded-4 bg-white shadow-sm">
+          <p class="plan-title mb-2">Food Plan nhóm</p>
+          <p class="text-secondary">Tạo kế hoạch, mời thành viên, thêm địa điểm có nguồn và cùng bình chọn. Thành viên và kết quả chỉ xuất hiện sau khi nhóm tạo dữ liệu thật.</p>
+          <a href="./pages/food-plans.php" class="btn-primary-w2e">Tạo Food Plan</a>
         </div>
       </div>
-    </div>
-    <div class="text-center mt-5">
-      <a href="./pages/dashboard.html" class="btn-primary-w2e">Xem thống kê đầy đủ</a>
-    </div>
-  </div>
-</section>
-
-<!-- ======== PWA ======== -->
-<section class="section section-alt">
-  <div class="container">
-    <div class="text-center mb-5">
-      <h2 class="section-title">What2Eat luôn bên bạn</h2>
-      <p class="section-sub">Dùng được mọi lúc, mọi nơi – ngay cả khi không có mạng</p>
-    </div>
-    <div class="row g-4">
-    <div class="col-md-4"><div class="pwa-box"><h5>Cài đặt như App</h5><p>Thêm vào màn hình chính và trải nghiệm như ứng dụng thật sự</p></div></div>
-    <div class="col-md-4"><div class="pwa-box"><h5>Tốc độ cực nhanh</h5><p>Cache thông minh giúp tải trang gần như tức thì</p></div></div>
-    <div class="col-md-4"><div class="pwa-box"><h5>Thông báo thông minh</h5><p>Nhận gợi ý bữa ăn, nhắc nhở Food Plan và cập nhật từ bạn bè</p></div></div>
+      <div class="col-lg-7">
+        <p class="section-sub">Food Plan</p>
+        <h2 class="section-title">Đi ăn cùng bạn bè?</h2>
+        <p class="text-secondary">Chia sẻ liên kết mời, đề xuất địa điểm từ OpenStreetMap hoặc danh sách đã được duyệt, rồi bình chọn trong cùng một kế hoạch.</p>
+      </div>
     </div>
   </div>
 </section>
-
 <!-- ======== CTA ======== -->
 <section class="cta-section">
   <div class="container">
     <h2>Hôm nay ăn gì?</h2>
     <p>Bắt đầu hành trình ẩm thực của bạn cùng What2Eat — hoàn toàn miễn phí!</p>
     <div class="d-flex gap-3 justify-content-center flex-wrap">
-      <a href="./pages/discovery.html" class="btn-cta btn-cta-white">Bắt đầu khám phá</a>
-      <a href="./pages/register.html" class="btn-cta btn-cta-outline">Tạo tài khoản miễn phí</a>
+      <a href="./pages/discovery.php" class="btn-cta btn-cta-white">Bắt đầu khám phá</a>
+      <a href="./pages/register.php" class="btn-cta btn-cta-outline">Tạo tài khoản miễn phí</a>
     </div>
   </div>
 </section>
@@ -844,26 +658,24 @@
       </div>
       <div class="col-lg-2 col-md-3 col-6">
         <p class="ft-heading">Khám phá</p>
-        <a href="./pages/discovery.html" class="ft-link">Tất cả quán ăn</a>
-        <a href="./pages/discovery.html?category=viet" class="ft-link">Món Việt</a>
-        <a href="./pages/discovery.html?category=bbq" class="ft-link">BBQ / Lẩu</a>
-        <a href="./pages/discovery.html?category=cafe" class="ft-link">Cà phê</a>
-        <a href="./pages/discovery.html?category=nhat" class="ft-link">Ẩm thực Nhật</a>
+        <a href="./pages/discovery.php" class="ft-link">Tất cả quán ăn</a>
+        <a href="./pages/discovery.php?category=viet" class="ft-link">Món Việt</a>
+        <a href="./pages/discovery.php?category=bbq" class="ft-link">BBQ / Lẩu</a>
+        <a href="./pages/discovery.php?category=cafe" class="ft-link">Cà phê</a>
+        <a href="./pages/discovery.php?category=nhat" class="ft-link">Ẩm thực Nhật</a>
       </div>
       <div class="col-lg-2 col-md-3 col-6">
         <p class="ft-heading">Cá nhân</p>
-        <a href="./pages/food-notes.html" class="ft-link">Food Note</a>
-        <a href="./pages/create-food-note.html" class="ft-link">Tạo ghi chú</a>
-        <a href="./pages/food-plans.html" class="ft-link">Food Plan</a>
-        <a href="./pages/dashboard.html" class="ft-link">Dashboard</a>
-        <a href="./pages/profile.html" class="ft-link">Hồ sơ</a>
+        <a href="./pages/food-notes.php" class="ft-link">Food Note</a>
+        <a href="./pages/create-food-note.php" class="ft-link">Tạo ghi chú</a>
+        <a href="./pages/food-plans.php" class="ft-link">Food Plan</a>
+        <a href="./pages/dashboard.php" class="ft-link">Dashboard</a>
+        <a href="./pages/profile.php" class="ft-link">Hồ sơ</a>
       </div>
       <div class="col-lg-4 col-md-6">
         <p class="ft-heading">Hỗ trợ</p>
-        <a href="#" class="ft-link">Trung tâm trợ giúp</a>
-        <a href="#" class="ft-link">Điều khoản dịch vụ</a>
-        <a href="#" class="ft-link">Chính sách bảo mật</a>
-        <a href="#" class="ft-link">Liên hệ</a>
+        <a href="./pages/terms.php" class="ft-link">Điều khoản dịch vụ</a>
+        <a href="./pages/privacy.php" class="ft-link">Quyền riêng tư và dữ liệu</a>
       </div>
     </div>
     <hr class="ft-divider">
@@ -877,11 +689,11 @@
 <!-- ======== MOBILE BOTTOM NAV ======== -->
 <nav class="mobile-nav">
   <div class="mobile-nav-inner">
-    <a href="./index.html" class="mobile-nav-item active"><i class="bi bi-house-fill"></i>Home</a>
-    <a href="./pages/discovery.html" class="mobile-nav-item"><i class="bi bi-search"></i>Khám phá</a>
-    <a href="./pages/create-food-note.html" class="mobile-nav-item add-btn"><i class="bi bi-plus-lg"></i></a>
-    <a href="./pages/food-notes.html" class="mobile-nav-item"><i class="bi bi-journal-text"></i>Notes</a>
-    <a href="./pages/profile.html" class="mobile-nav-item"><i class="bi bi-person"></i>Profile</a>
+    <a href="./index.php" class="mobile-nav-item active"><i class="bi bi-house-fill"></i>Home</a>
+    <a href="./pages/discovery.php" class="mobile-nav-item"><i class="bi bi-search"></i>Khám phá</a>
+    <a href="./pages/create-food-note.php" class="mobile-nav-item add-btn"><i class="bi bi-plus-lg"></i></a>
+    <a href="./pages/food-notes.php" class="mobile-nav-item"><i class="bi bi-journal-text"></i>Notes</a>
+    <a href="./pages/profile.php" class="mobile-nav-item"><i class="bi bi-person"></i>Profile</a>
   </div>
 </nav>
 
@@ -892,72 +704,34 @@
 /* Search */
 function heroSearchGo(){
   const q=document.getElementById('heroSearch').value.trim();
-  if(q) window.location.href='./pages/discovery.html?q='+encodeURIComponent(q);
+  if(q) window.location.href='./pages/discovery.php?q='+encodeURIComponent(q);
 }
 document.getElementById('heroSearch').addEventListener('keydown',e=>{if(e.key==='Enter')heroSearchGo();});
 
-/* Heart toggle */
-function toggleHeart(btn){
-const icon = btn.querySelector('i');
-const liked = btn.classList.toggle('liked');
-if (icon) icon.className = 'bi ' + (liked ? 'bi-heart-fill' : 'bi-heart');
+/* Random selection uses only the current OpenStreetMap and published What2Eat results. */
+async function randomFood(){
+  const button=document.querySelector('.btn-random');
+  if(button){button.disabled=true;button.textContent='Đang tải địa điểm…';}
+  try {
+    if(!window.getRandomNearbyPlace?.()) await window.refreshNearbyPlaces?.();
+    const item=window.getRandomNearbyPlace?.();
+    if(!item) throw new Error('Chưa có địa điểm thật để chọn. Hãy thử lại sau.');
+    document.getElementById('rName').textContent=item.name;
+    document.getElementById('rAddr').textContent=item.address;
+    document.getElementById('rRating').textContent=item.source;
+    document.getElementById('rPrice').textContent='Giá và đánh giá chỉ hiển thị khi nguồn cung cấp dữ liệu.';
+    const image=document.getElementById('rImg');if(image){image.removeAttribute('src');image.hidden=true;}
+    const link=document.getElementById('rLink');if(link){link.href=item.url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Mở địa điểm và nguồn';}
+    const result=document.getElementById('randomResult');result.style.display='block';
+    const card=document.getElementById('resultCard');card.style.animation='none';card.offsetHeight;card.style.animation='popIn .4s cubic-bezier(.34,1.56,.64,1)';
+  } catch(error) {
+    const result=document.getElementById('randomResult');result.style.display='block';
+    document.getElementById('rName').textContent='Chưa tải được địa điểm';
+    document.getElementById('rAddr').textContent=error.message;
+  } finally { if(button){button.disabled=false;button.textContent='Chọn ngẫu nhiên';} }
 }
 
-/* Random Food */
-const foods=[
-{name:'Phở Bò Tái – Phở Thìn Lò Đúc',addr:'13 Lò Đúc, Đống Đa, Hà Nội',img:'https://images.unsplash.com/photo-1555126634-323283e090fa?w=300&h=240&fit=crop',rating:' 4.8',price:'45.000đ – 70.000đ'},
-{name:'Bún Bò Huế Mệ Kính',addr:'116 Đinh Tiên Hoàng, Bình Thạnh, TP.HCM',img:'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=300&h=240&fit=crop',rating:' 4.7',price:'50.000đ – 75.000đ'},
-{name:'Cơm Tấm Sườn Bì Chả',addr:'73 Đặng Văn Ngữ, Phú Nhuận, TP.HCM',img:'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=300&h=240&fit=crop',rating:' 4.6',price:'40.000đ – 65.000đ'},
-{name:'Bánh Mì Phương Hội An',addr:'2B Phan Châu Trinh, Hội An',img:'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300&h=240&fit=crop',rating:' 4.9',price:'20.000đ – 35.000đ'},
-{name:'Chả Cá Lã Vọng',addr:'14 Chả Cá, Hoàn Kiếm, Hà Nội',img:'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=300&h=240&fit=crop',rating:' 4.7',price:'180.000đ – 280.000đ'},
-{name:'Lẩu Thái Hải Sản',addr:'Royal City, Hà Nội',img:'https://images.unsplash.com/photo-1544025162-d76694265947?w=300&h=240&fit=crop',rating:' 4.4',price:'250.000đ – 450.000đ'},
-];
-function randomFood(){
-  const item=foods[Math.floor(Math.random()*foods.length)];
-  document.getElementById('rName').textContent=item.name;
-  document.getElementById('rAddr').textContent=item.addr;
-  document.getElementById('rImg').src=item.img;
-  document.getElementById('rRating').textContent=item.rating;
-  document.getElementById('rPrice').textContent=item.price;
-  const r=document.getElementById('randomResult');
-  r.style.display='block';
-  const c=document.getElementById('resultCard');
-  c.style.animation='none';c.offsetHeight;c.style.animation='popIn .4s cubic-bezier(.34,1.56,.64,1)';
-}
-
-/* Charts */
-document.addEventListener('DOMContentLoaded',()=>{
-  const sCtx=document.getElementById('statsChart');
-  if(sCtx){
-    new Chart(sCtx,{
-      type:'line',
-      data:{
-        labels:['T4','T5','T6','T7','T8','T9'],
-        datasets:[{
-          label:'Chi tiêu',data:[680,920,750,1100,850,680],
-          borderColor:'#D4A017',backgroundColor:'rgba(212,160,23,0.08)',
-          borderWidth:2.5,tension:.4,fill:true,pointBackgroundColor:'#D4A017',pointRadius:4
-        }]
-      },
-      options:{responsive:true,plugins:{legend:{display:false}},
-      scales:{y:{ticks:{font:{family: "'Be Vietnam Pro', sans-serif",size:11},callback:v=>v+'k'},grid:{color:'#f0e8d8'}},
-      x:{ticks:{font:{family: "'Be Vietnam Pro', sans-serif",size:11}},grid:{display:false}}}}
-    });
-  }
-  const cCtx=document.getElementById('categoryChart');
-  if(cCtx){
-    new Chart(cCtx,{
-      type:'doughnut',
-      data:{
-        labels:['Món Việt','BBQ/Lẩu','Cà phê','Nhật','Khác'],
-        datasets:[{data:[42,18,15,12,13],
-          backgroundColor:['#D4A017','#4A2C1A','#6B3E26','#B8860B','#E8DED2'],
-          borderWidth:0}]
-      },
-      options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{family: "'Be Vietnam Pro', sans-serif",size:11},padding:16,usePointStyle:true}}}}
-    });
-  }
-});
 </script>
+  <script src="./assets/js/site.js"></script>
 </body>
 </html>

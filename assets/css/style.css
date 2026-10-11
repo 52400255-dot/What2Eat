@@ -10,7 +10,7 @@
    DESIGN TOKENS — single source of truth
    ------------------------------------------------------------
    The project grew three parallel token namespaces:
-     • --primary / --bg / --text      (style.css + index.html)
+     • --primary / --bg / --text      (style.css + index.php)
      • --w2e-primary / --w2e-bg       (food-notes, food-plans,
                                        create-food-note)
      • --w2e-brown / --w2e-cream      (login, register)
@@ -84,7 +84,7 @@
   --sidebar-width: 260px;
 
   /* ==========================================================
-     ALIAS NAMESPACE 1 — legacy (style.css, index.html)
+     ALIAS NAMESPACE 1 — legacy (style.css, index.php)
      ========================================================== */
   --primary:         var(--gold);
   --primary-dark:    var(--gold-dark);
@@ -137,7 +137,7 @@
 
   /* ==========================================================
      ALIAS NAMESPACE 3 — auth pages
-     login.html and register.html named the same brand hues with
+     login.php and register.php named the same brand hues with
      slightly different hexes (#e2ad17 vs #e4a914, #432514 vs
      #4a2b1b). Both now resolve to the canonical values, which is
      what makes the two screens finally read as one product.
@@ -346,8 +346,7 @@ hr {
    RATING STARS
    ------------------------------------------------------------
    The only warm colour in the product. Every star renderer in
-   the codebase (app.js renderStars, food-note.js
-   renderStarsFilled, the text-star fallbacks) resolves here, so
+   the codebase (site.js and the text-star fallbacks) resolves here, so
    the rating colour is one token instead of an inline hex.
    ============================================================ */
 .w2e-stars {
