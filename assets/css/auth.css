@@ -345,23 +345,20 @@ body.w2e-auth-page {
   color: var(--ink);
 }
 
-.w2e-auth-footer-link,
-.w2e-footer {
+.w2e-auth-footer-link {
   margin-top: 20px;
   text-align: center;
   color: var(--gray);
   font-size: 0.8125rem;
 }
 
-.w2e-auth-footer-link a,
-.w2e-footer a {
+.w2e-auth-footer-link a {
   color: var(--brown);
   font-weight: 500;
   text-decoration: none;
 }
 
-.w2e-auth-footer-link a:hover,
-.w2e-footer a:hover {
+.w2e-auth-footer-link a:hover {
   color: var(--gold-dark);
   text-decoration: underline;
 }

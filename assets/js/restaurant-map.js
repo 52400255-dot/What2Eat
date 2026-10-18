@@ -3,8 +3,9 @@
   'use strict';
 
   const DEFAULT_CENTER = [10.7769, 106.7009];
-  const SEARCH_RADIUS_METERS = 1500;
+  const SEARCH_RADIUS_METERS = 2000;
   const CACHE_TTL_MS = 10 * 60 * 1000;
+  const REQUEST_TIMEOUT_MS = 12000;
 
   document.addEventListener('DOMContentLoaded', () => {
     const mapElement = document.getElementById('map-container');
@@ -17,15 +18,39 @@
       return;
     }
 
-    const map = L.map(mapElement).setView(DEFAULT_CENTER, 14);
+    const focusParams = new URLSearchParams(location.search);
+    const focusLat = Number(focusParams.get('lat'));
+    const focusLon = Number(focusParams.get('lon'));
+    const hasFocus = focusParams.get('focus') === '1' && Number.isFinite(focusLat) && Number.isFinite(focusLon) && Math.abs(focusLat) <= 90 && Math.abs(focusLon) <= 180;
+    const initialCenter = hasFocus ? [focusLat, focusLon] : DEFAULT_CENTER;
+    const map = L.map(mapElement).setView(initialCenter, hasFocus ? 17 : 14);
     const markers = L.layerGroup().addTo(map);
     const managedMarkers = L.layerGroup().addTo(map);
+    const osmMarkerById = new Map();
+    const managedMarkerById = new Map();
+    let currentOsmData = null;
+    let managedRestaurants = [];
+    let visiblePlaceIds = null;
+    let osmErrorMessage = '';
+    let osmIsLoading = true;
     const tileNotice = document.createElement('div');
     tileNotice.className = 'w2e-map-tile-notice';
     tileNotice.hidden = true;
     tileNotice.textContent = 'Không tải được ảnh nền bản đồ. Kiểm tra kết nối mạng hoặc VPN.';
     mapElement.appendChild(tileNotice);
-    let searchCenter = DEFAULT_CENTER;
+    const legend = document.createElement('div');
+    legend.className = 'w2e-map-legend';
+    const osmLegend = document.createElement('span');
+    osmLegend.className = 'w2e-map-legend__item';
+    const osmSwatch = document.createElement('i'); osmSwatch.className = 'w2e-map-legend__swatch w2e-map-legend__swatch--osm';
+    osmLegend.append(osmSwatch, document.createTextNode('OpenStreetMap'));
+    const managedLegend = document.createElement('span');
+    managedLegend.className = 'w2e-map-legend__item';
+    const managedSwatch = document.createElement('i'); managedSwatch.className = 'w2e-map-legend__swatch w2e-map-legend__swatch--managed';
+    managedLegend.append(managedSwatch, document.createTextNode('What2Eat đã duyệt'));
+    legend.append(osmLegend, managedLegend);
+    mapElement.appendChild(legend);
+    let searchCenter = initialCenter;
     let userMarker;
     let activeController;
 
@@ -33,6 +58,11 @@
       maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · Tiles <a href="https://www.hotosm.org/">HOT</a>',
     }).addTo(map);
+    if (hasFocus) {
+      const focusPopup = document.createElement('div');
+      focusPopup.textContent = focusParams.get('name') || 'Địa điểm được chọn ngẫu nhiên';
+      L.circleMarker(initialCenter, { radius: 10, color: '#fff', weight: 3, fillColor: '#c58b00', fillOpacity: 1 }).addTo(map).bindPopup(focusPopup).openPopup();
+    }
     let tileErrors = 0;
     tileLayer.on('tileerror', () => {
       tileErrors += 1;
@@ -45,11 +75,114 @@
 
     function setStatus(message, busy) {
       status.textContent = message;
-      mapElement.setAttribute('aria-busy', String(busy));
+      mapElement.setAttribute('aria-busy', String(Boolean(busy)));
+    }
+
+    function normalizedName(value) {
+      return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').toLocaleLowerCase('vi').replace(/[^a-z0-9]+/g, ' ').trim();
+    }
+
+    function distanceMeters(first, second) {
+      if (!first || !second || ![...first, ...second].every(Number.isFinite)) return Infinity;
+      const radians = value => value * Math.PI / 180;
+      const dLat = radians(second[0] - first[0]), dLon = radians(second[1] - first[1]);
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(radians(first[0])) * Math.cos(radians(second[0])) * Math.sin(dLon / 2) ** 2;
+      return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function managedOsmKey(restaurant) {
+      const reference = `${restaurant?.source_id || ''} ${restaurant?.source_url || ''}`;
+      const match = reference.match(/\b(node|way|relation)[/:](\d+)\b/i);
+      return match ? `${match[1].toLowerCase()}:${match[2]}` : '';
+    }
+
+    function isManagedOsmDuplicate(element, restaurant) {
+      const managedKey = managedOsmKey(restaurant);
+      if (managedKey && managedKey === `${String(element.type).toLowerCase()}:${element.id}`) return true;
+      const osmName = normalizedName(element.tags?.name || element.tags?.['name:vi']);
+      const managedName = normalizedName(restaurant?.name);
+      if (osmName.length < 4 || osmName !== managedName) return false;
+      return distanceMeters(coordinatesOf(element), [Number(restaurant.latitude), Number(restaurant.longitude)]) <= 30;
+    }
+
+    function isClosedOsmPlace(tags) {
+      return tags.disused === 'yes' || tags.abandoned === 'yes' || tags.demolished === 'yes'
+        || tags['disused:amenity'] || tags['abandoned:amenity'] || tags['demolished:amenity']
+        || tags['disused:shop'] || tags['abandoned:shop'] || tags['demolished:shop'];
+    }
+
+    function statusForData(osmCount, managedCount) {
+      if (osmErrorMessage) {
+        return `${osmErrorMessage}${managedCount ? ` Đang hiển thị thêm ${managedCount} quán What2Eat đã được duyệt.` : ''}`;
+      }
+      if (!currentOsmData) {
+        return managedCount
+          ? `Đang tải địa điểm OSM. Hiện đã có ${managedCount} quán What2Eat đã được duyệt trên bản đồ.`
+          : 'Đang truy vấn OpenStreetMap…';
+      }
+      const total = osmCount + managedCount;
+      const updatedAt = currentOsmData.osm3s?.timestamp_osm_base
+        ? ` Dữ liệu OSM cập nhật đến ${new Date(currentOsmData.osm3s.timestamp_osm_base).toLocaleString('vi-VN')}.` : '';
+      const cacheAt = currentOsmData.cache_updated_at
+        ? new Date(`${String(currentOsmData.cache_updated_at).replace(' ', 'T')}Z`).toLocaleString('vi-VN') : '';
+      const snapshotNotice = currentOsmData.snapshot
+        ? ` Overpass không phản hồi; đang dùng snapshot OSM ngày ${currentOsmData.snapshot_date || 'không rõ'}. Trạng thái quán chưa được xác minh ngoài thực tế.`
+        : currentOsmData.stale
+          ? ` Máy chủ OSM không phản hồi; đang dùng dữ liệu lưu lúc ${cacheAt}.`
+          : currentOsmData.cached ? ` Kết quả OSM lưu tại máy chủ lúc ${cacheAt}. Bấm “Tải lại” để làm mới.` : '';
+      const sources = [osmCount ? `${osmCount} địa điểm OSM` : '', managedCount ? `${managedCount} quán What2Eat đã duyệt` : ''].filter(Boolean).join(' và ');
+      return `${total ? `Hiển thị ${total} địa điểm (${sources}) trong khu vực tìm kiếm.` : 'Không tìm thấy địa điểm ăn uống trong khu vực tìm kiếm.'}${updatedAt}${snapshotNotice}`;
+    }
+
+    function renderMarkers() {
+      markers.clearLayers();
+      managedMarkers.clearLayers();
+      osmMarkerById.clear();
+      managedMarkerById.clear();
+      let osmCount = 0;
+      let managedCount = 0;
+      (currentOsmData?.elements || []).forEach((element) => {
+        const tags = element.tags || {};
+        if (isClosedOsmPlace(tags)) return;
+        const coords = coordinatesOf(element);
+        if (!coords || managedRestaurants.some(restaurant => isManagedOsmDuplicate(element, restaurant))) return;
+        const id = `${element.type}:${element.id}`;
+        if (visiblePlaceIds && !visiblePlaceIds.has(id)) return;
+        const marker = L.marker(coords).bindPopup(popupFor(element)).addTo(markers);
+        osmMarkerById.set(id, marker);
+        osmCount += 1;
+      });
+      managedRestaurants.forEach((restaurant) => {
+        const lat = Number(restaurant.latitude), lon = Number(restaurant.longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+        const id = `managed:${restaurant.id}`;
+        if (visiblePlaceIds && !visiblePlaceIds.has(id)) return;
+        const popup = document.createElement('div');
+        const name = document.createElement('strong'); name.textContent = restaurant.name || 'Địa điểm What2Eat';
+        const address = document.createElement('div'); address.textContent = restaurant.address || 'Chưa có địa chỉ';
+        const details = [restaurant.category_name, restaurant.cuisine].filter(Boolean).filter((value, index, values) => values.indexOf(value) === index).join(' · ');
+        popup.append(name, address);
+        if (details) { const detail = document.createElement('small'); detail.textContent = details; popup.appendChild(detail); }
+        if (Array.isArray(restaurant.public_food_names) && restaurant.public_food_names.length) {
+          const dishes = document.createElement('small');
+          dishes.textContent = `Món thành viên ghi trong Food Note công khai: ${restaurant.public_food_names.join(', ')}`;
+          popup.appendChild(dishes);
+        }
+        const link = document.createElement('a'); link.href = `./restaurant.php?id=${encodeURIComponent(restaurant.id)}`; link.textContent = 'Xem thông tin đã duyệt';
+        popup.append(document.createElement('br'), link);
+        if (restaurant.source_url) {
+          const source = document.createElement('a'); source.href = restaurant.source_url; source.target = '_blank'; source.rel = 'noopener noreferrer'; source.textContent = 'Đối chiếu nguồn';
+          popup.append(document.createTextNode(' · '), source);
+        }
+        const marker = L.circleMarker([lat, lon], { radius: 9, color: '#fff', weight: 3, fillColor: '#c58b00', fillOpacity: 1 }).bindPopup(popup).addTo(managedMarkers);
+        managedMarkerById.set(id, marker);
+        managedCount += 1;
+      });
+      setStatus(statusForData(osmCount, managedCount), osmIsLoading);
     }
 
     function cacheKey(center) {
-      return `w2e-osm-restaurants-v2-${center[0].toFixed(3)}-${center[1].toFixed(3)}`;
+      return `w2e-osm-restaurants-v3-${center[0].toFixed(3)}-${center[1].toFixed(3)}`;
     }
 
     function getCached(center) {
@@ -83,16 +216,22 @@
       popup.appendChild(name);
 
       const addressParts = [tags['addr:housenumber'], tags['addr:street'], tags['addr:suburb'], tags['addr:city']].filter(Boolean);
-      if (addressParts.length) {
+      const addressText = element.address || addressParts.join(', ');
+      if (addressText) {
         const address = document.createElement('div');
-        address.textContent = addressParts.join(', ');
+        address.textContent = addressText;
         popup.appendChild(address);
       }
-      const type = tags.cuisine || tags.amenity;
+      const type = tags.cuisine || tags.amenity || element.category;
       if (type) {
         const detail = document.createElement('small');
         detail.textContent = `Loại: ${type}`;
         popup.appendChild(detail);
+      }
+      if (Array.isArray(element.public_food_names) && element.public_food_names.length) {
+        const dishes = document.createElement('small');
+        dishes.textContent = `Món thành viên ghi trong Food Note công khai: ${element.public_food_names.join(', ')}`;
+        popup.appendChild(dishes);
       }
       const link = document.createElement('a');
       link.href = `https://www.openstreetmap.org/${encodeURIComponent(element.type)}/${encodeURIComponent(element.id)}`;
@@ -104,40 +243,27 @@
     }
 
     function drawPlaces(data) {
-      markers.clearLayers();
-      let count = 0;
-      (data.elements || []).forEach((element) => {
-        const coords = coordinatesOf(element);
-        if (!coords) return;
-        L.marker(coords).bindPopup(popupFor(element)).addTo(markers);
-        count += 1;
-      });
-      const updatedAt = data.osm3s && data.osm3s.timestamp_osm_base
-        ? ` Cơ sở dữ liệu OSM cập nhật đến ${new Date(data.osm3s.timestamp_osm_base).toLocaleString('vi-VN')}.`
-        : '';
-      setStatus(count
-        ? `Hiển thị ${count} địa điểm trong bán kính 1,5 km.${updatedAt} Thông tin có thể thiếu do dữ liệu cộng đồng.`
-        : 'Không tìm thấy địa điểm ăn uống được ghi nhận gần đây trong OpenStreetMap.', false);
+      currentOsmData = data;
+      osmErrorMessage = '';
+      osmIsLoading = false;
+      renderMarkers();
       window.dispatchEvent(new CustomEvent('w2e:osm-data', { detail: { data, center: { lat: searchCenter[0], lon: searchCenter[1] } } }));
     }
 
     window.addEventListener('w2e:managed-data', (event) => {
-      managedMarkers.clearLayers();
-      let count = 0;
-      (event.detail?.restaurants || []).forEach((restaurant) => {
-        if (!Number.isFinite(restaurant.latitude) || !Number.isFinite(restaurant.longitude)) return;
-        const popup = document.createElement('div');
-        const name = document.createElement('strong'); name.textContent = restaurant.name || 'Địa điểm What2Eat';
-        const address = document.createElement('div'); address.textContent = restaurant.address || 'Chưa có địa chỉ';
-        const link = document.createElement('a'); link.href = `./restaurant.php?id=${encodeURIComponent(restaurant.id)}`; link.textContent = 'Xem thông tin đã duyệt';
-        popup.append(name, address, link);
-        L.marker([restaurant.latitude, restaurant.longitude]).bindPopup(popup).addTo(managedMarkers);
-        count += 1;
-      });
-      if (count) status.textContent += ` Có thêm ${count} địa điểm được quản trị viên duyệt.`;
+      managedRestaurants = (event.detail?.restaurants || []).filter(restaurant => restaurant.latitude !== null && restaurant.latitude !== '' && restaurant.longitude !== null && restaurant.longitude !== '' && Number.isFinite(Number(restaurant.latitude)) && Number.isFinite(Number(restaurant.longitude)));
+      if (event.detail?.center && Number.isFinite(event.detail.center.lat) && Number.isFinite(event.detail.center.lon)) {
+        searchCenter = [event.detail.center.lat, event.detail.center.lon];
+      }
+      renderMarkers();
     });
 
-    async function loadPlaces(center = [map.getCenter().lat(), map.getCenter().lng()]) {
+    window.addEventListener('w2e:discovery-filter', (event) => {
+      visiblePlaceIds = new Set(event.detail?.placeIds || []);
+      renderMarkers();
+    });
+
+    async function loadPlaces(center = [map.getCenter().lat(), map.getCenter().lng()], forceRefresh = false) {
       searchCenter = center;
       if (activeController) activeController.abort();
       activeController = new AbortController();
@@ -146,9 +272,9 @@
       const timeoutId = window.setTimeout(() => {
         timedOut = true;
         controller.abort();
-      }, 70000);
+      }, REQUEST_TIMEOUT_MS);
 
-      const cached = getCached(center);
+      const cached = forceRefresh ? null : getCached(center);
       if (cached) {
         window.clearTimeout(timeoutId);
         drawPlaces(cached);
@@ -156,9 +282,11 @@
         return;
       }
 
-      setStatus('Đang truy vấn OpenStreetMap…', true);
+      osmIsLoading = true;
+      setStatus(forceRefresh ? 'Đang yêu cầu dữ liệu OSM mới…' : 'Đang truy vấn OpenStreetMap…', true);
       try {
         const params = new URLSearchParams({ lat: center[0], lon: center[1], radius: SEARCH_RADIUS_METERS });
+        if (forceRefresh) params.set('refresh', '1');
         const response = await fetch(`/api/restaurants?${params}`, { signal: controller.signal });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || `Máy chủ cục bộ trả về HTTP ${response.status}`);
@@ -169,22 +297,37 @@
         if (controller.signal.aborted && activeController !== controller) return;
         console.error('Không lấy được địa điểm OSM:', error);
         const message = timedOut
-          ? 'Máy chủ cục bộ chưa phản hồi sau 70 giây.'
+          ? `Máy chủ dữ liệu chưa phản hồi sau ${REQUEST_TIMEOUT_MS / 1000} giây.`
           : (error.message === 'Failed to fetch' || error instanceof TypeError
             ? 'Không gọi được máy chủ dự án. Hãy chạy node server.js rồi mở http://127.0.0.1:4173/pages/discovery.php.'
             : error.message);
-        setStatus(`Không tải được địa điểm: ${message}`, false);
+        osmIsLoading = false;
+        osmErrorMessage = `Không tải được dữ liệu OpenStreetMap: ${message}`;
+        renderMarkers();
       } finally {
         window.clearTimeout(timeoutId);
       }
     }
 
     function locateUser() {
-      if (!navigator.geolocation) {
-        setStatus('Trình duyệt không hỗ trợ định vị. Di chuyển bản đồ rồi bấm Tải lại.', false);
+      if (window.isSecureContext === false) {
+        const secureUrl = new URL(location.href);
+        const localHost = secureUrl.hostname.toLowerCase();
+        if (localHost.endsWith('.local')) {
+          secureUrl.hostname = `${localHost.slice(0, -'.local'.length)}.localhost`;
+          secureUrl.searchParams.set('w2e_locate', '1');
+          setStatus('Đang chuyển sang địa chỉ hỗ trợ GPS…', true);
+          location.assign(secureUrl.href);
+        } else {
+          setStatus('Trình duyệt chặn định vị trên HTTP. Hãy mở trang qua HTTPS hoặc localhost để dùng GPS; bạn vẫn có thể di chuyển bản đồ rồi tải lại.', false);
+        }
         return;
       }
-      setStatus('Đang xác định vị trí của bạn…', true);
+      if (!navigator.geolocation) {
+        setStatus('Trình duyệt không cấp quyền định vị cho trang này. Hãy dùng HTTPS/localhost, kiểm tra quyền vị trí của trang rồi thử lại.', false);
+        return;
+      }
+      setStatus('Đang xin vị trí từ trình duyệt. Nếu có hộp thoại quyền vị trí, hãy chọn “Cho phép”…', true);
       navigator.geolocation.getCurrentPosition((position) => {
         searchCenter = [position.coords.latitude, position.coords.longitude];
         map.setView(searchCenter, 15);
@@ -192,14 +335,47 @@
         userMarker = L.circleMarker(searchCenter, {
           radius: 8, color: '#fff', weight: 3, fillColor: '#c58b00', fillOpacity: 1,
         }).addTo(map).bindPopup('Vị trí của bạn');
-        loadPlaces(searchCenter);
-      }, () => {
-        setStatus('Không lấy được vị trí. Hãy cho phép định vị hoặc di chuyển bản đồ đến nơi cần tìm.', false);
-      }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 });
+        loadPlaces(searchCenter, true);
+      }, (error) => {
+        const fallbackMessage = error?.code === 1
+          ? 'Quyền Vị trí đang bị từ chối cho trang này. Hãy cho phép Vị trí trong cài đặt của trình duyệt rồi thử lại.'
+          : (error?.code === 2 || error?.code === 3
+            ? 'Trình duyệt chưa nhận được tọa độ. Hãy bật Dịch vụ vị trí của Windows; hoặc kéo bản đồ đến khu vực cần tìm rồi bấm “Tải lại”.'
+            : 'Không lấy được vị trí. Hãy kiểm tra quyền định vị hoặc di chuyển bản đồ đến nơi cần tìm.');
+        if (navigator.permissions?.query) {
+          navigator.permissions.query({ name: 'geolocation' }).then(({ state }) => {
+            const message = state === 'prompt'
+              ? 'Trình duyệt chưa cấp quyền Vị trí cho what2eat.localhost. Hãy chọn “Cho phép” trong hộp thoại quyền vị trí rồi thử lại.'
+              : (state === 'denied'
+                ? 'Quyền Vị trí đang bị chặn cho what2eat.localhost. Hãy bật quyền Vị trí trong cài đặt trang của trình duyệt rồi thử lại.'
+                : fallbackMessage);
+            setStatus(message, false);
+          }).catch(() => setStatus(fallbackMessage, false));
+        } else {
+          setStatus(fallbackMessage, false);
+        }
+      }, { enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 });
     }
 
     locateButton.addEventListener('click', locateUser);
-    refreshButton.addEventListener('click', () => loadPlaces());
-    loadPlaces(DEFAULT_CENTER);
+    refreshButton.addEventListener('click', () => loadPlaces(undefined, true));
+
+    const cached = getCached(initialCenter);
+    if (cached) {
+      drawPlaces(cached);
+      status.textContent += ' (dữ liệu tạm lưu trong phiên, tối đa 10 phút).';
+    } else {
+      setStatus('Đang tải địa điểm OpenStreetMap quanh khu vực bản đồ…', true);
+    }
+    window.dispatchEvent(new CustomEvent('w2e:map-ready', {
+      detail: { center: { lat: initialCenter[0], lon: initialCenter[1] }, hasOsmData: Boolean(cached) },
+    }));
+    if (!cached) loadPlaces(initialCenter);
+    if (focusParams.get('w2e_locate') === '1' && window.isSecureContext !== false) {
+      const cleanUrl = new URL(location.href);
+      cleanUrl.searchParams.delete('w2e_locate');
+      history.replaceState(null, '', `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
+      window.setTimeout(locateUser, 0);
+    }
   });
 })();

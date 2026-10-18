@@ -16,9 +16,9 @@ $pageTitle = 'Quản lý Quán Ăn – What2Eat Admin';
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"/>
   <link rel="stylesheet" href="../assets/css/style.css"/>
   <link rel="stylesheet" href="../assets/css/admin.css"/>
-  <link rel="stylesheet" href="../assets/css/live-data.css">
+  <link rel="stylesheet" href="../assets/css/live-data.css?v=20261018-adminrestaurants1">
 </head>
-<body class="admin-body">
+<body class="admin-body admin-restaurants-page">
 
 <!-- Sidebar -->
 <div class="admin-sidebar" id="adminSidebar">
@@ -50,6 +50,31 @@ $pageTitle = 'Quản lý Quán Ăn – What2Eat Admin';
   </div>
 
   <div class="admin-content">
+
+    <section class="restaurant-admin-guide mb-4" aria-labelledby="restaurantGuideTitle">
+      <div class="restaurant-admin-guide__icon"><i class="bi bi-shop-window"></i></div>
+      <div class="flex-grow-1">
+        <h2 id="restaurantGuideTitle" class="h5 mb-2">Trang này dùng để quản lý địa điểm của What2Eat</h2>
+        <p class="mb-2">Thêm quán đã được xác minh, sửa thông tin, hoặc duyệt/ẩn đề xuất từ thành viên. Dữ liệu ở đây bổ sung cho OpenStreetMap; quán chỉ được ghim lên bản đồ What2Eat khi đang hiển thị và có đủ tọa độ.</p>
+        <div class="restaurant-admin-guide__steps">
+          <span><b>1.</b> Thêm hoặc tìm quán</span>
+          <span><b>2.</b> Đối chiếu địa chỉ và nguồn</span>
+          <span><b>3.</b> Tra tọa độ, kiểm tra ghim rồi mới hiển thị</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="restaurant-admin-stats mb-3" aria-label="Tổng quan địa điểm">
+      <article class="restaurant-admin-stat"><span>Tổng địa điểm</span><strong id="restaurantTotalCount">—</strong></article>
+      <article class="restaurant-admin-stat"><span>Đang hiển thị</span><strong id="restaurantPublishedCount">—</strong></article>
+      <article class="restaurant-admin-stat"><span>Chờ duyệt</span><strong id="restaurantPendingCount">—</strong></article>
+      <article class="restaurant-admin-stat"><span>Ẩn / từ chối</span><strong id="restaurantHiddenCount">—</strong></article>
+    </div>
+
+    <div class="alert alert-info restaurant-admin-notice mb-3" id="restaurantLoadNotice" role="status">
+      <span id="restaurantLoadMessage">Đang tải danh sách địa điểm…</span>
+      <button type="button" class="btn btn-sm btn-outline-primary" id="restaurantRetryButton" hidden>Thử tải lại</button>
+    </div>
 
     <!-- Actions Bar -->
     <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between mb-4">
@@ -85,13 +110,16 @@ $pageTitle = 'Quản lý Quán Ăn – What2Eat Admin';
                 <th>Tên Quán</th>
                 <th>Danh mục</th>
                 <th>Địa chỉ</th>
+                <th>Ghim bản đồ</th>
                 <th>Nguồn</th>
                 <th>Trạng thái</th>
                 <th>Ngày thêm</th>
                 <th>Thao tác</th>
               </tr>
             </thead>
-            <tbody id="tableBody"></tbody>
+            <tbody id="tableBody">
+              <tr data-empty="true"><td colspan="9" class="text-center text-secondary py-4">Đang tải danh sách địa điểm…</td></tr>
+            </tbody>
           </table>
         </div>
       </div>
@@ -130,6 +158,9 @@ $pageTitle = 'Quản lý Quán Ăn – What2Eat Admin';
           <div class="col-12">
             <label class="form-label fw-500">Địa chỉ <span class="text-danger">*</span></label>
             <input type="text" class="form-control w2e-input" id="restaurantAddress" maxlength="500" required placeholder="Số nhà, đường, quận, thành phố"/>
+            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="restaurantGeocodeButton">Tra tọa độ từ địa chỉ</button>
+            <div class="form-text" id="restaurantGeocodeStatus" role="status">Tra tọa độ để nhận một kết quả gợi ý; hãy đối chiếu trước khi lưu.</div>
+            <div class="form-text">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a> · Nominatim · <a href="https://operations.osmfoundation.org/policies/nominatim/" target="_blank" rel="noopener noreferrer">Chính sách sử dụng</a>.</div>
           </div>
           <div class="col-md-6">
             <label class="form-label fw-500">Loại hình / ẩm thực</label>
@@ -141,11 +172,11 @@ $pageTitle = 'Quản lý Quán Ăn – What2Eat Admin';
           </div>
           <div class="col-12">
             <label class="form-label fw-500">Website chính thức</label>
-            <input type="url" class="form-control w2e-input" id="restaurantWebsite" maxlength="500" placeholder="https://"/>
+            <input type="text" inputmode="url" class="form-control w2e-input" id="restaurantWebsite" maxlength="500" placeholder="Địa chỉ website (có thể để trống)"/>
           </div>
           <div class="col-12">
             <label class="form-label fw-500">Nguồn xác minh (tùy chọn)</label>
-            <input type="url" class="form-control w2e-input" id="restaurantSourceUrl" maxlength="500" placeholder="URL trang chính thức hoặc nguồn đối chiếu"/>
+            <input type="text" inputmode="url" class="form-control w2e-input" id="restaurantSourceUrl" maxlength="500" placeholder="URL trang chính thức hoặc nguồn đối chiếu"/>
           </div>
           <div class="col-md-4">
             <label class="form-label fw-500">Giá từ (đ)</label>
@@ -172,7 +203,7 @@ $pageTitle = 'Quản lý Quán Ăn – What2Eat Admin';
               <div class="col-md-6"><input type="number" class="form-control w2e-input" id="restaurantLatitude" min="-90" max="90" step="0.0000001" placeholder="Vĩ độ"/></div>
               <div class="col-md-6"><input type="number" class="form-control w2e-input" id="restaurantLongitude" min="-180" max="180" step="0.0000001" placeholder="Kinh độ"/></div>
             </div>
-            <small class="text-secondary">Không điền rating hoặc giờ mở cửa ước đoán. Địa điểm chỉ xuất hiện sau khi bạn nhập dữ liệu và lưu.</small>
+              <small class="text-secondary">Chỉ nhập thông tin đã đối chiếu. Quán cần trạng thái “Đang hiển thị” và cả vĩ độ lẫn kinh độ hợp lệ mới có ghim trên bản đồ.</small>
           </div>
         </div>
       </div>
@@ -199,6 +230,6 @@ function filterTable(){
   });
 }
 </script>
-  <script src="../assets/js/site.js"></script>
+<script src="../assets/js/site.js?v=20261018-adminrestaurants1"></script>
 </body>
 </html>

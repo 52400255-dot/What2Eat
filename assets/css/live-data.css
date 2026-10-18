@@ -38,3 +38,24 @@ body:not(.w2e-live-ready) .w2e-topbar-admin {
 #emptyState:not(.w2e-hidden) { display: block; }
 .shared-food-note-media { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 20px; }
 .shared-food-note-media img, .shared-food-note-media video { display: block; width: 100%; border-radius: 12px; }
+
+/* The restaurant admin page has no mock rows: keep its real table and loading state visible. */
+body.admin-restaurants-page:not(.w2e-live-ready) .admin-content .admin-card { display: block !important; }
+body.admin-restaurants-page:not(.w2e-live-ready) #tableBody > tr { display: table-row !important; }
+.restaurant-admin-guide { display: flex; align-items: flex-start; gap: 14px; padding: 18px 20px; border: 1px solid #eadfce; border-radius: 16px; background: linear-gradient(135deg, #fffdf8, #f8f0dc); color: #49321f; }
+.restaurant-admin-guide p { max-width: 1000px; color: #716257; line-height: 1.6; }
+.restaurant-admin-guide__icon { display: grid; flex: 0 0 42px; height: 42px; place-items: center; border-radius: 12px; background: #f2e3bb; color: #8a5c00; font-size: 1.25rem; }
+.restaurant-admin-guide__steps { display: flex; flex-wrap: wrap; gap: 8px 18px; color: #654c35; font-size: .84rem; }
+.restaurant-admin-guide__steps b { color: #a36d00; }
+.restaurant-admin-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.restaurant-admin-stat { display: grid; gap: 4px; padding: 14px 16px; border: 1px solid #eee4d5; border-radius: 12px; background: #fff; }
+.restaurant-admin-stat span { color: #796d62; font-size: .82rem; }
+.restaurant-admin-stat strong { color: #49321f; font-size: 1.35rem; }
+.restaurant-admin-notice { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.restaurant-admin-notice[hidden], #restaurantRetryButton[hidden] { display: none !important; }
+.restaurant-map-state { white-space: nowrap; }
+@media (max-width: 760px) {
+  .restaurant-admin-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .restaurant-admin-guide { padding: 14px; }
+  .restaurant-admin-notice { align-items: flex-start; flex-direction: column; }
+}
