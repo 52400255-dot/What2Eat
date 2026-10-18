@@ -1,0 +1,32 @@
+{
+  "id": "/",
+  "name": "What2Eat – Hôm nay ăn gì?",
+  "short_name": "What2Eat",
+  "description": "Khám phá địa điểm ăn uống và lưu giữ nhật ký ẩm thực.",
+  "lang": "vi",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fffdf8",
+  "theme_color": "#c58b00",
+  "icons": [
+    {
+      "src": "/assets/img/what2eat-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/img/what2eat-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/img/what2eat.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

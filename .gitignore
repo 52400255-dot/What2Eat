@@ -1,0 +1,10 @@
+.env
+/storage/uploads/**
+/storage/cache/osm-tiles/**
+/storage/imports/osm/**
+!/storage/uploads/notes/
+!/storage/uploads/notes/.gitkeep
+!/storage/uploads/avatars/
+!/storage/uploads/avatars/.gitkeep
+*.log
+*.sql.gz

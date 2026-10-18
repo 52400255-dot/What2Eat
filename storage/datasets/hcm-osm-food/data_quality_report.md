@@ -1,0 +1,148 @@
+# Báo cáo chất lượng dữ liệu OSM TP. Hồ Chí Minh
+
+- Nguồn: Geofabrik Vietnam PBF → OSM relation 1973756 (Thành phố Hồ Chí Minh).
+- Snapshot OSM: 2026-10-15.
+- Bản ghi có tên, tọa độ hợp lệ, nằm trong ranh giới: **5,150**.
+- Mục tiêu 10.000 địa điểm: **chưa đạt**; số liệu theo nguồn hiện có, không bù bằng dữ liệu giả.
+- ID OSM duy nhất: **5,150**.
+- Thiếu địa chỉ: **2,869**.
+- Thiếu cuisine: **3,100**.
+- Trạng thái chưa xác minh còn hoạt động: **5,150**.
+- Cặp cùng tên/cùng loại cách không quá 25 m cần người kiểm tra: **33** (giữ lại, không tự động gộp).
+
+## Theo loại hình
+
+- `bakery`: 140
+- `cafe`: 1,818
+- `dessert`: 54
+- `fast_food`: 313
+- `other`: 273
+- `restaurant`: 2,552
+
+## Theo khu vực có tag addr:district
+
+- Không có tag địa chỉ: 4,571
+- Quận 1: 81
+- Bình Tân: 40
+- Phú Nhuận: 30
+- Quận 7: 27
+- Bình Thạnh: 27
+- Quận 3: 21
+- Tân Bình: 21
+- Phường An Lạc: 17
+- Quận 10: 16
+- Thành phố Dĩ An: 14
+- Thủ Đức: 14
+- Quận 6: 13
+- Quận Tân Bình: 12
+- Quận Tân Phú: 12
+- Thành phố Thủ Đức: 12
+- 2: 11
+- Gò Vấp: 9
+- 1: 8
+- District 1: 8
+- Quận Bình Thạnh: 8
+- Quận 5: 7
+- Quận 2: 7
+- Phường An Khánh: 6
+- Quận 4: 6
+- Quận 8: 6
+- Quận Phú Nhuận: 6
+- An Khánh: 5
+- Tân Phú: 5
+- Xuân Hòa: 4
+- Quận 12: 4
+- Thu Duc: 3
+- Nhà Bè: 3
+- TP. Thủ Đức: 3
+- Phường Bình Lợi Trung: 3
+- Bình Chánh: 3
+- 12: 3
+- 10: 3
+- Quan 2: 3
+- Vũng Tàu: 3
+- Q1: 3
+- Côn Đảo: 3
+- Củ Chi: 2
+- Hiệp Thành: 2
+- Quan 1: 2
+- Quận Thủ Đức: 2
+- Thuận An: 2
+- Huyện Hóc Môn: 2
+- Dĩ An: 2
+- 8: 2
+- Huyện Tân Thành: 2
+- D1: 2
+- 11: 2
+- Quận Gò Vấp: 2
+- Khánh Bình: 2
+- Phường Tân Phú: 2
+- Hóc Môn: 2
+- huyện Long Điền: 1
+- Chánh Nghĩa: 1
+- Nha Be communce: 1
+- 4: 1
+- Quan Tan Binh: 1
+- vũng tàu: 1
+- 7: 1
+- quận 7: 1
+- Quận 9: 1
+- 3: 1
+- Go Vap: 1
+- Thành phố Vũng Tàu: 1
+- District 9: 1
+- Phường Bến Thành: 1
+- Thành Phố Thủ Đức: 1
+- xã Tóc Tiên: 1
+- Di An: 1
+- Phú Mỹ: 1
+- Tan Binh: 1
+- Thành phố Thủ Dầu Một: 1
+- Phường Thắng Tam: 1
+- Phường Tân Hưng: 1
+- Quận 11: 1
+- Phường Bàn Cờ: 1
+- Phường Long Bình: 1
+- Huyện Bình Chánh: 1
+- Quan4: 1
+- Binh Tân: 1
+- Thu Duc City: 1
+- Phu Nhuan: 1
+- Long Hải: 1
+- 9: 1
+- Vĩnh Phú: 1
+- 𝗕𝗶̀𝗻𝗵 𝗧𝐡𝐚̣𝐧𝐡: 1
+- District 2: 1
+- District 7: 1
+- An Bình: 1
+- Huyện Long Điền: 1
+- Lái Thiêu: 1
+- Phước Thuận: 1
+- Hóc môn: 1
+- Quan 10: 1
+- Quan 11: 1
+- Quan 5: 1
+- uyên hưng: 1
+- District1: 1
+- Chánh Hưng: 1
+- Tân Thành: 1
+- Bàu Bàng: 1
+- Phường 7: 1
+- Phường Bảy Hiền: 1
+- Bình Hưng: 1
+- Đất Đỏ: 1
+- Quận Bình Tân: 1
+- District 3: 1
+- District 10: 1
+- Bình Chành: 1
+- quận 8: 1
+- Thái Hòa: 1
+
+## Kiểm soát chất lượng
+
+- Chỉ lấy đối tượng có tên và tag loại hình ăn uống rõ ràng.
+- Loại tag `disused`, `abandoned`, `demolished` và tag vòng đời tương ứng.
+- Khử trùng lặp tự động theo ID OSM; cặp gần nhau chỉ là gợi ý rà soát, không tự gộp chi nhánh.
+- `confidence` đo mức đầy đủ trường dữ liệu, không phải xác suất quán đang mở.
+- Quy tắc `confidence`: 0,50 nền cho tên + tọa độ có nguồn; +0,15 có địa chỉ; +0,15 có cuisine; +0,10 có điện thoại/website; +0,10 ánh xạ được loại hình (tối đa 1,00).
+- Không suy ra phường từ `addr:suburb`; không suy diễn giá, giờ mở cửa hoặc tình trạng hoạt động.

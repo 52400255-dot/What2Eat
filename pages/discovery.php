@@ -614,6 +614,11 @@ $pageTitle = 'Khám Phá Quán Ăn – What2Eat';
     .w2e-live-map-btn--primary { border-color:var(--primary); background:var(--primary); color:#fff; }
     #map-container { position:relative; width:100%; height:420px; border-radius:12px; background:#f2eee7; z-index:0; }
     .w2e-map-tile-notice { position:absolute; z-index:500; top:12px; left:50%; transform:translateX(-50%); max-width:calc(100% - 24px); padding:.55rem .8rem; border:1px solid #e8ded2; border-radius:10px; background:#fffdf8; box-shadow:0 3px 14px rgba(0,0,0,.12); color:#4a2c1a; font-size:.82rem; }
+    .w2e-map-legend { position:absolute; z-index:450; left:12px; bottom:12px; display:flex; flex-wrap:wrap; gap:.45rem .8rem; max-width:calc(100% - 24px); padding:.45rem .65rem; border:1px solid #e8ded2; border-radius:9px; background:rgba(255,253,248,.96); box-shadow:0 2px 8px rgba(0,0,0,.12); color:#4a2c1a; font-size:.74rem; pointer-events:none; }
+    .w2e-map-legend__item { display:inline-flex; align-items:center; gap:.35rem; white-space:nowrap; }
+    .w2e-map-legend__swatch { display:inline-block; width:10px; height:10px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px #777; }
+    .w2e-map-legend__swatch--osm { background:#3388ff; }
+    .w2e-map-legend__swatch--managed { background:#c58b00; }
     .w2e-live-map-footer { display:flex; justify-content:space-between; gap:1rem; margin-top:.65rem; color:var(--text-secondary); font-size:.78rem; }
     .w2e-live-map-footer a { color:inherit; }
     @media (max-width:600px) { .w2e-live-map-section { padding:.85rem; } .w2e-live-map-heading { align-items:flex-start; flex-direction:column; } .w2e-live-map-actions { width:100%; } .w2e-live-map-btn { flex:1; justify-content:center; } #map-container { height:340px; } .w2e-live-map-footer { flex-direction:column; gap:.2rem; } }
@@ -697,13 +702,14 @@ $pageTitle = 'Khám Phá Quán Ăn – What2Eat';
         <input
           type="text"
           id="searchInput"
-          placeholder="Tìm món ăn, quán ăn, địa điểm..."
+          placeholder="Tìm món đã được ghi nhận, tên quán hoặc loại hình..."
           autocomplete="off"
         />
         <button class="w2e-search-btn" onclick="window.runDiscoverySearch?.()">
           <i class="bi bi-search me-1"></i>Tìm
         </button>
       </div>
+      <small class="d-block mt-2">Món ăn lấy từ Food Note công khai đã duyệt hoặc thẻ OSM thực tế; đây không phải thực đơn đầy đủ.</small>
     </div>
   </header>
 
@@ -866,7 +872,7 @@ $pageTitle = 'Khám Phá Quán Ăn – What2Eat';
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="../assets/js/app.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="../assets/js/restaurant-map.js"></script>
-  <script src="../assets/js/site.js"></script>
+  <script src="../assets/js/restaurant-map.js?v=20261018-gps4"></script>
+  <script src="../assets/js/site.js?v=20261018"></script>
 </body>
 </html>

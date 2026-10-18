@@ -269,7 +269,11 @@ $pageTitle = 'Food Plan – What2Eat';
       background: rgba(0,0,0,0.45); z-index: 2000;
       align-items: center; justify-content: center; padding: 1rem;
     }
-    .w2e-modal-overlay.show { display: flex; }
+    .w2e-modal-overlay.show {
+      display: flex;
+      opacity: 1;
+      visibility: visible;
+    }
     .w2e-modal-box {
       background: #fff; border-radius: var(--w2e-radius-card);
       box-shadow: 0 16px 60px rgba(0,0,0,0.2); width: 100%; max-width: 520px;
