@@ -4,7 +4,7 @@
 
   const API_ROOT = '/api/v1';
   const OSM_CENTER = { lat: 10.7769, lon: 106.7009 };
-  const state = { csrf: '', user: null, authChecked: false, osm: [], places: [], managed: [], managedLoaded: false, favoriteKeys: new Set(), center: OSM_CENTER, notes: [], notePage: 1, noteTotal: 0, noteStats: null, plans: [], adminRestaurants: [], adminCategories: [], userPage: 1, userPages: 1, userTotal: 0, userSearchTimer: null, auditPage: 1, auditPages: 1, auditTotal: 0, auditSearchTimer: null, foodNoteFilter: 'all', foodNotePage: 1, foodNotePages: 1, foodNoteTotal: 0, editRestaurantId: null, editCategoryId: null };
+  const state = { csrf: '', user: null, authChecked: false, osm: [], places: [], managed: [], favoriteKeys: new Set(), center: OSM_CENTER, notes: [], notePage: 1, noteTotal: 0, noteStats: null, plans: [], adminRestaurants: [], adminCategories: [], userPage: 1, userPages: 1, userTotal: 0, userSearchTimer: null, auditPage: 1, auditPages: 1, auditTotal: 0, auditSearchTimer: null, foodNoteFilter: 'all', foodNotePage: 1, foodNotePages: 1, foodNoteTotal: 0, editRestaurantId: null, editCategoryId: null, requestedCategory: '' };
   window.W2EApp = state;
 
   function toast(message, type = 'info') {
@@ -41,6 +41,7 @@
   const text = (value) => value == null ? '' : String(value);
   const normalizeText = (value) => String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLocaleLowerCase('vi');
   const cuisinePatterns={viet:/vietnam|viet|pho|banh|bun|com.?tam/,bbq:/barbecue|\bbbq\b|hot.?pot|shabu/,japanese:/japan|sushi|ramen|udon/,korean:/korean|kimchi|bulgogi/,fastfood:/fast.?food|burger|pizza/,cafe:/cafe|coffee|tea|bubble.?tea/,dessert:/dessert|ice.?cream|cake|bakery|confectionery/};
+  const categoryAliases={viet:{label:'Món Việt',pattern:/vietnam|viet/},bbq:{label:'BBQ / Lẩu',pattern:/barbecue|\bbbq\b|hot.?pot|shabu/},cafe:{label:'Cà phê',pattern:/cafe|coffee/},nhat:{label:'Nhật Bản',pattern:/japan|sushi|ramen|udon/},han:{label:'Hàn Quốc',pattern:/korean|kimchi|bulgogi/},fast:{label:'Ăn nhanh',pattern:/fast.?food|burger|pizza/},dessert:{label:'Tráng miệng',pattern:/dessert|ice.?cream|cake|bakery|confectionery/},drink:{label:'Đồ uống',pattern:/drink|beverage|tea|juice|bubble.?tea/}};
   const money = (value) => value == null || value === '' ? 'Chưa có dữ liệu giá' : new Intl.NumberFormat('vi-VN').format(Number(value)) + ' ₫';
   const localDate = (value) => { if (!value) return 'Chưa ghi ngày'; const d = new Date(`${String(value).slice(0, 10)}T00:00:00`); return Number.isNaN(d.getTime()) ? text(value) : d.toLocaleDateString('vi-VN'); };
   const todayLocal = () => { const date=new Date();return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`; };
@@ -48,12 +49,71 @@
   const placeName = (place) => place?.tags?.name?.trim() || '';
   const placeId = (place) => `${place.type}:${place.id}`;
   const placeUrl = (place) => place?.managed_record ? `${location.pathname.includes('/pages/')?'./':'./pages/'}restaurant.php?id=${encodeURIComponent(place.id)}` : `https://www.openstreetmap.org/${encodeURIComponent(place.type)}/${encodeURIComponent(place.id)}`;
-  const placeCoords = (place) => Number.isFinite(place.lat) ? [place.lat, place.lon] : [place.center?.lat, place.center?.lon];
-  const addressOf = (tags = {}) => [tags['addr:housenumber'], tags['addr:street'], tags['addr:suburb'], tags['addr:city']].filter(Boolean).join(', ');
-  const cuisineOf = (tags = {}) => tags.cuisine || tags.amenity || '';
+  const placeCoords = (place) => {
+    const coords=Number.isFinite(place?.lat)?[place.lat,place.lon]:[place?.center?.lat,place?.center?.lon];
+    // Ignore the common placeholder near 0,0; What2Eat's restaurant catalog is Vietnam-focused.
+    return coords.every(Number.isFinite)&&!(Math.abs(coords[0])<0.01&&Math.abs(coords[1])<0.01)?coords:[Number.NaN,Number.NaN];
+  };
+  const managedPlacesCache = new Map();
+  const managedPlacesRequests = new Map();
+  const normalizedVenueName = (value) => normalizeText(value).replace(/[^a-z0-9]+/g, ' ').trim();
+  const osmEntityKey = (place) => `${String(place?.type || '').toLowerCase()}:${String(place?.id || '')}`;
+  function managedOsmEntityKey(restaurant) {
+    const reference = `${restaurant?.source_id || ''} ${restaurant?.source_url || ''}`;
+    const match = reference.match(/\b(node|way|relation)[/:](\d+)\b/i);
+    return match ? `${match[1].toLowerCase()}:${match[2]}` : '';
+  }
+  function distanceMeters(first, second) {
+    const [lat1, lon1] = first || [], [lat2, lon2] = second || [];
+    if (![lat1, lon1, lat2, lon2].every(Number.isFinite)) return Infinity;
+    const radians = value => value * Math.PI / 180;
+    const dLat = radians(lat2 - lat1), dLon = radians(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(radians(lat1)) * Math.cos(radians(lat2)) * Math.sin(dLon / 2) ** 2;
+    return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+  function isManagedOsmDuplicate(osmPlace, restaurant) {
+    const osmKey = osmEntityKey(osmPlace), managedKey = managedOsmEntityKey(restaurant);
+    if (managedKey && osmKey === managedKey) return true;
+    const osmName = normalizedVenueName(osmPlace?.tags?.name || osmPlace?.tags?.['name:vi'] || '');
+    const managedName = normalizedVenueName(restaurant?.name || '');
+    if (osmName.length < 4 || osmName !== managedName) return false;
+    return distanceMeters(placeCoords(osmPlace), [Number(restaurant.latitude), Number(restaurant.longitude)]) <= 30;
+  }
+  const placeMapUrl = (place) => { if(place?.managed_record)return placeUrl(place);const [lat,lon]=placeCoords(place);if(!Number.isFinite(lat)||!Number.isFinite(lon))return './pages/discovery.php';const target=new URL(location.pathname.includes('/pages/')?'./discovery.php':'./pages/discovery.php',location.href);target.searchParams.set('focus','1');target.searchParams.set('lat',String(lat));target.searchParams.set('lon',String(lon));target.searchParams.set('name',placeName(place));return target.href; };
+  const addressOf = (tags = {}, place = null) => place?.address || tags['addr:full'] || [tags['addr:housenumber'], tags['addr:street'], tags['addr:suburb'], tags['addr:city']].filter(Boolean).join(', ');
+  const cuisineOf = (tags = {}, place = null) => tags.cuisine || tags.amenity || ({restaurant:'Nhà hàng/quán ăn',cafe:'Cà phê',fast_food:'Đồ ăn nhanh',bakery:'Tiệm bánh',dessert:'Tráng miệng',other:'Khác'})[place?.category] || '';
+  const placeSearchValues = (place) => {
+    const tags = place?.tags || {};
+    const keys = ['name','name:vi','alt_name','official_name','brand','operator','cuisine','amenity','shop','food','description'];
+    const values = keys.map((key) => tags[key]).filter((value) => typeof value === 'string');
+    values.push(place?.category, place?.address, place?.restaurant?.name, place?.restaurant?.address, place?.restaurant?.cuisine, place?.restaurant?.category_name, place?.restaurant?.description);
+    if (Array.isArray(place?.public_food_names)) values.push(...place.public_food_names);
+    return values.filter(Boolean);
+  };
+  const placeSearchText = (place) => normalizeText(placeSearchValues(place).join(' ')).replace(/[-_]+/g, ' ');
+  const placeSearchRawText = (place) => placeSearchValues(place).join(' ').normalize('NFC').toLocaleLowerCase('vi').replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const placeFilterKey = (place) => place?.managed_record ? `managed:${place.id}` : placeId(place);
   const favoriteKey = (place) => place?.managed_record ? `${place.source||'admin'}:managed:${place.id}` : `osm:${placeId(place)}`;
 
-  async function loadManagedPlaces(){if(state.managedLoaded)return state.managed;state.managedLoaded=true;try{const result=await api('/restaurants/managed');state.managed=(result.data||[]).map(restaurant=>({source:restaurant.source||'admin',managed_record:true,id:restaurant.id,lat:restaurant.latitude,lon:restaurant.longitude,source_url:restaurant.source_url,tags:{name:restaurant.name,'addr:street':restaurant.address,cuisine:restaurant.cuisine||restaurant.category_name||''},restaurant}));}catch(_){state.managed=[];}return state.managed;}
+  async function loadManagedPlaces(center = state.center, radius = 2500){
+    const lat = Number(center?.lat), lon = Number(center?.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return [];
+    const key = `${lat.toFixed(3)}:${lon.toFixed(3)}:${radius}`;
+    const cached = managedPlacesCache.get(key);
+    if (cached && cached.expiresAt > Date.now()) return cached.places;
+    if (managedPlacesRequests.has(key)) return managedPlacesRequests.get(key);
+    const params = new URLSearchParams({ lat: String(lat), lon: String(lon), radius: String(radius) });
+    const request = api(`/restaurants/managed?${params}`).then(result => {
+      const places = (result.data || []).filter(restaurant => restaurant.latitude !== null && restaurant.latitude !== '' && restaurant.longitude !== null && restaurant.longitude !== '' && Number.isFinite(Number(restaurant.latitude)) && Number.isFinite(Number(restaurant.longitude))).map(restaurant => ({source:restaurant.source||'admin',managed_record:true,id:restaurant.id,lat:Number(restaurant.latitude),lon:Number(restaurant.longitude),source_url:restaurant.source_url,public_food_names:restaurant.public_food_names||[],tags:{name:restaurant.name,'addr:street':restaurant.address,cuisine:restaurant.cuisine||restaurant.category_name||''},restaurant}));
+      managedPlacesCache.set(key, { expiresAt: Date.now() + 30000, places });
+      return places;
+    }).catch(error => {
+      console.warn('Không tải được quán What2Eat đã duyệt:', error);
+      return [];
+    }).finally(() => managedPlacesRequests.delete(key));
+    managedPlacesRequests.set(key, request);
+    return request;
+  }
   async function loadAllFavorites(){const first=await api('/favorites?page=1&limit=200');const rows=[...(first.data||[])];for(let page=2;rows.length<(first.total||0);page++){const result=await api(`/favorites?page=${page}&limit=200`);if(!result.data?.length)break;rows.push(...result.data);}return rows;}
 
   function chosenCenter() {
@@ -84,7 +144,7 @@
       event.preventDefault(); event.stopPropagation();
       try {
         if (!state.user) throw new Error('Đăng nhập để lưu địa điểm yêu thích.');
-        const coords=placeCoords(place);const source=place.managed_record?(place.source||'admin'):'osm';const sourceId=place.managed_record?`managed:${place.id}`:placeId(place);const result = await api('/favorites', { method: 'POST', body: JSON.stringify({ source, source_id: sourceId, name: placeName(place), address: place.managed_record?place.restaurant.address:addressOf(place.tags), latitude:Number.isFinite(coords[0])?coords[0]:null, longitude:Number.isFinite(coords[1])?coords[1]:null, source_url: place.source_url||placeUrl(place), restaurant_id:place.managed_record?place.id:null }) });
+        const coords=placeCoords(place);const source=place.managed_record?(place.source||'admin'):'osm';const sourceId=place.managed_record?`managed:${place.id}`:placeId(place);const result = await api('/favorites', { method: 'POST', body: JSON.stringify({ source, source_id: sourceId, name: placeName(place), address: place.managed_record?place.restaurant.address:addressOf(place.tags,place), latitude:Number.isFinite(coords[0])?coords[0]:null, longitude:Number.isFinite(coords[1])?coords[1]:null, source_url: place.source_url||placeUrl(place), restaurant_id:place.managed_record?place.id:null }) });
         if(result.favorite)state.favoriteKeys.add(key);else state.favoriteKeys.delete(key);
         button.classList.toggle('active', result.favorite); button.innerHTML = `<i class="bi bi-heart${result.favorite ? '-fill' : ''}"></i>`;
         toast(result.favorite ? 'Đã lưu địa điểm vào mục yêu thích.' : 'Đã bỏ địa điểm khỏi mục yêu thích.', 'success');
@@ -96,19 +156,23 @@
   function nearbyCard(place, index = 0) {
     const [lat, lon] = placeCoords(place);
     const card = element('article', 'w2e-live-place-card');
+    card.dataset.placeId = placeFilterKey(place);
     card.dataset.name = placeName(place).toLowerCase();
-    card.dataset.cuisine = cuisineOf(place.tags).toLowerCase();
+    card.dataset.cuisine = cuisineOf(place.tags, place).toLowerCase();
+    card.dataset.search = placeSearchText(place);
+    card.dataset.rawSearch = placeSearchRawText(place);
     card.dataset.distance = Number.isFinite(lat)&&Number.isFinite(lon)?String((distanceKm(state.center.lat, state.center.lon, lat, lon)).toFixed(2)):'';
     const header = element('div', 'w2e-live-place-card__top');
-    const badge = element('span', 'w2e-live-place-card__type', cuisineOf(place.tags) || (place.managed_record?'Địa điểm What2Eat':'Địa điểm OSM'));
+    const badge = element('span', 'w2e-live-place-card__type', cuisineOf(place.tags, place) || (place.managed_record?'Địa điểm What2Eat':'Địa điểm OSM'));
     header.append(badge, favoriteButton(place));
     const title = element('h3', 'w2e-live-place-card__name', placeName(place));
-    const address = element('p', 'w2e-live-place-card__address', place.managed_record?place.restaurant.address:(addressOf(place.tags)||'OpenStreetMap chưa ghi địa chỉ cụ thể.'));
-    const provenance=place.managed_record?({osm:'OpenStreetMap',user:'Thành viên What2Eat',admin:'Quản trị viên'})[place.source]||'Nguồn chưa ghi rõ':'OpenStreetMap';
+    const address = element('p', 'w2e-live-place-card__address', place.managed_record?place.restaurant.address:(addressOf(place.tags,place)||'OpenStreetMap chưa ghi địa chỉ cụ thể.'));
+    const provenance=place.managed_record?({osm:'OpenStreetMap',user:'Thành viên What2Eat',admin:'Quản trị viên'})[place.source]||'Nguồn chưa ghi rõ':(place.snapshot?`OSM snapshot ${place.snapshot_date||''} · chưa xác minh hoạt động`:'OpenStreetMap');
     const distanceText=card.dataset.distance?`${card.dataset.distance} km từ tâm tìm kiếm`:'Chưa có tọa độ';const detail = element('p', 'w2e-live-place-card__meta', `${distanceText} · ${provenance}`);
     const link = element('a', 'w2e-live-place-card__source', place.managed_record?'Xem thông tin ↗':'Mở nguồn OSM ↗');
     link.href = placeUrl(place); if(!place.managed_record){link.target='_blank';link.rel='noopener noreferrer';}
     card.append(header, title, address, detail, link);
+    if(Array.isArray(place.public_food_names)&&place.public_food_names.length)card.appendChild(element('p','w2e-live-place-card__meta',`Món thành viên ghi trong Food Note công khai: ${place.public_food_names.join(', ')}`));
     if(place.managed_record&&place.source_url){const evidence=element('a','w2e-live-place-card__source d-block mt-1','Đối chiếu nguồn ↗');evidence.href=place.source_url;evidence.target='_blank';evidence.rel='noopener noreferrer';card.appendChild(evidence);}
     card.dataset.index = String(index);
     return card;
@@ -122,8 +186,12 @@
 
   async function drawDiscovery(data, center) {
     const grid = document.getElementById('restaurantGrid'); if (!grid) return;
-    const elements = (data.elements || []).filter((p) => placeName(p) && placeCoords(p).every(Number.isFinite));
-    state.osm = elements; state.center = center || state.center;state.managed=await loadManagedPlaces();state.places=[...elements,...state.managed];window.dispatchEvent(new CustomEvent('w2e:managed-data',{detail:{restaurants:state.managed.map(place=>place.restaurant)}}));
+    const elements = (data.elements || []).filter((p) => placeName(p) && placeCoords(p).every(Number.isFinite)).map((place)=>data.snapshot?{...place,snapshot:true,snapshot_date:data.snapshot_date}:place);
+    state.center = center || state.center;
+    state.managed = await loadManagedPlaces(state.center, 2000);
+    state.osm = elements.filter(osmPlace => !state.managed.some(place => isManagedOsmDuplicate(osmPlace, place.restaurant)));
+    state.places = [...state.osm, ...state.managed];
+    window.dispatchEvent(new CustomEvent('w2e:managed-data',{detail:{restaurants:state.managed.map(place=>place.restaurant),center:state.center}}));
     grid.replaceChildren();document.body.classList.add('w2e-live-ready');
     state.places.forEach((place, index) => {const col=element('div','col-12 col-sm-6 col-xl-4');col.appendChild(nearbyCard(place,index));grid.appendChild(col);});
     const count = document.getElementById('resultCount'); if (count) count.textContent = String(state.places.length);
@@ -131,9 +199,10 @@
     const pages = document.getElementById('paginationWrap'); if (pages) pages.style.display = 'none';
     const tabs = document.getElementById('categoryTabs');
     if (tabs) {
-      const types = [...new Set(state.places.map((p) => cuisineOf(p.tags)).filter(Boolean))].slice(0, 9);
+      const types = [...new Set(state.places.map((p) => cuisineOf(p.tags, p)).filter(Boolean))].slice(0, 9);
       tabs.replaceChildren();
       const all = element('button', 'w2e-cat-tab active', 'Tất cả'); all.dataset.filter = ''; tabs.appendChild(all);
+      const requested=categoryAliases[state.requestedCategory];if(requested){const button=element('button','w2e-cat-tab active',requested.label);button.dataset.filter=`alias:${state.requestedCategory}`;all.classList.remove('active');tabs.appendChild(button);}
       types.forEach((type) => { const button=element('button','w2e-cat-tab',type);button.dataset.filter=type.toLowerCase();tabs.appendChild(button); });
       tabs.querySelectorAll('.w2e-cat-tab').forEach((button)=>button.addEventListener('click',()=>{tabs.querySelectorAll('.w2e-cat-tab').forEach((b)=>b.classList.toggle('active',b===button));filterDiscovery();}));
     }
@@ -150,17 +219,21 @@
 
   function filterDiscovery() {
     const grid=document.getElementById('restaurantGrid');if(!grid)return;
-    const query=normalizeText((document.getElementById('searchInput')?.value||'').trim()).replace(/[-_]+/g,' ');
-    const queryPattern=({pho:cuisinePatterns.viet,vietnamese:cuisinePatterns.viet,'bun bo':cuisinePatterns.viet,'bun bo hue':cuisinePatterns.viet,'com tam':cuisinePatterns.viet,'banh mi':cuisinePatterns.viet,bbq:cuisinePatterns.bbq,barbecue:cuisinePatterns.bbq,'hot pot':cuisinePatterns.bbq,'ca phe':cuisinePatterns.cafe,cafe:cuisinePatterns.cafe,coffee:cuisinePatterns.cafe,sushi:cuisinePatterns.japanese,japanese:cuisinePatterns.japanese,ramen:cuisinePatterns.japanese,korean:cuisinePatterns.korean,'fast food':cuisinePatterns.fastfood,dessert:cuisinePatterns.dessert,drink:/drink|beverage|tea|juice|bubble.?tea/})[query]||null;
+    const inputQuery=(document.getElementById('searchInput')?.value||'').trim();
+    const rawQuery=inputQuery.normalize('NFC').toLocaleLowerCase('vi').replace(/[-_]+/g,' ').replace(/\s+/g,' ').trim();
+    const queryHasDiacritics=rawQuery.normalize('NFD')!==rawQuery;
+    const query=normalizeText(inputQuery).replace(/[-_]+/g,' ').replace(/\s+/g,' ').trim();
+    const queryPattern=({vietnamese:cuisinePatterns.viet,viet:cuisinePatterns.viet,bbq:cuisinePatterns.bbq,barbecue:cuisinePatterns.bbq,'hot pot':cuisinePatterns.bbq,cafe:/cafe|coffee/,coffee:/cafe|coffee/,'ca phe':/cafe|coffee/,'quan ca phe':/cafe|coffee/,japanese:cuisinePatterns.japanese,sushi:cuisinePatterns.japanese,korean:cuisinePatterns.korean,'fast food':cuisinePatterns.fastfood,dessert:cuisinePatterns.dessert,drink:/drink|beverage|tea|juice|bubble.?tea/})[query]||null;
     const selected=document.querySelector('#categoryTabs .w2e-cat-tab.active')?.dataset.filter||'';
     const distance=Number(document.getElementById('distanceFilter')?.value||0);
-    let shown=0;
+    let shown=0;const visiblePlaceIds=[];
     grid.querySelectorAll('.w2e-live-place-card').forEach((card)=>{
-      const cuisine=normalizeText(card.dataset.cuisine).replace(/[-_]+/g,' '),name=normalizeText(card.dataset.name).replace(/[-_]+/g,' ');const ok=(!query||name.includes(query)||cuisine.includes(query)||(queryPattern&&queryPattern.test(cuisine)))&&(!selected||normalizeText(card.dataset.cuisine)===normalizeText(selected))&&(!distance||!card.dataset.distance||Number(card.dataset.distance)<=distance);
-      card.hidden=!ok;const wrapper=card.parentElement;if(wrapper&&wrapper!==grid)wrapper.hidden=!ok;if(ok)shown++;
+      const cuisine=normalizeText(card.dataset.cuisine).replace(/[-_]+/g,' '),search=card.dataset.search||'',rawSearch=card.dataset.rawSearch||'';const selectedAlias=selected.startsWith('alias:')?categoryAliases[selected.slice(6)]?.pattern:null;const categoryMatch=selectedAlias?selectedAlias.test(cuisine):(!selected||normalizeText(card.dataset.cuisine)===normalizeText(selected));const queryMatch=!query||(queryHasDiacritics?rawSearch.includes(rawQuery):search.includes(query))||(queryPattern&&queryPattern.test(search));const ok=queryMatch&&categoryMatch&&(!distance||!card.dataset.distance||Number(card.dataset.distance)<=distance);
+      card.hidden=!ok;const wrapper=card.parentElement;if(wrapper&&wrapper!==grid)wrapper.hidden=!ok;if(ok){shown++;visiblePlaceIds.push(card.dataset.placeId);}
     });
     const count=document.getElementById('resultCount');if(count)count.textContent=String(shown);
-    const empty=document.getElementById('emptyState');if(empty)empty.style.display=shown?'none':'block';
+    const empty=document.getElementById('emptyState');if(empty){empty.style.display=shown?'none':'block';const description=empty.querySelector('p');if(description)description.textContent=query?'Không có địa điểm nào khớp với dữ liệu tên, món hoặc loại hình đã được ghi nhận quanh khu vực này. Hãy thử từ khóa khác hoặc di chuyển bản đồ rồi tải lại.':'Chưa có địa điểm phù hợp trong dữ liệu quanh khu vực này. Hãy tải lại hoặc di chuyển bản đồ đến khu vực cần tìm.';}
+    window.dispatchEvent(new CustomEvent('w2e:discovery-filter',{detail:{placeIds:visiblePlaceIds}}));
   }
   window.runDiscoverySearch=filterDiscovery;
   window.clearDiscoveryFilters=()=>{const search=document.getElementById('searchInput'),distance=document.getElementById('distanceFilter'),price=document.getElementById('priceFilter'),rating=document.getElementById('ratingFilter'),sort=document.getElementById('sortFilter');if(search)search.value='';if(distance)distance.value='';if(price)price.value='';if(rating)rating.value='';if(sort)sort.value='relevant';document.querySelectorAll('#categoryTabs .w2e-cat-tab').forEach((button,index)=>button.classList.toggle('active',index===0));filterDiscovery();sortDiscovery();};
@@ -178,7 +251,7 @@
     if(mapStatus)return; // The map owns location/search and emits its successful result.
     if(!document.querySelector('#randomResult')&&!document.querySelector('#homePlacesGrid'))return;
     const center=await chosenCenter();
-    try { const data=await nearby(center,3000);state.osm=(data.elements||[]).filter(p=>placeName(p)&&placeCoords(p).every(Number.isFinite));state.center=center;state.managed=await loadManagedPlaces();state.places=[...state.osm,...state.managed];renderHomePlaces();document.body.classList.add('w2e-live-ready'); }
+    try { const data=await nearby(center,3000);state.center=center;state.managed=await loadManagedPlaces(center,3000);state.osm=(data.elements||[]).filter(p=>placeName(p)&&placeCoords(p).every(Number.isFinite)&&!state.managed.some(place=>isManagedOsmDuplicate(p,place.restaurant)));state.places=[...state.osm,...state.managed];renderHomePlaces();document.body.classList.add('w2e-live-ready'); }
     catch(error) { const grid=document.getElementById('homePlacesGrid');if(grid){grid.replaceChildren(element('p','text-secondary',error.message));} }
   }
 
@@ -186,14 +259,14 @@
   window.getRandomNearbyPlace = (filters = {}) => {
     if (!state.places.length) return null;
     let candidates=state.places;
-    if(filters.type&&cuisinePatterns[filters.type])candidates=candidates.filter((place)=>cuisinePatterns[filters.type].test(normalizeText(cuisineOf(place.tags))));
+    if(filters.type&&cuisinePatterns[filters.type])candidates=candidates.filter((place)=>cuisinePatterns[filters.type].test(normalizeText(cuisineOf(place.tags,place))));
     if(filters.distance){candidates=candidates.filter((place)=>{const [lat,lon]=placeCoords(place);if(!Number.isFinite(lat)||!Number.isFinite(lon))return false;const distance=distanceKm(state.center.lat,state.center.lon,lat,lon);if(filters.distance==='under1')return distance<1;if(filters.distance==='1to3')return distance>=1&&distance<=3;if(filters.distance==='over3')return distance>3;return true;});}
     if(!candidates.length)return null;
     const place = candidates[Math.floor(Math.random() * candidates.length)];
     return {
       name: placeName(place),
-      address: place.managed_record ? place.restaurant.address : (addressOf(place.tags) || 'OpenStreetMap chưa ghi địa chỉ cụ thể.'),
-      url: placeUrl(place),
+      address: place.managed_record ? place.restaurant.address : (addressOf(place.tags,place) || 'OpenStreetMap chưa ghi địa chỉ cụ thể.'),
+      url: placeUrl(place), mapUrl: placeMapUrl(place), sourceUrl: place.source_url||placeUrl(place),
       source: place.managed_record ? 'Thông tin do What2Eat lưu; xem nguồn đối chiếu nếu có.' : 'Dữ liệu OpenStreetMap',
     };
   };
@@ -267,7 +340,7 @@
     try{const result=await api(`/restaurants/managed/${encodeURIComponent(id)}`);const restaurant=result.data;root.replaceChildren(back,element('h1','display-5 fw-bold',restaurant.name),element('p','lead',restaurant.address||'Chưa có địa chỉ trong dữ liệu.'),element('p','text-secondary',restaurant.category_name||restaurant.cuisine||'Chưa phân loại'));
       const detail=element('section','card p-4 mt-3');const fields=[['Mô tả',restaurant.description],['Ẩm thực',restaurant.cuisine],['Điện thoại',restaurant.phone],['Khoảng giá',restaurant.price_range],['Giờ mở cửa',restaurant.opening_hours?.text],['Website',restaurant.website]];fields.forEach(([label,value])=>{const row=element('p','mb-2');row.appendChild(element('strong','me-2',`${label}:`));row.appendChild(element('span','',value||'Chưa có dữ liệu được xác minh.'));detail.appendChild(row);});
       const provenance=({osm:'OpenStreetMap',user:'Thành viên What2Eat',admin:'Quản trị viên'})[restaurant.source]||'Nguồn chưa được ghi rõ';detail.appendChild(element('p','small text-secondary mb-0',`Nguồn dữ liệu: ${provenance}`));root.appendChild(detail);
-      const links=element('div','d-flex flex-wrap gap-2 mt-4');if(restaurant.source_url&&/^https?:\/\//i.test(restaurant.source_url)){const source=element('a','btn btn-outline-primary','Đối chiếu nguồn ↗');source.href=restaurant.source_url;source.target='_blank';source.rel='noopener noreferrer';links.appendChild(source);}if(Number.isFinite(restaurant.latitude)&&Number.isFinite(restaurant.longitude)){const map=element('a','btn btn-outline-secondary','Xem trên OpenStreetMap ↗');map.href=`https://www.openstreetmap.org/?mlat=${restaurant.latitude}&mlon=${restaurant.longitude}#map=17/${restaurant.latitude}/${restaurant.longitude}`;map.target='_blank';map.rel='noopener noreferrer';links.appendChild(map);}root.appendChild(links);document.title=`${restaurant.name} | What2Eat`;
+      const links=element('div','d-flex flex-wrap gap-2 mt-4');if(restaurant.source_url&&/^https?:\/\//i.test(restaurant.source_url)){const source=element('a','btn btn-outline-primary','Đối chiếu nguồn ↗');source.href=restaurant.source_url;source.target='_blank';source.rel='noopener noreferrer';links.appendChild(source);}const [latitude,longitude]=placeCoords({lat:restaurant.latitude,lon:restaurant.longitude});if(Number.isFinite(latitude)&&Number.isFinite(longitude)){const map=element('a','btn btn-outline-secondary','Xem trên OpenStreetMap ↗');map.href=`https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=17/${latitude}/${longitude}`;map.target='_blank';map.rel='noopener noreferrer';links.appendChild(map);}root.appendChild(links);document.title=`${restaurant.name} | What2Eat`;
     }catch(error){root.replaceChildren(back,element('h1','', 'Không tải được địa điểm'),element('p','text-danger',error.message),element('a','btn btn-primary','Quay lại khám phá'));root.querySelector('a.btn-primary').href='./discovery.php';}
   }
 
@@ -306,8 +379,8 @@
       const places=[...(osm.elements||[]),...managed].filter(place=>{
         const coords=placeCoords(place);
         const name=placeName(place);
-        const address=place.managed_record?place.restaurant.address:addressOf(place.tags);
-        return name&&coords.every(Number.isFinite)&&(!term||`${name} ${address||''} ${cuisineOf(place.tags)}`.toLocaleLowerCase('vi').includes(term));
+        const address=place.managed_record?place.restaurant.address:addressOf(place.tags,place);
+        return name&&coords.every(Number.isFinite)&&(!term||`${name} ${address||''} ${cuisineOf(place.tags,place)}`.toLocaleLowerCase('vi').includes(term));
       }).slice(0,10);
       results.replaceChildren();
       if(!places.length){results.appendChild(element('p','text-secondary','Không tìm thấy địa điểm khớp trong OpenStreetMap hoặc danh mục What2Eat ở khu vực hiện tại.'));return;}
@@ -315,7 +388,7 @@
       places.forEach(place=>{
         const sourceName=place.managed_record?(place.source||'admin'):'osm';
         const sourceId=place.managed_record?`managed:${place.id}`:placeId(place);
-        const address=place.managed_record?place.restaurant.address:addressOf(place.tags);
+        const address=place.managed_record?place.restaurant.address:addressOf(place.tags,place);
         const sourceUrl=placeUrl(place);
         const key=`${sourceName}:${sourceId}`;
         const row=element('div','w2e-vote-item');
@@ -381,9 +454,13 @@
       const activity=document.getElementById('activityTableBody');if(activity){activity.replaceChildren();(d.activity||[]).forEach((row)=>{const tr=document.createElement('tr');[localDate(row.created_at),`${row.action} · ${row.entity_type}`,row.actor_name||'Hệ thống',row.action].forEach(v=>tr.appendChild(element('td','',text(v))));activity.appendChild(tr);});if(!d.activity?.length)activity.appendChild(emptyRow(4,'Chưa có hoạt động được ghi nhận.'));}return;
     }
     if(path.endsWith('/admin/restaurants.php')){
-      const body=document.getElementById('tableBody');if(!body)return;const [restaurants,categories]=await Promise.all([api('/admin/restaurants?status=all'),api('/admin/categories')]);state.adminRestaurants=restaurants.data||[];state.adminCategories=categories.data||[];document.body.classList.add('w2e-live-ready');
+      const body=document.getElementById('tableBody');if(!body)return;
+      setRestaurantAdminNotice('Đang tải danh sách địa điểm từ cơ sở dữ liệu…','info',false);
+      const [restaurants,categories]=await Promise.all([api('/admin/restaurants?status=all'),api('/admin/categories')]);
+      state.adminRestaurants=restaurants.data||[];state.adminCategories=categories.data||[];
       fillCategoryOptions(document.getElementById('restaurantCategory'),state.adminCategories,true);fillCategoryOptions(document.getElementById('catFilter'),state.adminCategories,false);
-      body.replaceChildren();state.adminRestaurants.forEach((r,i)=>{const tr=document.createElement('tr');tr.dataset.search=`${r.name} ${r.address} ${r.category_name||''}`.toLocaleLowerCase('vi');tr.dataset.category=String(r.category_id||'');tr.dataset.status=r.status;[i+1,r.name,r.category_name||'Chưa phân loại',r.address].forEach((v)=>tr.appendChild(element('td','',text(v))));const sourceCell=element('td');sourceCell.appendChild(element('span','',({osm:'OpenStreetMap',user:'Thành viên',admin:'Quản trị viên'})[r.source]||'Không rõ'));if(r.source_url){const sourceLink=element('a','ms-1','Nguồn ↗');sourceLink.href=r.source_url;sourceLink.target='_blank';sourceLink.rel='noopener noreferrer';sourceCell.appendChild(sourceLink);}tr.appendChild(sourceCell);[restaurantStatusLabel(r.status),localDate(r.created_at)].forEach(v=>tr.appendChild(element('td','',text(v))));const action=element('td','text-nowrap');const edit=element('button','btn btn-sm btn-outline-primary me-1','Sửa');edit.type='button';edit.addEventListener('click',()=>editRestaurant(r));action.appendChild(edit);if(r.status==='pending'||r.status==='rejected'){const publish=element('button','btn btn-sm btn-success me-1','Duyệt');publish.type='button';publish.addEventListener('click',()=>adminRestaurantStatus(r.id,'published'));action.appendChild(publish);}const toggle=element('button','btn btn-sm btn-outline-secondary',r.status==='hidden'?'Hiện':'Ẩn');toggle.type='button';toggle.addEventListener('click',()=>adminRestaurantStatus(r.id,r.status==='hidden'?'published':'hidden'));action.appendChild(toggle);tr.appendChild(action);body.appendChild(tr);});if(!state.adminRestaurants.length)body.appendChild(emptyRow(8,'Chưa có địa điểm. Bạn có thể thêm địa điểm có thông tin xác thực hoặc duyệt đề xuất của thành viên.'));filterAdminRestaurants();
+      document.body.classList.add('w2e-live-ready');renderAdminRestaurants();
+      const notice=document.getElementById('restaurantLoadNotice');if(notice)notice.hidden=true;
     }else if(path.endsWith('/admin/users.php')){
       const body=document.getElementById('userTableBody');if(!body)return;const query=new URLSearchParams({page:String(state.userPage),per_page:'50'});[['q','userSearch'],['role','roleFilter'],['status','statusFilter']].forEach(([key,id])=>{const value=document.getElementById(id)?.value.trim();if(value)query.set(key,value);});const d=await api(`/admin/users?${query}`);document.body.classList.add('w2e-live-ready');state.userPage=d.pagination?.page||1;state.userPages=d.pagination?.pages||1;state.userTotal=d.pagination?.total||0;const counts=d.counts||{};[['usersTotalCount',counts.total],['usersActiveCount',counts.active],['usersSuspendedCount',counts.suspended],['usersAdminCount',counts.admins]].forEach(([id,value])=>{const node=document.getElementById(id);if(node)node.textContent=new Intl.NumberFormat('vi-VN').format(value||0);});body.replaceChildren();(d.data||[]).forEach((u,i)=>{const tr=document.createElement('tr');tr.appendChild(element('td','',String((state.userPage-1)*50+i+1)));const name=element('td','',u.name);name.title=u.email;tr.appendChild(name);tr.appendChild(element('td','text-secondary',u.email));tr.appendChild(element('td','',u.role==='admin'?'Admin':'User'));tr.appendChild(element('td','',String(u.notes_count||0)));const statusCell=element('td');statusCell.appendChild(element('span',`w2e-badge ${u.status==='active'?'badge-open':'badge-closed'}`,u.status==='active'?'Hoạt động':'Bị khóa'));tr.appendChild(statusCell);tr.appendChild(element('td','text-secondary small',localDate(u.created_at)));const td=element('td');if(u.role==='user'){const b=element('button',`btn btn-sm ${u.status==='suspended'?'btn-outline-success':'btn-outline-danger'}`,u.status==='suspended'?'Mở khóa':'Khóa');b.type='button';b.addEventListener('click',async()=>{b.disabled=true;try{await api(`/admin/users/${u.id}`,{method:'PATCH',body:JSON.stringify({status:u.status==='suspended'?'active':'suspended'})});await adminLoad();}catch(error){toast(error.message,'error');b.disabled=false;}});td.appendChild(b);}else td.appendChild(element('span','text-secondary small','Quản trị viên'));tr.appendChild(td);body.appendChild(tr);});if(!d.data?.length)body.appendChild(emptyRow(8,'Không có tài khoản khớp bộ lọc.'));const start=(state.userTotal===0)?0:(state.userPage-1)*50+1;const end=Math.min(state.userPage*50,state.userTotal);const label=document.getElementById('userRecordCount');if(label)label.textContent=`Hiển thị ${start}–${end} / ${new Intl.NumberFormat('vi-VN').format(state.userTotal)} tài khoản`;const pageLabel=document.getElementById('userPageLabel');if(pageLabel)pageLabel.textContent=`${state.userPage} / ${state.userPages}`;const previous=document.getElementById('userPrevPage'),next=document.getElementById('userNextPage');if(previous)previous.disabled=state.userPage<=1;if(next)next.disabled=state.userPage>=state.userPages;
     }else if(path.endsWith('/admin/food-notes.php')){
@@ -400,16 +477,168 @@
   function updateFoodNoteBulkBar(){const checks=[...document.querySelectorAll('#fnTable .fn-check')],selected=checks.filter((checkbox)=>checkbox.checked),master=document.getElementById('selectAll'),bar=document.getElementById('bulkBar'),label=document.getElementById('selectedCount');if(bar)bar.style.display=selected.length?'block':'none';if(label)label.textContent=`${selected.length} mục đã chọn`;if(master){master.checked=checks.length>0&&selected.length===checks.length;master.indeterminate=selected.length>0&&selected.length<checks.length;}}
   async function changeSelectedFoodNotes(status){const ids=[...document.querySelectorAll('#fnTable .fn-check:checked')].map((checkbox)=>checkbox.value);if(!ids.length)return;document.querySelectorAll('#bulkBar button').forEach((button)=>button.disabled=true);let failed=0;for(const id of ids){try{await api(`/admin/food-notes/${id}`,{method:'PATCH',body:JSON.stringify({status})});}catch(_){failed++;}}clearFoodNoteSelection();await adminLoad();toast(failed?`${ids.length-failed} ghi chú đã cập nhật; ${failed} mục bị lỗi.`:`Đã cập nhật ${ids.length} ghi chú.` ,failed?'warning':'success');}
   function emptyRow(cols,message){const tr=document.createElement('tr');tr.dataset.empty='true';const td=element('td','text-center text-secondary',message);td.colSpan=cols;tr.appendChild(td);return tr;}
+  function setRestaurantAdminNotice(message, variant = 'info', showRetry = false) {
+    const notice = document.getElementById('restaurantLoadNotice');
+    const label = document.getElementById('restaurantLoadMessage');
+    const retry = document.getElementById('restaurantRetryButton');
+    if (!notice || !label) return;
+    notice.className = `alert alert-${variant} restaurant-admin-notice mb-3`;
+    label.textContent = message;
+    notice.hidden = false;
+    if (retry) retry.hidden = !showRetry;
+  }
+
+  function showRestaurantAdminError(error) {
+    const message = error?.message || 'Lỗi không xác định.';
+    document.body.classList.add('w2e-live-ready');
+    const body = document.getElementById('tableBody');
+    if (body) body.replaceChildren(emptyRow(9, 'Không tải được danh sách địa điểm. Hãy kiểm tra kết nối hoặc đăng nhập lại tài khoản admin.'));
+    const count = document.getElementById('restaurantCount');
+    if (count) count.textContent = 'Không tải được dữ liệu địa điểm';
+    setRestaurantAdminNotice(`Không tải được dữ liệu: ${message}`, 'danger', true);
+  }
+
+  function updateRestaurantAdminSummary() {
+    const rows = state.adminRestaurants;
+    const counts = {
+      total: rows.length,
+      published: rows.filter(restaurant => restaurant.status === 'published').length,
+      pending: rows.filter(restaurant => restaurant.status === 'pending').length,
+      hidden: rows.filter(restaurant => ['hidden', 'rejected'].includes(restaurant.status)).length,
+    };
+    [['restaurantTotalCount', counts.total], ['restaurantPublishedCount', counts.published],
+      ['restaurantPendingCount', counts.pending], ['restaurantHiddenCount', counts.hidden]].forEach(([id, value]) => {
+      const node = document.getElementById(id);
+      if (node) node.textContent = new Intl.NumberFormat('vi-VN').format(value);
+    });
+  }
+
+  function renderAdminRestaurants() {
+    const body = document.getElementById('tableBody');
+    if (!body) return;
+    body.replaceChildren();
+
+    state.adminRestaurants.forEach((restaurant, index) => {
+      const row = document.createElement('tr');
+      row.dataset.search = normalizeText([
+        restaurant.name, restaurant.address, restaurant.category_name, restaurant.cuisine,
+        restaurant.phone, restaurant.website, restaurant.source_url,
+      ].filter(Boolean).join(' '));
+      row.dataset.category = String(restaurant.category_id || '');
+      row.dataset.status = restaurant.status;
+      [index + 1, restaurant.name, restaurant.category_name || 'Chưa phân loại', restaurant.address]
+        .forEach(value => row.appendChild(element('td', '', text(value))));
+
+      const latitude = restaurant.latitude == null || restaurant.latitude === '' ? NaN : Number(restaurant.latitude);
+      const longitude = restaurant.longitude == null || restaurant.longitude === '' ? NaN : Number(restaurant.longitude);
+      const hasCoordinates = Number.isFinite(latitude) && Number.isFinite(longitude)
+        && Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180;
+      const mapCell = element('td');
+      mapCell.className = 'restaurant-map-state';
+      if (!hasCoordinates) {
+        mapCell.appendChild(element('span', 'text-secondary small', 'Thiếu tọa độ'));
+      } else if (restaurant.status !== 'published') {
+        mapCell.appendChild(element('span', 'text-secondary small', 'Chưa hiển thị'));
+      } else {
+        const mapLink = element('a', '', 'Xem ghim ↗');
+        const params = new URLSearchParams({ focus: '1', lat: String(latitude), lon: String(longitude), name: restaurant.name });
+        mapLink.href = `../pages/discovery.php?${params.toString()}`;
+        mapLink.target = '_blank';
+        mapLink.rel = 'noopener noreferrer';
+        mapCell.appendChild(mapLink);
+      }
+      row.appendChild(mapCell);
+
+      const sourceCell = element('td');
+      sourceCell.appendChild(element('span', '', ({ osm: 'OpenStreetMap', user: 'Thành viên', admin: 'Quản trị viên' })[restaurant.source] || 'Không rõ'));
+      if (restaurant.source_url) {
+        const sourceLink = element('a', 'ms-1', 'Nguồn ↗');
+        sourceLink.href = restaurant.source_url;
+        sourceLink.target = '_blank';
+        sourceLink.rel = 'noopener noreferrer';
+        sourceCell.appendChild(sourceLink);
+      }
+      row.appendChild(sourceCell);
+      [restaurantStatusLabel(restaurant.status), localDate(restaurant.created_at)]
+        .forEach(value => row.appendChild(element('td', '', text(value))));
+
+      const actions = element('td', 'text-nowrap');
+      const edit = element('button', 'btn btn-sm btn-outline-primary me-1', 'Sửa');
+      edit.type = 'button';
+      edit.addEventListener('click', () => editRestaurant(restaurant));
+      actions.appendChild(edit);
+      if (restaurant.status === 'pending' || restaurant.status === 'rejected') {
+        const publish = element('button', 'btn btn-sm btn-success me-1', 'Duyệt');
+        publish.type = 'button';
+        publish.addEventListener('click', () => adminRestaurantStatus(restaurant.id, 'published'));
+        actions.appendChild(publish);
+      }
+      const toggle = element('button', 'btn btn-sm btn-outline-secondary', restaurant.status === 'hidden' ? 'Hiện' : 'Ẩn');
+      toggle.type = 'button';
+      toggle.addEventListener('click', () => adminRestaurantStatus(restaurant.id, restaurant.status === 'hidden' ? 'published' : 'hidden'));
+      actions.appendChild(toggle);
+      row.appendChild(actions);
+      body.appendChild(row);
+    });
+
+    if (!state.adminRestaurants.length) {
+      body.appendChild(emptyRow(9, 'Chưa có địa điểm. Bạn có thể thêm quán đã xác minh hoặc duyệt đề xuất của thành viên.'));
+    }
+    updateRestaurantAdminSummary();
+    filterAdminRestaurants();
+  }
+
+  function setupRestaurantAdminRetry() {
+    const button = document.getElementById('restaurantRetryButton');
+    if (!button || button.dataset.bound === 'true') return;
+    button.dataset.bound = 'true';
+    button.addEventListener('click', async () => {
+      button.disabled = true;
+      setRestaurantAdminNotice('Đang thử tải lại danh sách địa điểm…', 'info', false);
+      try {
+        await adminLoad();
+      } catch (error) {
+        showRestaurantAdminError(error);
+      } finally {
+        button.disabled = false;
+      }
+    });
+  }
   async function adminRestaurantStatus(id,status){try{await api(`/admin/restaurants/${id}`,{method:'PATCH',body:JSON.stringify({status})});toast('Đã cập nhật trạng thái.','success');await adminLoad();}catch(error){toast(error.message,'error');}}
 
   function restaurantStatusLabel(status){return({pending:'Chờ duyệt',published:'Đang hiển thị',hidden:'Đã ẩn',rejected:'Từ chối'})[status]||text(status);}
   function fillCategoryOptions(select,categories,includeEmpty){if(!select)return;const selected=select.value;select.replaceChildren();if(includeEmpty)select.appendChild(new Option('Chưa phân loại',''));else select.appendChild(new Option('Tất cả danh mục',''));categories.forEach((category)=>{if(category.status==='active')select.appendChild(new Option(category.name,String(category.id)));});if([...select.options].some(option=>option.value===selected))select.value=selected;}
-  function filterAdminRestaurants(){const query=(document.getElementById('searchInput')?.value||'').trim().toLocaleLowerCase('vi');const category=document.getElementById('catFilter')?.value||'';const status=document.getElementById('statusFilter')?.value||'';let shown=0;document.querySelectorAll('#tableBody tr').forEach((row)=>{if(row.dataset.empty)return;const visible=(!query||row.dataset.search.includes(query))&&(!category||row.dataset.category===category)&&(!status||row.dataset.status===status);row.hidden=!visible;if(visible)shown++;});const count=document.getElementById('restaurantCount');if(count)count.textContent=`Đang hiển thị ${shown} / ${state.adminRestaurants.length} địa điểm`;
+  function filterAdminRestaurants() {
+    const query = normalizeText((document.getElementById('searchInput')?.value || '').trim());
+    const category = document.getElementById('catFilter')?.value || '';
+    const status = document.getElementById('statusFilter')?.value || '';
+    let shown = 0;
+    document.querySelectorAll('#tableBody tr').forEach(row => {
+      if (row.dataset.empty) return;
+      const visible = (!query || row.dataset.search.includes(query))
+        && (!category || row.dataset.category === category)
+        && (!status || row.dataset.status === status);
+      row.hidden = !visible;
+      if (visible) shown++;
+    });
+    const filterEmpty = document.getElementById('restaurantFilterEmpty');
+    if (shown === 0 && state.adminRestaurants.length > 0) {
+      if (!filterEmpty) {
+        const row = emptyRow(9, 'Không có địa điểm khớp bộ lọc. Hãy đổi từ khóa hoặc chọn lại bộ lọc.');
+        row.id = 'restaurantFilterEmpty';
+        document.getElementById('tableBody')?.appendChild(row);
+      }
+    } else {
+      filterEmpty?.remove();
+    }
+    const count = document.getElementById('restaurantCount');
+    if (count) count.textContent = `Đang hiển thị ${shown} / ${state.adminRestaurants.length} địa điểm`;
   }
   function openModal(id){const modal=document.getElementById(id);if(modal)window.bootstrap?.Modal.getOrCreateInstance(modal).show();}
-  function editRestaurant(restaurant){state.editRestaurantId=restaurant.id;const categorySelect=document.getElementById('restaurantCategory');if(restaurant.category_id&&categorySelect&&![...categorySelect.options].some(o=>o.value===String(restaurant.category_id))){const option=new Option(restaurant.category_name||'Danh mục đã ẩn',String(restaurant.category_id));categorySelect.appendChild(option);}const fields={restaurantName:restaurant.name,restaurantCategory:restaurant.category_id||'',restaurantDescription:restaurant.description||'',restaurantAddress:restaurant.address,restaurantCuisine:restaurant.cuisine||'',restaurantPhone:restaurant.phone||'',restaurantWebsite:restaurant.website||'',restaurantSourceUrl:restaurant.source_url||'',restaurantStatus:restaurant.status==='hidden'?'hidden':'published',restaurantLatitude:restaurant.latitude??'',restaurantLongitude:restaurant.longitude??''};Object.entries(fields).forEach(([id,value])=>{const input=document.getElementById(id);if(input)input.value=value;});const priceParts=(restaurant.price_range||'').match(/[\d]+(?:[.,][\d]+)*/g)||[];const min=document.getElementById('restaurantPriceMin'),max=document.getElementById('restaurantPriceMax');if(min)min.value=priceParts[0]?.replace(/[.,]/g,'')||'';if(max)max.value=priceParts[1]?.replace(/[.,]/g,'')||'';const opening=document.getElementById('restaurantOpening');if(opening)opening.value=restaurant.opening_hours?.text||'';const title=document.getElementById('restaurantModalTitle');if(title)title.textContent=`Sửa: ${restaurant.name}`;openModal('restaurantModal');}
+  function editRestaurant(restaurant){state.editRestaurantId=restaurant.id;const statusSelect=document.getElementById('restaurantStatus');if(['pending','rejected'].includes(restaurant.status)&&statusSelect&&!Array.from(statusSelect.options).some(option=>option.value===restaurant.status))statusSelect.add(new Option(restaurantStatusLabel(restaurant.status),restaurant.status));const categorySelect=document.getElementById('restaurantCategory');if(restaurant.category_id&&categorySelect&&![...categorySelect.options].some(o=>o.value===String(restaurant.category_id))){const option=new Option(restaurant.category_name||'Danh mục đã ẩn',String(restaurant.category_id));categorySelect.appendChild(option);}const fields={restaurantName:restaurant.name,restaurantCategory:restaurant.category_id||'',restaurantDescription:restaurant.description||'',restaurantAddress:restaurant.address,restaurantCuisine:restaurant.cuisine||'',restaurantPhone:restaurant.phone||'',restaurantWebsite:restaurant.website||'',restaurantSourceUrl:restaurant.source_url||'',restaurantStatus:restaurant.status||'published',restaurantLatitude:restaurant.latitude??'',restaurantLongitude:restaurant.longitude??''};Object.entries(fields).forEach(([id,value])=>{const input=document.getElementById(id);if(input)input.value=value;});const priceParts=(restaurant.price_range||'').match(/[\d]+(?:[.,][\d]+)*/g)||[];const min=document.getElementById('restaurantPriceMin'),max=document.getElementById('restaurantPriceMax');if(min)min.value=priceParts[0]?.replace(/[.,]/g,'')||'';if(max)max.value=priceParts[1]?.replace(/[.,]/g,'')||'';const opening=document.getElementById('restaurantOpening');if(opening)opening.value=restaurant.opening_hours?.text||'';const title=document.getElementById('restaurantModalTitle');if(title)title.textContent=`Sửa: ${restaurant.name}`;openModal('restaurantModal');}
   async function saveRestaurant(){const name=document.getElementById('restaurantName'),address=document.getElementById('restaurantAddress'),min=document.getElementById('restaurantPriceMin'),max=document.getElementById('restaurantPriceMax'),lat=document.getElementById('restaurantLatitude')?.value||null,lon=document.getElementById('restaurantLongitude')?.value||null;if(!name?.reportValidity()||!address?.reportValidity())return;const low=min?.value?Number(min.value):null,high=max?.value?Number(max.value):null;if(low!==null&&high!==null&&low>high){toast('Giá thấp nhất không thể lớn hơn giá cao nhất.','warning');return;}if((lat===null)!==(lon===null)){toast('Hãy nhập cả vĩ độ lẫn kinh độ, hoặc để trống cả hai.','warning');return;}const price=low===null&&high===null?null:[low,high].filter(v=>v!==null).map(v=>new Intl.NumberFormat('en-US').format(v)).join('–')+' VND';const openingText=document.getElementById('restaurantOpening')?.value.trim()||'';const payload={name:name.value.trim(),category_id:document.getElementById('restaurantCategory')?.value||null,address:address.value.trim(),latitude:lat,longitude:lon,cuisine:document.getElementById('restaurantCuisine')?.value.trim()||null,phone:document.getElementById('restaurantPhone')?.value.trim()||null,website:document.getElementById('restaurantWebsite')?.value.trim()||null,source_url:document.getElementById('restaurantSourceUrl')?.value.trim()||null,opening_hours:openingText?{text:openingText}:null,price_range:price,description:document.getElementById('restaurantDescription')?.value.trim()||null,status:document.getElementById('restaurantStatus')?.value||'published'};const button=document.getElementById('saveRestaurantButton');if(button)button.disabled=true;try{await api(state.editRestaurantId?`/admin/restaurants/${state.editRestaurantId}`:'/admin/restaurants',{method:state.editRestaurantId?'PUT':'POST',body:JSON.stringify(payload)});window.bootstrap?.Modal.getInstance(document.getElementById('restaurantModal'))?.hide();toast('Địa điểm đã được lưu.','success');state.editRestaurantId=null;await adminLoad();}catch(error){toast(error.message,'error');}finally{if(button)button.disabled=false;}}
-  function resetRestaurantForm(){state.editRestaurantId=null;document.getElementById('restaurantModalTitle').textContent='Thêm Quán Ăn Mới';['restaurantName','restaurantDescription','restaurantAddress','restaurantCuisine','restaurantPhone','restaurantWebsite','restaurantSourceUrl','restaurantPriceMin','restaurantPriceMax','restaurantOpening','restaurantLatitude','restaurantLongitude'].forEach(id=>{const field=document.getElementById(id);if(field)field.value='';});const category=document.getElementById('restaurantCategory');if(category)category.value='';const status=document.getElementById('restaurantStatus');if(status)status.value='published';}
+  function resetRestaurantForm(){state.editRestaurantId=null;document.getElementById('restaurantModalTitle').textContent='Thêm Quán Ăn Mới';['restaurantName','restaurantDescription','restaurantAddress','restaurantCuisine','restaurantPhone','restaurantWebsite','restaurantSourceUrl','restaurantPriceMin','restaurantPriceMax','restaurantOpening','restaurantLatitude','restaurantLongitude'].forEach(id=>{const field=document.getElementById(id);if(field)field.value='';});const category=document.getElementById('restaurantCategory');if(category)category.value='';const status=document.getElementById('restaurantStatus');if(status){Array.from(status.options).filter(option=>!['published','hidden'].includes(option.value)).forEach(option=>option.remove());status.value='published';}const geocodeStatus=document.getElementById('restaurantGeocodeStatus');if(geocodeStatus)geocodeStatus.textContent='Tra tọa độ để nhận một kết quả gợi ý; hãy đối chiếu trước khi lưu.';}
+  function setupAdminGeocoder(){const button=document.getElementById('restaurantGeocodeButton'),address=document.getElementById('restaurantAddress'),latitude=document.getElementById('restaurantLatitude'),longitude=document.getElementById('restaurantLongitude'),status=document.getElementById('restaurantGeocodeStatus');if(!button||!address)return;button.addEventListener('click',async()=>{const query=address.value.trim();if(query.length<5){toast('Nhập địa chỉ đầy đủ hơn trước khi tra tọa độ.','warning');address.focus();return;}button.disabled=true;button.textContent='Đang tra…';if(status)status.textContent='Đang tra một kết quả gợi ý từ OpenStreetMap Nominatim…';try{const result=await api('/admin/geocode',{method:'POST',body:JSON.stringify({address:query})});if(!result.found){if(status)status.textContent='Không tìm thấy kết quả. Bạn có thể nhập tọa độ thủ công hoặc sửa địa chỉ.';return;}latitude.value=String(result.latitude);longitude.value=String(result.longitude);if(status)status.textContent=`Kết quả gợi ý: ${result.label||'địa chỉ phù hợp'}. Hãy đối chiếu địa chỉ và tọa độ trước khi lưu.`;}catch(error){if(status)status.textContent=error.message;toast(error.message,'warning');}finally{button.disabled=false;button.textContent='Tra tọa độ từ địa chỉ';}});address.addEventListener('input',()=>{latitude.value='';longitude.value='';if(status)status.textContent='Địa chỉ đã đổi. Hãy tra lại tọa độ hoặc nhập cặp tọa độ đã xác minh.';});}
   function editCategory(category){state.editCategoryId=category.id;document.getElementById('catModalTitle').textContent=`Sửa: ${category.name}`;document.getElementById('catName').value=category.name;document.getElementById('catDescription').value=category.description||'';document.getElementById('catStatus').value=category.status;openModal('categoryModal');}
   async function persistCategory(){const name=document.getElementById('catName')?.value.trim()||'';if(name.length<1){toast('Nhập tên danh mục.','warning');return;}const payload={name,description:document.getElementById('catDescription')?.value.trim()||null,status:document.getElementById('catStatus')?.value||'active'};try{await api(state.editCategoryId?`/admin/categories/${state.editCategoryId}`:'/admin/categories',{method:state.editCategoryId?'PUT':'POST',body:JSON.stringify(payload)});window.bootstrap?.Modal.getInstance(document.getElementById('categoryModal'))?.hide();toast('Danh mục đã được lưu.','success');state.editCategoryId=null;await adminLoad();}catch(error){toast(error.message,'error');}}
   async function saveCategoryStatus(category,status){try{await api(`/admin/categories/${category.id}`,{method:'PATCH',body:JSON.stringify({status})});toast('Trạng thái danh mục đã được cập nhật.','success');await adminLoad();}catch(error){toast(error.message,'error');}}
@@ -422,7 +651,7 @@
     const modal=element('div','modal fade');modal.id='w2eRestaurantProposalModal';modal.tabIndex=-1;modal.setAttribute('aria-labelledby','w2eRestaurantProposalTitle');
     const dialog=element('div','modal-dialog modal-lg');const content=element('div','modal-content');const header=element('div','modal-header');const heading=element('h2','modal-title fs-5','Đóng góp địa điểm');heading.id='w2eRestaurantProposalTitle';header.appendChild(heading);const close=element('button','btn-close');close.type='button';close.dataset.bsDismiss='modal';close.setAttribute('aria-label','Đóng');header.appendChild(close);content.appendChild(header);
     const body=element('div','modal-body');body.appendChild(element('p','text-secondary','Chỉ gửi thông tin bạn biết hoặc đã đối chiếu. Quản trị viên sẽ kiểm tra trước khi địa điểm xuất hiện công khai.'));
-    const form=element('form','');form.id='w2eRestaurantProposalForm';const field=(label,id,type='text',required=false)=>{const wrap=element('div','mb-3');const caption=element('label','form-label',label);caption.htmlFor=id;const input=element(type==='textarea'?'textarea':'input','form-control');input.id=id;input.name=id;if(type!=='textarea')input.type=type;input.maxLength=type==='url'?500:500;if(required)input.required=true;wrap.append(caption,input);return wrap;};
+    const form=element('form','');form.id='w2eRestaurantProposalForm';const field=(label,id,type='text',required=false)=>{const wrap=element('div','mb-3');const caption=element('label','form-label',label);caption.htmlFor=id;const input=element(type==='textarea'?'textarea':'input','form-control');input.id=id;input.name=id;if(type!=='textarea')input.type=type==='url'?'text':type;if(type==='url')input.inputMode='url';input.maxLength=500;if(required)input.required=true;wrap.append(caption,input);return wrap;};
     form.append(field('Tên địa điểm *','proposalName','text',true),field('Địa chỉ *','proposalAddress','text',true),field('Loại hình / ẩm thực','proposalCuisine'),field('Điện thoại','proposalPhone','tel'),field('Website chính thức','proposalWebsite','url'),field('Nguồn để đối chiếu (nếu có)','proposalSourceUrl','url'),field('Ghi chú / thông tin đã xác nhận','proposalDescription','textarea'));
     const coords=element('div','row g-2 mb-3');[['Vĩ độ','proposalLatitude',-90,90],['Kinh độ','proposalLongitude',-180,180]].forEach(([label,id,min,max])=>{const col=element('div','col-md-6');const input=element('input','form-control');input.type='number';input.step='0.0000001';input.min=String(min);input.max=String(max);input.id=id;input.placeholder=label;input.setAttribute('aria-label',label);col.appendChild(input);coords.appendChild(col);});form.appendChild(coords);
     const submit=element('button','btn btn-primary','Gửi để quản trị viên kiểm tra');submit.type='submit';form.appendChild(submit);body.appendChild(form);content.appendChild(body);dialog.appendChild(content);modal.appendChild(dialog);document.body.appendChild(modal);
@@ -438,8 +667,8 @@
     if(protectedPage&&!state.user&&state.authChecked){const base=path.includes('/pages/')?'./login.php':'login.php';const next=location.pathname+location.search;window.location.replace(`${base}?next=${encodeURIComponent(next)}`);return;}
     if(path.includes('/admin/')){
       if(state.user?.role!=='admin'){document.body.replaceChildren(element('main','container py-5','Khu vực quản trị cần tài khoản admin. Đăng nhập bằng tài khoản quản trị đã được tạo từ lệnh CLI trên máy chủ.'));return;}
-      setupAdminForms();
-      try{await adminLoad();}catch(error){toast(error.message,'error');}
+      setupAdminForms();setupAdminGeocoder();setupRestaurantAdminRetry();
+      try{await adminLoad();}catch(error){if(path.endsWith('/admin/restaurants.php'))showRestaurantAdminError(error);else toast(error.message,'error');}
     }
     if(path.endsWith('/food-notes.php')){await loadNotes();document.getElementById('noteSearch')?.addEventListener('input',applyNoteFilters);document.getElementById('ratingFilter')?.addEventListener('change',applyNoteFilters);document.getElementById('timeFilter')?.addEventListener('change',applyNoteFilters);document.getElementById('loadMoreNotes')?.addEventListener('click',()=>loadNotes(false));}
     if(path.endsWith('/food-plans.php'))await loadPlans();
@@ -447,7 +676,7 @@
     if(path.endsWith('/dashboard.php'))await renderDashboard();
     if(path.endsWith('/discovery.php')){
       setupRestaurantProposal();
-      document.getElementById('searchInput')?.addEventListener('input',filterDiscovery);document.getElementById('distanceFilter')?.addEventListener('change',filterDiscovery);
+      const discoverySearch=document.getElementById('searchInput');discoverySearch?.addEventListener('input',filterDiscovery);discoverySearch?.addEventListener('keydown',(event)=>{if(event.key==='Enter'){event.preventDefault();filterDiscovery();}});document.getElementById('distanceFilter')?.addEventListener('change',filterDiscovery);
       filterDiscovery();
       ['priceFilter','ratingFilter'].forEach((id)=>{const x=document.getElementById(id);if(x){x.disabled=true;x.title='Nguồn OSM hiện không cung cấp dữ liệu này.';}});
     }
@@ -460,7 +689,7 @@
   }
 
   function setupAuthForms() {
-    window.resendVerification=async()=>{const link=document.querySelector('#successScreen .w2e-footer a');const email=document.getElementById('confirmedEmail')?.textContent.trim()||document.getElementById('regEmail')?.value.trim()||'';if(!email||email==='—'){toast('Không tìm thấy địa chỉ email cần xác nhận.','warning');return;}if(link)link.setAttribute('aria-disabled','true');try{const result=await api('/auth/resend-verification',{method:'POST',body:JSON.stringify({email})});toast(result.message,'success');}catch(error){toast(error.message,'error');}finally{if(link)link.removeAttribute('aria-disabled');}};
+    window.resendVerification=async()=>{const link=document.querySelector('#successScreen .w2e-auth-footer-link a');const email=document.getElementById('confirmedEmail')?.textContent.trim()||document.getElementById('regEmail')?.value.trim()||'';if(!email||email==='—'){toast('Không tìm thấy địa chỉ email cần xác nhận.','warning');return;}if(link)link.setAttribute('aria-disabled','true');try{const result=await api('/auth/resend-verification',{method:'POST',body:JSON.stringify({email})});toast(result.message,'success');}catch(error){toast(error.message,'error');}finally{if(link)link.removeAttribute('aria-disabled');}};
     const loginEmail=document.getElementById('loginEmail'),loginPassword=document.getElementById('loginPassword');
     const setLoginError=(input,id,visible)=>{input?.classList.toggle('is-invalid',visible);document.getElementById(id)?.classList.toggle('is-on',visible);};
     document.getElementById('passToggle')?.addEventListener('click',(event)=>{const button=event.currentTarget,visible=loginPassword?.type==='password';if(loginPassword)loginPassword.type=visible?'text':'password';button.querySelector('i')?.classList.toggle('bi-eye',!visible);button.querySelector('i')?.classList.toggle('bi-eye-slash',visible);button.setAttribute('aria-label',visible?'Ẩn mật khẩu':'Hiện mật khẩu');});
@@ -499,16 +728,17 @@
     if(dropdown)dropdown.replaceChildren();
     const dateField=document.getElementById('foodDate');if(dateField)dateField.value=todayLocal();
     window.searchRestaurant=async(query)=>{
-      if(!dropdown)return;clearTimeout(timer);timer=setTimeout(async()=>{if(!query||query.trim().length<2){dropdown.replaceChildren();return;}try{const center=await chosenCenter();const data=await nearby(center,3000);const managed=await loadManagedPlaces();const matches=[...(data.elements||[]),...managed].filter((place)=>placeName(place).toLocaleLowerCase('vi').includes(query.trim().toLocaleLowerCase('vi'))).slice(0,10);dropdown.replaceChildren();matches.forEach((place)=>{const item=element('button','w2e-restaurant-item');item.type='button';item.append(element('span','w2e-rest-name',placeName(place)),element('span','w2e-rest-addr',place.managed_record?place.restaurant.address:(addressOf(place.tags)||'Địa chỉ chưa có trong OSM')),element('span','small text-secondary',place.managed_record?'Địa điểm What2Eat đã lưu':'Nguồn OpenStreetMap'));item.addEventListener('click',()=>{selected=place;search.value=placeName(place);dropdown.classList.remove('show');window.markFoodNoteDirty?.();});dropdown.appendChild(item);});if(!matches.length)dropdown.appendChild(element('p','w2e-restaurant-addr','Không tìm thấy địa điểm có tên trong dữ liệu quanh vị trí của bạn.'));dropdown.classList.add('show');}catch(error){toast(error.message,'error');}},350);
+      if(!dropdown)return;clearTimeout(timer);timer=setTimeout(async()=>{if(!query||query.trim().length<2){dropdown.replaceChildren();return;}try{const center=await chosenCenter();const data=await nearby(center,3000);const managed=await loadManagedPlaces();const matches=[...(data.elements||[]),...managed].filter((place)=>placeName(place).toLocaleLowerCase('vi').includes(query.trim().toLocaleLowerCase('vi'))).slice(0,10);dropdown.replaceChildren();matches.forEach((place)=>{const item=element('button','w2e-restaurant-item');item.type='button';item.append(element('span','w2e-rest-name',placeName(place)),element('span','w2e-rest-addr',place.managed_record?place.restaurant.address:(addressOf(place.tags,place)||'Địa chỉ chưa có trong OSM')),element('span','small text-secondary',place.managed_record?'Địa điểm What2Eat đã lưu':'Nguồn OpenStreetMap'));item.addEventListener('click',()=>{selected=place;search.value=placeName(place);dropdown.classList.remove('show');window.markFoodNoteDirty?.();});dropdown.appendChild(item);});if(!matches.length)dropdown.appendChild(element('p','w2e-restaurant-addr','Không tìm thấy địa điểm có tên trong dữ liệu quanh vị trí của bạn.'));dropdown.classList.add('show');}catch(error){toast(error.message,'error');}},350);
     };
     window.showRestaurantDropdown=()=>{if(dropdown)dropdown.classList.add('show');};
     let editingNoteId=new URLSearchParams(location.search).get('edit');
     async function persistNote(isDraft=false) {
       const foodName=document.getElementById('foodName')?.value.trim()||'';if(!foodName){toast('Nhập tên món ăn trước khi lưu.','warning');return;}
+      const selectedMedia=[...(document.getElementById('fileInput')?.files||[]),...(document.getElementById('videoInput')?.files||[])];const oversizedMedia=selectedMedia.find((file)=>file.size>50*1024*1024);if(oversizedMedia){toast(`Tệp “${oversizedMedia.name}” vượt quá giới hạn 50 MB.`, 'warning');return;}
       const tags=[...document.querySelectorAll('.w2e-selected-tag')].map((x)=>x.textContent.replace('✕','').replace(/^#/,'').trim()).filter(Boolean);
       const privacy=document.querySelector('input[name="privacy"]:checked')?.value||'private';
       const chosen=selected;const payload={food_name:foodName,eaten_at:document.getElementById('foodDate')?.value||todayLocal(),price:document.getElementById('foodPrice')?.value||null,rating:Number(document.getElementById('ratingValue')?.value||0)||null,review:document.getElementById('noteComment')?.value.trim()||null,privacy,tags,is_draft:isDraft};
-      if(chosen?.managed_record){payload.restaurant_id=chosen.id;payload.restaurant_source=chosen.source;payload.restaurant_source_id=String(chosen.id);payload.restaurant_name=placeName(chosen);payload.restaurant_address=chosen.restaurant.address||null;}else if(chosen){payload.restaurant_source='osm';payload.restaurant_source_id=placeId(chosen);payload.restaurant_name=placeName(chosen);payload.restaurant_address=addressOf(chosen)||null;}else if(savedRestaurant){payload.restaurant_id=savedRestaurant.restaurant_id;payload.restaurant_source=savedRestaurant.restaurant_source;payload.restaurant_source_id=savedRestaurant.restaurant_source_id;payload.restaurant_name=savedRestaurant.restaurant_name;payload.restaurant_address=savedRestaurant.restaurant_address;}
+      if(chosen?.managed_record){payload.restaurant_id=chosen.id;payload.restaurant_source=chosen.source;payload.restaurant_source_id=String(chosen.id);payload.restaurant_name=placeName(chosen);payload.restaurant_address=chosen.restaurant.address||null;}else if(chosen){payload.restaurant_source='osm';payload.restaurant_source_id=placeId(chosen);payload.restaurant_name=placeName(chosen);payload.restaurant_address=addressOf(chosen.tags,chosen)||null;}else if(savedRestaurant){payload.restaurant_id=savedRestaurant.restaurant_id;payload.restaurant_source=savedRestaurant.restaurant_source;payload.restaurant_source_id=savedRestaurant.restaurant_source_id;payload.restaurant_name=savedRestaurant.restaurant_name;payload.restaurant_address=savedRestaurant.restaurant_address;}
       const saveButtons=document.querySelectorAll('.w2e-submit-bar button');saveButtons.forEach((b)=>b.disabled=true);
       try{const result=editingNoteId?await api(`/food-notes/${editingNoteId}`,{method:'PUT',body:JSON.stringify(payload)}):await api('/food-notes',{method:'POST',body:JSON.stringify(payload)});const note=result.data;const files=[...(document.getElementById('fileInput')?.files||[]),...(document.getElementById('videoInput')?.files||[])];for(const file of files){const form=new FormData();form.append('media',file);await api(`/food-notes/${note.id}/media`,{method:'POST',body:form});}if(result.share_url){const link=new URL(result.share_url,location.origin).href;let copied=false;try{await navigator.clipboard.writeText(link);copied=true;}catch(_){}if(status){const anchor=element('a','d-block mt-2','Mở Food Note được chia sẻ');anchor.href=link;anchor.target='_blank';anchor.rel='noopener noreferrer';status.replaceChildren(element('span','',copied?'Đã lưu và sao chép liên kết chia sẻ.':'Đã lưu. Bạn có thể mở liên kết chia sẻ bên dưới.'),anchor);}editingNoteId=note.id;history.replaceState({},'',`?edit=${note.id}`);toast('Đã lưu Food Note có liên kết chia sẻ.','success');saveButtons.forEach((b)=>b.disabled=false);}else{if(status)status.textContent=isDraft?'Đã lưu bản nháp.':(privacy==='public'?'Đã gửi, đang chờ admin duyệt.':'Đã lưu trên tài khoản của bạn.');toast(isDraft?'Đã lưu bản nháp.':(privacy==='public'?'Food Note đã gửi, chờ quản trị viên duyệt.':'Food Note đã lưu.'),'success');location.href='./food-notes.php';}}
       catch(error){toast(error.message,'error');saveButtons.forEach((b)=>b.disabled=false);}
@@ -525,7 +755,7 @@
     window.resetInfoForm=()=>{const name=document.getElementById('fullName'),phone=document.getElementById('phone');if(name)name.value=state.user?.name||'';if(phone)phone.value=state.user?.phone||'';};
     window.resetPrefForm=()=>{const preferences=Array.isArray(state.user?.preferences)?state.user.preferences:[];document.querySelectorAll('#prefForm input[type="checkbox"],#prefForm input[type="radio"]').forEach((input)=>{input.checked=preferences.includes(input.value);input.closest('label')?.classList.toggle(input.type==='radio'?'selected':'checked',input.checked);});const distance=preferences.find(value=>value.startsWith('distance:'));const slider=document.getElementById('distanceSlider');if(slider){slider.value=distance?.split(':')[1]||'2';window.updateSlider?.(slider);}};
     window.checkDeleteConfirm=(input)=>{const button=document.getElementById('confirmDeleteBtn');if(!button)return;const ready=input.value==='XÓA TÀI KHOẢN'&&Boolean(document.getElementById('deletePassword')?.value);button.disabled=!ready;button.style.opacity=ready?'1':'0.5';button.style.cursor=ready?'pointer':'not-allowed';};
-    window.exportData=async()=>{const button=document.getElementById('exportDataButton');if(button)button.disabled=true;try{const [profile,planList,contributions,firstNotes,firstFavorites]=await Promise.all([api('/profile'),api('/food-plans'),api('/restaurants/proposals'),api('/food-notes?page=1&limit=50'),api('/favorites?page=1&limit=200')]);const notes=[...(firstNotes.data||[])];for(let page=2;page<=1000&&notes.length<(firstNotes.total||0);page++){const next=await api(`/food-notes?page=${page}&limit=50`);if(!next.data?.length)break;notes.push(...next.data);}const favorites=[...(firstFavorites.data||[])];for(let page=2;favorites.length<(firstFavorites.total||0);page++){const next=await api(`/favorites?page=${page}&limit=200`);if(!next.data?.length)break;favorites.push(...next.data);}const plans=[];for(const plan of planList.data||[]){const detail=await api(`/food-plans/${plan.id}`);plans.push(detail.data||plan);}const data={exported_at:new Date().toISOString(),profile:profile.user,food_notes:notes,favorites,food_plans:plans,restaurant_contributions:contributions.data||[]};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`what2eat-data-${new Date().toISOString().slice(0,10)}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Đã xuất dữ liệu hiện có trong tài khoản.','success');}catch(error){toast(error.message,'error');}finally{if(button)button.disabled=false;}};
+    window.exportData=async()=>{const button=document.getElementById('exportDataButton');if(button)button.disabled=true;const warnings=[];try{const paths=[['profile','/profile'],['food_plans','/food-plans'],['restaurant_contributions','/restaurants/proposals'],['food_notes','/food-notes?page=1&limit=50'],['favorites','/favorites?page=1&limit=500']];const settled=await Promise.allSettled(paths.map(([,path])=>api(path)));const results={};settled.forEach((entry,index)=>{const key=paths[index][0];if(entry.status==='fulfilled')results[key]=entry.value;else{results[key]=null;warnings.push(`${key}: ${entry.reason?.message||'không tải được'}`);}});if(!results.profile)throw new Error(warnings.find(w=>w.startsWith('profile:'))||'Không tải được hồ sơ.');const collectPages=async(key,endpoint,first,limit)=>{if(!first)return[];const rows=[...(first.data||[])],total=Number(first.total)||rows.length;for(let page=2;rows.length<total&&page<=1000;page++){try{const next=await api(`${endpoint}?page=${page}&limit=${limit}`);if(!next.data?.length){warnings.push(`${key}: API trả trang rỗng trước khi xuất đủ ${total} mục.`);break;}rows.push(...next.data);}catch(error){warnings.push(`${key} trang ${page}: ${error.message}`);break;}}if(rows.length<total&&!warnings.some(message=>message.startsWith(`${key}:`)||message.startsWith(`${key} trang`)))warnings.push(`${key}: giới hạn phân trang khiến chỉ xuất ${rows.length}/${total} mục.`);return rows;};const [notes,favorites]=await Promise.all([collectPages('food_notes','/food-notes',results.food_notes,50),collectPages('favorites','/favorites',results.favorites,500)]);const plans=[];for(const plan of results.food_plans?.data||[]){try{const detail=await api(`/food-plans/${plan.id}`);plans.push(detail.data||plan);}catch(error){warnings.push(`food_plan ${plan.id}: ${error.message}`);plans.push(plan);}}const data={exported_at:new Date().toISOString(),complete:warnings.length===0,export_warnings:warnings,profile:results.profile.user,food_notes:notes,favorites,food_plans:plans,restaurant_contributions:results.restaurant_contributions?.data||[]};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`what2eat-data-${new Date().toISOString().slice(0,10)}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast(warnings.length?`Đã xuất dữ liệu một phần. Kiểm tra mục export_warnings (${warnings.length} lỗi).`:'Đã xuất đầy đủ dữ liệu hiện có trong tài khoản.','success');}catch(error){toast(error.message,'error');}finally{if(button)button.disabled=false;}};
     window.deleteAccount=async()=>{const button=document.getElementById('confirmDeleteBtn');if(button)button.disabled=true;try{await api('/profile',{method:'DELETE',body:JSON.stringify({password:document.getElementById('deletePassword')?.value||'',confirmation:document.getElementById('deleteConfirmInput')?.value||''})});localStorage.removeItem('w2e_remember_email');location.replace('./login.php?account=deleted');}catch(error){toast(error.message,'error');if(button)button.disabled=false;}};
     document.getElementById('deletePassword')?.addEventListener('input',()=>window.checkDeleteConfirm(document.getElementById('deleteConfirmInput')));
     document.getElementById('deleteConfirmInput')?.addEventListener('input',(event)=>window.checkDeleteConfirm(event.currentTarget));
@@ -553,14 +783,14 @@
   }
 
   function setupPlans() {
-    window.createPlan=async()=>{const name=document.getElementById('planName')?.value.trim()||'';if(!name){toast('Nhập tên Food Plan.','warning');return;}const date=document.getElementById('planDate')?.value;const time=document.getElementById('planTime')?.value;const eventAt=date?new Date(`${date}T${time||'00:00'}`).toISOString():null;try{const result=await api('/food-plans',{method:'POST',body:JSON.stringify({name,description:document.getElementById('planDesc')?.value||'',event_at:eventAt})});closeCreateModal();toast(`Đã tạo Food Plan. Liên kết mời: ${new URL(result.invite_url,location.origin).href}`,'success');await loadPlans();}catch(error){toast(error.message,'error');}};
+    window.createPlan=async()=>{const name=document.getElementById('planName')?.value.trim()||'';if(!name){toast('Nhập tên Food Plan.','warning');return;}const date=document.getElementById('planDate')?.value;const time=document.getElementById('planTime')?.value;const eventAt=date?new Date(`${date}T${time||'00:00'}`).toISOString():null;try{const result=await api('/food-plans',{method:'POST',body:JSON.stringify({name,description:document.getElementById('planDesc')?.value||'',event_at:eventAt})});closeCreateModal();toast(`Đã tạo Food Plan: ${name}`,'success');await loadPlans();if(result.id){await showPlan(result.id);const panel=document.getElementById('w2ePlanLiveDetail');if(panel&&result.invite_url){const invite=element('div','alert alert-info mt-3');invite.appendChild(element('strong','d-block mb-2','Liên kết mời thành viên'));const row=element('div','d-flex gap-2');const input=element('input','form-control');input.readOnly=true;input.value=new URL(result.invite_url,location.origin).href;const copy=element('button','btn btn-outline-primary','Sao chép');copy.type='button';copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(input.value);toast('Đã sao chép liên kết mời.','success');}catch(_){input.select();document.execCommand('copy');toast('Đã chọn liên kết; hãy sao chép nếu trình duyệt chặn clipboard.','info');}});row.append(input,copy);invite.appendChild(row);panel.prepend(invite);}}}catch(error){toast(error.message,'error');}};
     const chipInput=document.getElementById('emailChipInput');if(chipInput){chipInput.disabled=true;chipInput.placeholder='Mời người khác bằng liên kết chia sẻ sau khi tạo kế hoạch.';}
   }
 
   function setupRandomPicker() {
     const budget=document.getElementById('filterBudget');if(budget){budget.disabled=true;budget.title='OpenStreetMap không cung cấp dữ liệu giá nhất quán.';}
-    window.randomFood=async()=>{if(!state.places.length)await loadNearby();const item=window.getRandomNearbyPlace?.({type:document.getElementById('filterType')?.value||'',distance:document.getElementById('filterDist')?.value||''});if(!item){toast('Không có địa điểm nào khớp bộ lọc trong dữ liệu hiện có. Thử bỏ bớt bộ lọc hoặc tải lại.','warning');return;}const result=document.getElementById('randomResult');if(result)result.style.display='block';const img=document.getElementById('rImg');if(img){img.removeAttribute('src');img.alt='Nguồn chưa cung cấp ảnh';img.hidden=true;}const name=document.getElementById('rName');if(name)name.textContent=item.name;const addr=document.getElementById('rAddr');if(addr)addr.textContent=item.address;const rate=document.getElementById('rRating');if(rate){rate.textContent=item.source;rate.hidden=false;}const price=document.getElementById('rPrice');if(price){price.textContent='Giá và đánh giá chỉ hiển thị khi nguồn cung cấp dữ liệu.';price.hidden=false;}const open=result?.querySelector('.open-badge');if(open)open.hidden=true;const link=result?.querySelector('#rLink');if(link){link.href=item.url;link.textContent='Mở địa điểm và nguồn';link.target='_blank';link.rel='noopener noreferrer';}result?.scrollIntoView({behavior:'smooth',block:'center'});};
-    window.rollLucky=async()=>{if(!state.places.length)await loadNearby();const place=window.getRandomNearbyPlace?.();const modal=document.getElementById('luckyModal');if(!place||!modal){toast('Chưa tải được địa điểm có dữ liệu. Hãy thử lại sau.','warning');return;}const body=modal.querySelector('.modal-body');if(body){const title=element('h3','h5',place.name),address=element('p','text-secondary',place.address),source=element('p','small text-secondary',place.source),link=element('a','btn btn-primary','Mở địa điểm và nguồn');link.href=place.url;link.target='_blank';link.rel='noopener noreferrer';body.replaceChildren(title,address,source,link);}window.bootstrap?.Modal.getOrCreateInstance(modal).show();};
+    window.randomFood=async()=>{if(!state.places.length)await loadNearby();const item=window.getRandomNearbyPlace?.({type:document.getElementById('filterType')?.value||'',distance:document.getElementById('filterDist')?.value||''});if(!item){toast('Không có địa điểm nào khớp bộ lọc trong dữ liệu hiện có. Thử bỏ bớt bộ lọc hoặc tải lại.','warning');return;}const result=document.getElementById('randomResult');if(result)result.style.display='block';const img=document.getElementById('rImg');if(img){img.removeAttribute('src');img.alt='Nguồn chưa cung cấp ảnh';img.hidden=true;}const name=document.getElementById('rName');if(name)name.textContent=item.name;const addr=document.getElementById('rAddr');if(addr)addr.textContent=item.address;const rate=document.getElementById('rRating');if(rate){rate.textContent=item.source;rate.hidden=false;}const price=document.getElementById('rPrice');if(price){price.textContent='Giá và đánh giá chỉ hiển thị khi nguồn cung cấp dữ liệu.';price.hidden=false;}const open=result?.querySelector('.open-badge');if(open)open.hidden=true;const link=result?.querySelector('#rLink');if(link){link.href=item.mapUrl||item.url;link.textContent=item.mapUrl?'Xem trên bản đồ What2Eat':'Xem địa điểm';link.removeAttribute('target');link.removeAttribute('rel');}let sourceLink=result?.querySelector('#rSourceLink');if(!sourceLink&&link){sourceLink=element('a','btn-outline-w2e','Đối chiếu nguồn ↗');sourceLink.id='rSourceLink';link.after(sourceLink);}if(sourceLink){sourceLink.href=item.sourceUrl||item.url;sourceLink.target='_blank';sourceLink.rel='noopener noreferrer';sourceLink.hidden=!item.sourceUrl;}result?.scrollIntoView({behavior:'smooth',block:'center'});};
+    window.rollLucky=async()=>{if(!state.places.length)await loadNearby();const place=window.getRandomNearbyPlace?.();const modal=document.getElementById('luckyModal');if(!place||!modal){toast('Chưa tải được địa điểm có dữ liệu. Hãy thử lại sau.','warning');return;}const body=modal.querySelector('.modal-body');if(body){const title=element('h3','h5',place.name),address=element('p','text-secondary',place.address),source=element('p','small text-secondary',place.source),link=element('a','btn btn-primary','Xem trên bản đồ What2Eat');link.href=place.mapUrl||place.url;const sourceLink=element('a','btn btn-outline-secondary ms-2','Đối chiếu nguồn ↗');sourceLink.href=place.sourceUrl||place.url;sourceLink.target='_blank';sourceLink.rel='noopener noreferrer';body.replaceChildren(title,address,source,link,sourceLink);}window.bootstrap?.Modal.getOrCreateInstance(modal).show();};
   }
 
   function installLiveStyles() {
@@ -568,8 +798,13 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    installLiveStyles();setupAuthForms();setupRandomPicker();setupPlans();const discoverySearch=document.getElementById('searchInput');if(discoverySearch){const params=new URLSearchParams(location.search),category=params.get('category');const categoryQueries={viet:'vietnamese',bbq:'bbq',cafe:'cafe',nhat:'japanese',han:'korean',fast:'fast_food',dessert:'dessert',drink:'drink'};discoverySearch.value=params.get('q')||categoryQueries[category]||'';}
+    if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(error=>console.warn('What2Eat offline support unavailable:',error)));
+    installLiveStyles();setupAuthForms();setupRandomPicker();setupPlans();const discoverySearch=document.getElementById('searchInput');if(discoverySearch){const params=new URLSearchParams(location.search);state.requestedCategory=categoryAliases[params.get('category')]?params.get('category'):'';discoverySearch.value=params.get('q')||'';}
     start().catch((error)=>toast(error.message,'error'));
+  });
+  window.addEventListener('w2e:map-ready',(event)=>{
+    if(event.detail?.hasOsmData)return;
+    drawDiscovery({elements:[]},event.detail?.center).catch((error)=>toast(error.message,'error'));
   });
   window.addEventListener('w2e:osm-data',(event)=>drawDiscovery(event.detail.data,event.detail.center));
 })();

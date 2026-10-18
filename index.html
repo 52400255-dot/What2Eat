@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>What2Eat – Hôm nay ăn gì?</title>
   <meta name="description" content="Khám phá ẩm thực, lưu giữ kỷ niệm. Tìm quán ăn, ghi chú trải nghiệm, lên kế hoạch ăn uống cùng bạn bè.">
+  <meta name="theme-color" content="#c58b00">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/assets/img/what2eat.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -572,6 +575,7 @@
               </div>
               <div class="d-flex gap-2">
                 <a href="./pages/discovery.php" id="rLink" class="btn-primary-w2e" style="font-size:.85rem;padding:8px 18px;">Mở nguồn OpenStreetMap</a>
+                <a href="#" id="rSourceLink" class="btn-outline-w2e" target="_blank" rel="noopener noreferrer" hidden>Đối chiếu nguồn ↗</a>
                 <button class="btn-outline-w2e" style="font-size:.85rem;padding:8px 18px;" onclick="randomFood()">Chọn lại</button>
               </div>
             </div>
@@ -721,7 +725,8 @@ async function randomFood(){
     document.getElementById('rRating').textContent=item.source;
     document.getElementById('rPrice').textContent='Giá và đánh giá chỉ hiển thị khi nguồn cung cấp dữ liệu.';
     const image=document.getElementById('rImg');if(image){image.removeAttribute('src');image.hidden=true;}
-    const link=document.getElementById('rLink');if(link){link.href=item.url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Mở địa điểm và nguồn';}
+    const link=document.getElementById('rLink');if(link){link.href=item.mapUrl||item.url;link.removeAttribute('target');link.removeAttribute('rel');link.textContent='Xem trên bản đồ What2Eat';}
+    const sourceLink=document.getElementById('rSourceLink');if(sourceLink){sourceLink.href=item.sourceUrl||item.url;sourceLink.hidden=!item.sourceUrl;}
     const result=document.getElementById('randomResult');result.style.display='block';
     const card=document.getElementById('resultCard');card.style.animation='none';card.offsetHeight;card.style.animation='popIn .4s cubic-bezier(.34,1.56,.64,1)';
   } catch(error) {
