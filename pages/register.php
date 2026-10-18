@@ -61,7 +61,7 @@ $pageTitle = 'Đăng ký – What2Eat';
             Đăng nhập ngay
           </a>
 
-          <div class="w2e-footer">
+          <div class="w2e-auth-footer-link">
             Không nhận được email?
             <a href="#" id="resendVerificationLink">Gửi lại</a>
           </div>
@@ -169,7 +169,7 @@ $pageTitle = 'Đăng ký – What2Eat';
             </button>
           </form>
 
-          <div class="w2e-footer">
+          <div class="w2e-auth-footer-link">
             Đã có tài khoản?
             <a href="./login.php">Đăng nhập</a>
           </div>

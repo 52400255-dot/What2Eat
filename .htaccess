@@ -1,0 +1,33 @@
+Options -Indexes
+DirectoryIndex index.php index.html
+
+# Permit Food Note images up to 50 MB under mod_php. CGI/FastCGI reads .user.ini.
+<IfModule mod_php.c>
+  php_value upload_max_filesize 50M
+  php_value post_max_size 64M
+</IfModule>
+<IfModule php_module>
+  php_value upload_max_filesize 50M
+  php_value post_max_size 64M
+</IfModule>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule (^|/)\. - [F,L]
+  RewriteRule ^api/index\.php$ - [L]
+  RewriteRule ^api(?:/.*)?$ api/index.php [QSA,L]
+  RewriteRule ^tiles/(\d{1,2})/(\d{1,8})/(\d{1,8})\.png$ api/index.php?tile=$1/$2/$3 [QSA,L]
+  RewriteRule ^offline\.html$ - [L]
+  RewriteRule ^(.+)\.html$ /$1.php [R=302,L,NE]
+</IfModule>
+
+<FilesMatch "^(?:\.env|\.env\..*|database_design\.md|README\.md|.*\.sql|.*\.log)$">
+  Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set X-Frame-Options "DENY"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(self)"
+</IfModule>

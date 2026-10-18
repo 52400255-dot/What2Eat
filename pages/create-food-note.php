@@ -340,11 +340,11 @@ $pageTitle = 'Tạo Food Note – What2Eat';
         <div class="w2e-form-card-body">
 
           <div class="w2e-upload-area" id="uploadArea">
-            <input type="file" id="fileInput" accept="image/*" multiple />
+            <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple />
             <div class="w2e-upload-icon"><i class="bi bi-cloud-upload"></i></div>
             <div class="w2e-upload-title">Kéo &amp; Thả ảnh vào đây</div>
             <div class="w2e-upload-sub">Hoặc nhấn để chọn ảnh từ máy tính của bạn</div>
-            <div class="w2e-upload-sub mt-1" style="font-size:0.78rem">Hỗ trợ: JPG, PNG, WEBP – Tối đa 10MB/ảnh</div>
+            <div class="w2e-upload-sub mt-1" style="font-size:0.78rem">Hỗ trợ: JPEG, PNG, WEBP, GIF – Tối đa 50 MB/ảnh</div>
             <div class="w2e-upload-actions">
               <button type="button" class="w2e-btn-outline" onclick="document.getElementById('fileInput').click()">
                 <i class="bi bi-image"></i> Chọn Ảnh
@@ -599,6 +599,8 @@ $pageTitle = 'Tạo Food Note – What2Eat';
   const fileInput = document.getElementById('fileInput');
   const previewGrid = document.getElementById('previewGrid');
   const uploadArea = document.getElementById('uploadArea');
+  let selectedImageFiles = [];
+  let previewObjectUrls = [];
 
   fileInput.addEventListener('change', handleFiles);
   uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag-over'); });
@@ -609,22 +611,35 @@ $pageTitle = 'Tạo Food Note – What2Eat';
     handleFileList(e.dataTransfer.files);
   });
 
-  function handleFiles(e) { handleFileList(e.target.files); triggerAutoSave(); }
+  function fileKey(file) { return `${file.name}:${file.size}:${file.lastModified}`; }
+  function handleFiles(e) { handleFileList(e.target.files); }
   function handleFileList(files) {
-    Array.from(files).forEach(file => {
-      if (!file.type.startsWith('image/')) return;
-      const reader = new FileReader();
-      reader.onload = ev => addPreview(ev.target.result, file.name);
-      reader.readAsDataURL(file);
-    });
+    const unique = new Map(selectedImageFiles.map(file => [fileKey(file), file]));
+    Array.from(files).filter(file => file.type.startsWith('image/')).forEach(file => unique.set(fileKey(file), file));
+    selectedImageFiles = [...unique.values()];
+    const oversized = selectedImageFiles.find(file => file.size > 50 * 1024 * 1024);
+    if (oversized) window.alert(`Ảnh “${oversized.name}” vượt quá giới hạn 50 MB.`);
+    const transfer = new DataTransfer();
+    selectedImageFiles.forEach(file => transfer.items.add(file));
+    fileInput.files = transfer.files;
+    renderImagePreviews();
+    triggerAutoSave();
   }
-  function addPreview(src, name) {
+  function renderImagePreviews() {
+    previewObjectUrls.forEach(url => URL.revokeObjectURL(url));
+    previewObjectUrls = [];
+    previewGrid.replaceChildren();
+    selectedImageFiles.filter(file => file.size <= 50 * 1024 * 1024).forEach(addPreview);
+  }
+  function addPreview(file) {
+    const src = URL.createObjectURL(file);
+    previewObjectUrls.push(src);
     const div = document.createElement('div');
     div.className = 'w2e-preview-item';
-    div.innerHTML = `
-      <img src="${src}" alt="${name}" />
-      <button class="w2e-preview-remove" onclick="this.parentElement.remove()" title="Xóa ảnh">✕</button>
-    `;
+    const image = document.createElement('img'); image.src = src; image.alt = file.name; image.loading = 'lazy';
+    const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'w2e-preview-remove'; remove.title = 'Xóa ảnh'; remove.textContent = '✕';
+    remove.addEventListener('click', () => { const key = fileKey(file); selectedImageFiles = selectedImageFiles.filter(item => fileKey(item) !== key); const transfer = new DataTransfer(); selectedImageFiles.forEach(item => transfer.items.add(item)); fileInput.files = transfer.files; renderImagePreviews(); triggerAutoSave(); });
+    div.append(image, remove);
     previewGrid.appendChild(div);
   }
 
@@ -695,6 +710,6 @@ $pageTitle = 'Tạo Food Note – What2Eat';
   // DRAFT / PUBLISH
   // ============================================================
 </script>
-  <script src="../assets/js/site.js"></script>
+  <script src="../assets/js/site.js?v=20261018"></script>
 </body>
 </html>
