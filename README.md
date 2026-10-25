@@ -1,63 +1,65 @@
 # What2Eat
 
-What2Eat is a Vietnamese food-discovery and food-journaling website. Its page views are PHP templates in `index.php`, `pages/*.php` and `admin/*.php`; CSS and JavaScript provide styling and interaction, with Leaflet for maps. The production API is PHP 8.1+ with MySQL 8 or compatible MariaDB. The map uses live OpenStreetMap data and does not require a Google Maps API key. Business data comes from OpenStreetMap or actual user/admin submissions.
+What2Eat là website khám phá quán ăn và ghi chép trải nghiệm ẩm thực. Các trang được xây dựng bằng PHP tại `index.php`, `pages/*.php` và `admin/*.php`; CSS và JavaScript đảm nhiệm giao diện, tương tác, còn Leaflet hiển thị bản đồ. API sử dụng PHP 8.1+ và MySQL 8 hoặc MariaDB tương thích. Bản đồ dùng dữ liệu OpenStreetMap, không cần khóa Google Maps API. Thông tin quán ăn đến từ OpenStreetMap hoặc do người dùng và quản trị viên cung cấp.
 
-## Implemented features
+## Chức năng đã triển khai
 
-- Nearby food-place discovery, map markers, in-app place details, saved places, nearby alternatives and random selection. OSM attribution remains visible; place actions stay on What2Eat.
-- Email-verified accounts, login/logout, password reset, profile and avatar upload.
-- Food Notes with server drafts, local recovery of unsent text, private/public/link sharing, tags, personal ratings, images and videos.
-- Food Plans with invitation links, OSM place proposals, member voting and closing a poll.
-- Admin tools for accounts, categories, restaurant records and Food Note moderation, plus audit history.
-- Member reports for closed, moved or inaccurate places; admin review can hide a place from discovery and later restore an OSM place.
-- Admin-managed, time-limited sponsored placements for published restaurants, always labeled "Tài trợ" in discovery, map popups and restaurant details. Agreements and payments are handled outside this version of the site.
-- Server-side role checks, CSRF protection, prepared SQL, rate limits, private uploads and moderation states.
+- Khám phá quán ăn gần vị trí tìm kiếm, xem ghim bản đồ và trang chi tiết ngay trong What2Eat, lưu quán, xem quán lân cận và chọn ngẫu nhiên. Bản đồ vẫn ghi công OpenStreetMap.
+- Đăng ký có xác nhận email, đăng nhập, đăng xuất, đặt lại mật khẩu, quản lý hồ sơ và tải ảnh đại diện.
+- Tạo Food Note, lưu bản nháp trên máy chủ, khôi phục nội dung chưa gửi trên thiết bị, gắn nhãn, chấm điểm cá nhân, tải ảnh/video và chọn chế độ riêng tư, công khai hoặc chia sẻ bằng liên kết.
+- Tạo Food Plan, mời thành viên bằng liên kết, đề xuất địa điểm, bình chọn và chốt kết quả.
+- Quản trị người dùng, danh mục, quán ăn và Food Note công khai; xem nhật ký hoạt động.
+- Báo quán đóng cửa, chuyển địa chỉ hoặc sai thông tin. Quản trị viên có thể xem xét báo cáo, ẩn địa điểm khỏi Khám phá và khôi phục địa điểm OSM sau đó.
+- Quản lý vị trí tài trợ có thời hạn cho quán đã công khai. Vị trí tài trợ luôn có nhãn "Tài trợ" trên trang Khám phá, popup bản đồ và trang chi tiết. Thỏa thuận và thanh toán hiện được xử lý bên ngoài website.
+- Kiểm tra quyền truy cập ở máy chủ, bảo vệ CSRF, truy vấn SQL có tham số, giới hạn tần suất yêu cầu, lưu tệp riêng tư và kiểm duyệt nội dung.
 
-The database is intentionally empty after migration. Public restaurants on the map are queried from OpenStreetMap; submitted or admin-entered records are stored only after a person provides them. The site does not seed sample users, venues, reviews, ratings, prices or analytics. Missing source data is shown as missing.
+Cơ sở dữ liệu không có tài khoản, quán ăn, đánh giá, giá hay thống kê mẫu sau khi khởi tạo. Quán công khai trên bản đồ được truy vấn từ OpenStreetMap; đề xuất của người dùng và bản ghi do quản trị viên nhập chỉ được lưu khi có người cung cấp. Trường nào chưa có dữ liệu sẽ được hiển thị là chưa có dữ liệu.
 
-For local PHP development, set `W2E_ENV=development` and `W2E_BASE_URL` to the local site origin. Verification and password-reset messages are captured in `storage/dev-mail.log`; the `storage/` directory is blocked from web access. Open the matching link from that file in the browser. Do not use development mode on a public site.
+Khi phát triển bằng PHP trên máy cá nhân, đặt `W2E_ENV=development` và `W2E_BASE_URL` thành địa chỉ website cục bộ. Email xác nhận và đặt lại mật khẩu được ghi vào `storage/dev-mail.log`; website chặn truy cập trực tiếp thư mục `storage/`. Mở liên kết tương ứng trong tệp log bằng trình duyệt. Không dùng chế độ `development` cho website công khai.
 
-Admin address lookup uses a single user-triggered OpenStreetMap Nominatim request, caches results for 30 days and serializes uncached requests to one per second. The admin UI displays attribution and requires the result to be checked before saving. Configure `W2E_NOMINATIM_URL` to switch to a compatible service or a self-hosted instance.
+Chức năng tra tọa độ địa chỉ trong trang quản trị chỉ gửi yêu cầu tới OpenStreetMap Nominatim khi quản trị viên bấm tra cứu. Kết quả được lưu tạm 30 ngày; các yêu cầu chưa có trong bộ nhớ đệm được giãn cách tối thiểu một giây. Giao diện hiển thị thông tin ghi công và yêu cầu đối chiếu kết quả trước khi lưu. Có thể đặt `W2E_NOMINATIM_URL` để dùng dịch vụ tương thích hoặc máy chủ tự vận hành.
 
-## Local preview
+## Xem thử trên máy cá nhân
 
-Run `node server.js` and open `http://127.0.0.1:4173/`. This lightweight preview serves the frontend and proxies the live OSM map requests. It does not run the PHP account, Food Note, Food Plan or admin API; those features need PHP and MySQL as described in [`api/README.md`](api/README.md).
+Chạy `node server.js`, sau đó mở `http://127.0.0.1:4173/`. Máy chủ xem thử này phục vụ giao diện và chuyển tiếp yêu cầu bản đồ OSM. Nó **không chạy API PHP** cho tài khoản, Food Note, Food Plan hoặc trang quản trị. Muốn thử các chức năng đó cần PHP và MySQL theo hướng dẫn tại [`api/README.md`](api/README.md).
 
-## Production setup
+## Triển khai website
 
-1. Use an HTTPS domain and PHP 8.1+ with `pdo_mysql`, `curl`, `fileinfo`, `mbstring`, `json` and sessions, plus MySQL 8 or compatible MariaDB.
-2. Configure the Apache document root to this directory and enable rewrite and headers modules. The provided `.htaccess` routes API and map tile requests.
-3. Copy `.env.example` to `.env` on the server, then enter the actual site URL, strong app secret, database credentials, sender address and support email. Keep the file private and out of version control.
-4. Create an empty database, then run `php api/bin/migrate.php` from this directory. Run it again when updating an existing installation to add the sponsorship table.
-5. Create the first admin from a trusted terminal with `W2E_ADMIN_PASSWORD` set to a one-time password, then run `php api/bin/create-admin.php admin@example.com`. Clear that temporary password afterward.
-6. Configure the host's mail transport and HTTPS, allow PHP to write to `storage/uploads`, then check `/api/v1/health`.
+1. Chuẩn bị tên miền dùng HTTPS, PHP 8.1+ với `pdo_mysql`, `curl`, `fileinfo`, `mbstring`, `json` và session; cơ sở dữ liệu MySQL 8 hoặc MariaDB tương thích.
+2. Đặt thư mục gốc của website Apache tại thư mục dự án này và bật các module rewrite, headers. Tệp `.htaccess` đã cấu hình đường dẫn cho API và ảnh nền bản đồ.
+3. Sao chép `.env.example` thành `.env` trên máy chủ. Điền URL website thật, mã bí mật ứng dụng đủ mạnh, thông tin kết nối cơ sở dữ liệu, địa chỉ gửi email và email hỗ trợ. Giữ `.env` riêng tư, không đưa lên Git.
+4. Tạo cơ sở dữ liệu trống, rồi chạy `php api/bin/migrate.php` trong thư mục dự án. Khi cập nhật bản cài đặt cũ, chạy lại lệnh này để bổ sung các bảng mới.
+5. Tạo quản trị viên đầu tiên trong terminal đáng tin cậy: đặt `W2E_ADMIN_PASSWORD` thành mật khẩu dùng một lần, rồi chạy `php api/bin/create-admin.php admin@example.com`. Xóa mật khẩu tạm khỏi biến môi trường sau đó.
+6. Cấu hình dịch vụ gửi email và HTTPS, cấp quyền ghi vào `storage/uploads` cho PHP, rồi kiểm tra `/api/v1/health`.
 
-The host must provide persistent MySQL and upload storage, outbound HTTPS for OSM and a working PHP `mail()` transport for account verification and password resets. OSM's community endpoints and tile providers can throttle or become temporarily unavailable; the API tries alternate Overpass servers and serves recent cached results when available.
+Máy chủ cần lưu trữ MySQL và tệp tải lên lâu dài, truy cập HTTPS ra ngoài cho OSM và một hệ thống gửi email hoạt động để xác nhận tài khoản, đặt lại mật khẩu. Các dịch vụ bản đồ cộng đồng có thể giới hạn yêu cầu hoặc tạm ngừng. API thử máy chủ Overpass khác và dùng dữ liệu đã lưu gần đây khi có thể.
 
-## Sponsored placements
+## Vị trí tài trợ
 
-An administrator can open **Admin → Quản lý Quán ăn → Tài trợ** for a published restaurant with coordinates. Enter the sponsoring business, an internal agreement reference and the UTC-backed start/end schedule, then activate the placement. The public API marks a restaurant as sponsored only while that schedule is active; the interface labels the placement "Tài trợ". Pausing it removes the label and placement priority immediately. This is a manual agreement workflow, not a payment gateway or a claim that a payment was received.
+Quản trị viên mở **Admin → Quản lý Quán ăn → Tài trợ** tại một quán đã công khai và có tọa độ. Nhập tên bên tài trợ, mã thỏa thuận nội bộ, thời gian bắt đầu/kết thúc, rồi kích hoạt. API công khai chỉ đánh dấu quán là tài trợ trong thời gian đã định; giao diện luôn hiển thị nhãn "Tài trợ". Tạm dừng vị trí sẽ gỡ nhãn và mức ưu tiên hiển thị ngay. Đây là quy trình quản lý thỏa thuận thủ công, **chưa phải cổng thanh toán** và không xác nhận rằng website đã nhận tiền.
 
-Run the isolated integration checks with `node tests/integration.mjs`. They require local PHP and MySQL CLI binaries and permission to create/drop a temporary database. On non-XAMPP systems set `W2E_TEST_PHP`, `W2E_TEST_MYSQL`, `W2E_TEST_DB_USER`, `W2E_TEST_DB_PASSWORD` and `W2E_TEST_DB_PORT` as needed. The script creates its own temporary database and deletes it after testing.
+## Kiểm thử tích hợp
 
-## Build the HCMC OSM food-place snapshot
+Chạy `node tests/integration.mjs` để kiểm tra các luồng chính trên một cơ sở dữ liệu tạm. Máy cần có lệnh PHP và MySQL CLI, cùng quyền tạo/xóa cơ sở dữ liệu thử nghiệm. Nếu không dùng XAMPP, đặt các biến `W2E_TEST_PHP`, `W2E_TEST_MYSQL`, `W2E_TEST_DB_USER`, `W2E_TEST_DB_PASSWORD` và `W2E_TEST_DB_PORT` theo môi trường của bạn. Lệnh kiểm thử tự tạo và xóa cơ sở dữ liệu tạm sau khi chạy.
 
-The PBF import tool creates source-linked CSV, GeoJSON, summaries and a quality report from a Geofabrik Vietnam extract. It uses the current Ho Chi Minh City admin boundary contained in that extract. It does not claim that an OSM venue is still open; all rows start as `unverified`, and possible nearby duplicates are reported for review.
+## Tạo bộ dữ liệu OSM cho TP. Hồ Chí Minh
 
-1. Download `vietnam-latest.osm.pbf` from [Geofabrik Vietnam](https://download.geofabrik.de/asia/vietnam.html) into `storage/imports/osm/`.
-2. With Python 3.12, install `requirements-osm-import.txt` into the ignored import directory:
+Công cụ nhập tệp PBF tạo CSV, GeoJSON, bản tóm tắt và báo cáo chất lượng từ dữ liệu Geofabrik Việt Nam. Công cụ dùng ranh giới hành chính TP. Hồ Chí Minh có trong tệp trích xuất. Dữ liệu **không xác nhận quán còn hoạt động**: mọi bản ghi ban đầu có trạng thái `unverified`; các quán có khả năng trùng nhau ở khoảng cách gần được liệt kê để kiểm tra thủ công.
+
+1. Tải `vietnam-latest.osm.pbf` từ [Geofabrik Việt Nam](https://download.geofabrik.de/asia/vietnam.html) vào `storage/imports/osm/`.
+2. Với Python 3.12, cài các gói trong `requirements-osm-import.txt` vào thư mục phục vụ nhập dữ liệu:
 
    ```powershell
    python -m pip install --target storage/imports/osm/vendor -r requirements-osm-import.txt
    ```
 
-3. Find the current HCMC `admin_level=4` relation in the extract, then build the dataset:
+3. Tìm quan hệ ranh giới TP. Hồ Chí Minh có `admin_level=4` trong tệp trích xuất, rồi tạo bộ dữ liệu:
 
    ```powershell
    python scripts/build_hcm_food_dataset.py --list-boundaries
    python scripts/build_hcm_food_dataset.py --boundary-relation RELATION_ID
    ```
 
-The generated files go to `storage/datasets/hcm-osm-food/`. Review `data_quality_report.md` and `sources_and_license.md` before importing or redistributing the data. OSM-derived data must retain attribution and comply with the [ODbL](https://www.openstreetmap.org/copyright).
+Tệp kết quả nằm trong `storage/datasets/hcm-osm-food/`. Đọc `data_quality_report.md` và `sources_and_license.md` trước khi nhập hoặc phân phối lại dữ liệu. Dữ liệu có nguồn gốc OSM phải ghi công và tuân thủ [giấy phép ODbL](https://www.openstreetmap.org/copyright).
 
-See [`database_design.md`](database_design.md) for the original database design and [`api/README.md`](api/README.md) for environment, endpoints and operations.
+Xem [`database_design.md`](database_design.md) để tham khảo thiết kế cơ sở dữ liệu ban đầu và [`api/README.md`](api/README.md) để biết thêm về môi trường chạy, API và vận hành.
