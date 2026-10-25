@@ -29,13 +29,14 @@ $pageTitle = 'Điều khoản sử dụng – What2Eat';
     <p>Chỉ đăng thông tin bạn có cơ sở để ghi nhận. Không gửi nội dung trái pháp luật, gây hại, xâm phạm quyền riêng tư hoặc quyền của người khác. Chỉ tải ảnh/video mà bạn có quyền chia sẻ. Quản trị viên có thể duyệt, ẩn hoặc từ chối Food Notes công khai và địa điểm do người dùng gửi.</p>
 
     <h2>Chia sẻ và dữ liệu bản đồ</h2>
-    <p>Food Note công khai chỉ hiện sau khi được duyệt. Food Note chia sẻ bằng liên kết có thể được xem bởi bất kỳ ai nhận liên kết. Địa điểm OpenStreetMap do cộng đồng đóng góp, có thể thiếu, cũ hoặc sai; What2Eat hiển thị nguồn để bạn đối chiếu. Không coi dữ liệu bản đồ là xác nhận về giá, giờ mở cửa, tình trạng kinh doanh hay an toàn thực phẩm.</p>
+    <p>Food Note công khai chỉ hiện sau khi được duyệt. Food Note chia sẻ bằng liên kết có thể được xem bởi bất kỳ ai nhận liên kết. Địa điểm OpenStreetMap do cộng đồng đóng góp, có thể thiếu, cũ hoặc sai; What2Eat ghi rõ nguồn và ngày snapshot khi có. Không coi dữ liệu bản đồ là xác nhận về giá, giờ mở cửa, tình trạng kinh doanh hay an toàn thực phẩm.</p>
+    <p>Bạn có thể báo địa điểm đã đóng, chuyển chỗ hoặc có thông tin sai. Quản trị viên xem xét trước khi ẩn hoặc cập nhật địa điểm; một báo cáo riêng lẻ không tự động thay đổi dữ liệu công khai.</p>
 
     <h2>Quyền và quản lý tài khoản</h2>
     <p>Bạn có thể sửa/xóa Food Notes, xuất dữ liệu và yêu cầu xóa tài khoản từ Hồ sơ. Khi xóa tài khoản, các địa điểm đã đóng góp vào thư mục dùng chung có thể được giữ lại sau khi bỏ thông tin người đóng góp. Các quy tắc về dữ liệu được trình bày trong <a href="./privacy.php">trang quyền riêng tư</a>.</p>
 
     <h2>Tính năng và chi phí</h2>
-    <p>Phiên bản hiện tại không có quy trình thanh toán hoặc gói dịch vụ trả phí. Việc khám phá địa điểm dùng dữ liệu OpenStreetMap và các nhà cung cấp bản đồ bên ngoài; các dịch vụ này có thể tạm thời không phản hồi hoặc giới hạn truy cập.</p>
+    <p>Phiên bản hiện tại không thu phí người dùng và chưa có thanh toán trực tuyến. Quán ăn có thể có vị trí tài trợ do quản trị viên quản lý theo thỏa thuận riêng; các vị trí này luôn có nhãn “Tài trợ”. Việc khám phá địa điểm dùng dữ liệu OpenStreetMap và các nhà cung cấp bản đồ bên ngoài; các dịch vụ này có thể tạm thời không phản hồi hoặc giới hạn truy cập.</p>
 
     <h2>Liên hệ</h2>
     <p id="supportContact">Địa chỉ hỗ trợ sẽ hiển thị khi chủ website cấu hình.</p>

@@ -113,7 +113,7 @@ $pageTitle = 'Khám Phá Quán Ăn – What2Eat';
     }
     .w2e-search-box input {
       width: 100%;
-      padding: 16px 60px 16px 52px;
+      padding: 16px 105px 16px 52px;
       border: none;
       border-radius: 14px;
       font-family: inherit;
@@ -154,6 +154,7 @@ $pageTitle = 'Khám Phá Quán Ăn – What2Eat';
     .w2e-search-box .w2e-search-btn:hover {
     background: var(--primary-dark);
     }
+    .w2e-page-header small { color: rgba(255,255,255,0.88); }
 
     /* ---------- FILTER SECTION ---------- */
     .w2e-filter-section {
@@ -604,6 +605,9 @@ $pageTitle = 'Khám Phá Quán Ăn – What2Eat';
     }
     @media (max-width: 575px) {
       .w2e-card-img-wrap { height: 160px; }
+      .w2e-search-box input { padding: 14px 16px 14px 48px; }
+      .w2e-search-box .w2e-search-icon { top: 24px; }
+      .w2e-search-box .w2e-search-btn { position: static; transform: none; width: 100%; margin-top: 8px; padding: 11px; }
     }
     .w2e-live-map-section { margin: 1.5rem 0 2rem; padding: 1.25rem; background: #fff; border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,.04); }
     .w2e-live-map-heading { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem; }
@@ -814,7 +818,7 @@ $pageTitle = 'Khám Phá Quán Ăn – What2Eat';
         <div id="map-container" role="region" aria-label="Bản đồ quán ăn thực tế" aria-busy="true"></div>
         <div class="w2e-live-map-footer">
           <span id="mapStatus" role="status" aria-live="polite">Đang tải địa điểm…</span>
-          <a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noreferrer">© OpenStreetMap contributors · Humanitarian OpenStreetMap Team · Báo lỗi bản đồ</a>
+          <span>© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a> · Humanitarian OpenStreetMap Team</span>
         </div>
       </section>
 

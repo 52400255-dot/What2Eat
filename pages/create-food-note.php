@@ -358,6 +358,7 @@ $pageTitle = 'Tạo Food Note – What2Eat';
 
           <!-- Image Previews -->
           <div class="w2e-preview-grid" id="previewGrid"></div>
+          <div class="w2e-preview-grid" id="existingMedia"></div>
         </div>
       </div>
 
@@ -576,7 +577,13 @@ $pageTitle = 'Tạo Food Note – What2Eat';
     selectedTags.forEach(tag => {
       const span = document.createElement('span');
       span.className = 'w2e-selected-tag';
-      span.innerHTML = `${tag}<button type="button" onclick="removeTag('${tag}')">✕</button>`;
+      span.appendChild(document.createTextNode(tag));
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.textContent = '✕';
+      remove.setAttribute('aria-label', `Xóa nhãn ${tag}`);
+      remove.addEventListener('click', () => removeTag(tag));
+      span.appendChild(remove);
       tagWrap.insertBefore(span, tagInput);
     });
     triggerAutoSave();
@@ -592,6 +599,14 @@ $pageTitle = 'Tạo Food Note – What2Eat';
   function addSuggestedTag(tag) {
     addTag(tag);
   }
+  window.replaceFoodNoteTags = (tags) => {
+    selectedTags = [];
+    (tags || []).forEach((tag) => {
+      const clean = String(tag).trim().replace(/^#/, '').replace(/[,\s]+/g, '_').toLowerCase();
+      if (clean && !selectedTags.includes('#' + clean)) selectedTags.push('#' + clean);
+    });
+    renderTags();
+  };
 
   // ============================================================
   // FILE UPLOAD & PREVIEW
