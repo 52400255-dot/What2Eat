@@ -35,6 +35,8 @@ body:not(.w2e-live-ready) .w2e-topbar-admin {
 
 .w2e-live-place-card[hidden] { display: none !important; }
 .w2e-live-place-card__source { display: inline-block; margin-top: 5px; }
+.w2e-sponsored-label { display: inline-flex; align-items: center; background: #245b4b; color: #fff; padding: 4px 7px; font-size: .72rem; font-weight: 700; border-radius: 4px; white-space: nowrap; }
+.w2e-live-place-card__top { flex-wrap: wrap; }
 #emptyState:not(.w2e-hidden) { display: block; }
 .shared-food-note-media { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 20px; }
 .shared-food-note-media img, .shared-food-note-media video { display: block; width: 100%; border-radius: 12px; }
@@ -47,13 +49,20 @@ body.admin-restaurants-page:not(.w2e-live-ready) #tableBody > tr { display: tabl
 .restaurant-admin-guide__icon { display: grid; flex: 0 0 42px; height: 42px; place-items: center; border-radius: 12px; background: #f2e3bb; color: #8a5c00; font-size: 1.25rem; }
 .restaurant-admin-guide__steps { display: flex; flex-wrap: wrap; gap: 8px 18px; color: #654c35; font-size: .84rem; }
 .restaurant-admin-guide__steps b { color: #a36d00; }
-.restaurant-admin-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.restaurant-admin-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
 .restaurant-admin-stat { display: grid; gap: 4px; padding: 14px 16px; border: 1px solid #eee4d5; border-radius: 12px; background: #fff; }
 .restaurant-admin-stat span { color: #796d62; font-size: .82rem; }
 .restaurant-admin-stat strong { color: #49321f; font-size: 1.35rem; }
 .restaurant-admin-notice { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .restaurant-admin-notice[hidden], #restaurantRetryButton[hidden] { display: none !important; }
 .restaurant-map-state { white-space: nowrap; }
+.w2e-place-review-section { border-top: 1px solid #e8ded2; margin-top: 28px; padding-top: 20px; }
+.w2e-place-review-section h2 { font-size: 1.08rem; font-weight: 700; margin: 0 0 12px; }
+.w2e-place-review-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 13px 0; border-bottom: 1px solid #eee8e0; }
+.w2e-place-review-row strong { display: block; font-size: .92rem; }
+.w2e-place-review-row p { color: #665b51; font-size: .84rem; margin: 4px 0; overflow-wrap: anywhere; }
+.w2e-place-review-actions { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; flex-shrink: 0; }
+@media (max-width: 760px) { .w2e-place-review-row { flex-direction: column; } .w2e-place-review-actions { justify-content: flex-start; } }
 @media (max-width: 760px) {
   .restaurant-admin-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .restaurant-admin-guide { padding: 14px; }

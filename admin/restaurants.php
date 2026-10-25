@@ -69,6 +69,7 @@ $pageTitle = 'Quản lý Quán Ăn – What2Eat Admin';
       <article class="restaurant-admin-stat"><span>Đang hiển thị</span><strong id="restaurantPublishedCount">—</strong></article>
       <article class="restaurant-admin-stat"><span>Chờ duyệt</span><strong id="restaurantPendingCount">—</strong></article>
       <article class="restaurant-admin-stat"><span>Ẩn / từ chối</span><strong id="restaurantHiddenCount">—</strong></article>
+      <article class="restaurant-admin-stat"><span>Tài trợ đang chạy</span><strong id="restaurantSponsoredCount">—</strong></article>
     </div>
 
     <div class="alert alert-info restaurant-admin-notice mb-3" id="restaurantLoadNotice" role="status">
@@ -128,6 +129,18 @@ $pageTitle = 'Quản lý Quán Ăn – What2Eat Admin';
         <span class="text-secondary small" id="restaurantCount">Đang tải địa điểm…</span>
       </div>
     </div>
+
+    <section class="w2e-place-review-section" aria-labelledby="placeReportsTitle">
+      <div class="d-flex align-items-baseline justify-content-between gap-3 flex-wrap">
+        <h2 id="placeReportsTitle">Báo cáo địa điểm <span id="placeReportCount" class="text-secondary"></span></h2>
+        <a href="./audit-logs.php" class="small">Xem nhật ký xử lý</a>
+      </div>
+      <div id="placeReportQueue" aria-live="polite"></div>
+    </section>
+    <section class="w2e-place-review-section" aria-labelledby="blockedPlacesTitle">
+      <h2 id="blockedPlacesTitle">Địa điểm OSM đã ẩn</h2>
+      <div id="blockedPlaceList" aria-live="polite"></div>
+    </section>
   </div>
 </div>
 
@@ -210,6 +223,34 @@ $pageTitle = 'Quản lý Quán Ăn – What2Eat Admin';
       <div class="modal-footer border-0">
         <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
         <button type="button" class="btn w2e-btn-primary" id="saveRestaurantButton">Lưu Quán Ăn</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="sponsorshipModal" tabindex="-1" aria-labelledby="sponsorshipModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="sponsorshipModalTitle">Vị trí tài trợ</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-secondary small">Chỉ kích hoạt khi đã có thỏa thuận với quán. Vị trí đang chạy sẽ có nhãn “Tài trợ” trên What2Eat.</p>
+        <label class="form-label" for="sponsorName">Tên bên tài trợ</label>
+        <input class="form-control mb-3" id="sponsorName" maxlength="180" required>
+        <label class="form-label" for="sponsorReference">Mã thỏa thuận hoặc hóa đơn</label>
+        <input class="form-control mb-3" id="sponsorReference" maxlength="120">
+        <div class="row g-3 mb-3">
+          <div class="col-sm-6"><label class="form-label" for="sponsorStart">Bắt đầu</label><input class="form-control" id="sponsorStart" type="datetime-local" required></div>
+          <div class="col-sm-6"><label class="form-label" for="sponsorEnd">Kết thúc</label><input class="form-control" id="sponsorEnd" type="datetime-local" required></div>
+        </div>
+        <label class="form-label" for="sponsorStatus">Trạng thái</label>
+        <select class="form-select" id="sponsorStatus"><option value="paused">Tạm dừng</option><option value="active">Kích hoạt</option></select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Hủy</button>
+        <button class="btn w2e-btn-primary" type="button" id="saveSponsorshipButton">Lưu vị trí tài trợ</button>
       </div>
     </div>
   </div>

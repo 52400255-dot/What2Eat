@@ -75,18 +75,14 @@ function showToast({ title = '', message = '', type = 'default', duration = 4000
   toast.setAttribute('role', 'alert');
   toast.setAttribute('aria-live', 'polite');
 
-  toast.innerHTML = `
-    <div class="w2e-toast__icon">
-      <i class="bi ${iconMap[type] || iconMap.default}"></i>
-    </div>
-    <div class="w2e-toast__content">
-      <div class="w2e-toast__title">${titleMap[type]}</div>
-      ${message ? `<div class="w2e-toast__message">${message}</div>` : ''}
-    </div>
-    <button class="w2e-toast__close" onclick="hideToast('${toastId}')" aria-label="Đóng">
-      <i class="bi bi-x"></i>
-    </button>
-  `;
+  const icon = document.createElement('div');icon.className = 'w2e-toast__icon';
+  const iconGlyph = document.createElement('i');iconGlyph.className = `bi ${iconMap[type] || iconMap.default}`;icon.appendChild(iconGlyph);
+  const content = document.createElement('div');content.className = 'w2e-toast__content';
+  const heading = document.createElement('div');heading.className = 'w2e-toast__title';heading.textContent = titleMap[type] || titleMap.default;content.appendChild(heading);
+  if (message) { const detail = document.createElement('div');detail.className = 'w2e-toast__message';detail.textContent = message;content.appendChild(detail); }
+  const close = document.createElement('button');close.className = 'w2e-toast__close';close.type = 'button';close.setAttribute('aria-label', 'Đóng');
+  const closeGlyph = document.createElement('i');closeGlyph.className = 'bi bi-x';close.appendChild(closeGlyph);close.addEventListener('click', () => hideToast(toastId));
+  toast.append(icon, content, close);
 
   container.appendChild(toast);
 
@@ -191,19 +187,16 @@ function showConfirm({ title = 'Xác nhận', message = '', confirmText = 'Xác 
   const iconMap = { danger: 'bi-trash3-fill', warning: 'bi-exclamation-triangle-fill' };
   const confirmClass = type === 'danger' ? 'w2e-btn--danger' : 'w2e-btn--primary';
 
-  document.getElementById('w2e-confirm-body').innerHTML = `
-    <div class="w2e-confirm-modal__icon ${type}">
-      <i class="bi ${iconMap[type] || 'bi-question-circle-fill'}"></i>
-    </div>
-    <div class="w2e-confirm-modal__title">${title}</div>
-    <div class="w2e-confirm-modal__desc">${message}</div>
-    <div class="w2e-confirm-modal__actions">
-      <button class="w2e-btn w2e-btn--ghost" onclick="hideModal('w2e-confirm-overlay')">${cancelText}</button>
-      <button class="w2e-btn ${confirmClass}" id="w2e-confirm-btn">${confirmText}</button>
-    </div>
-  `;
+  const icon = document.createElement('div');icon.className = `w2e-confirm-modal__icon ${type === 'warning' ? 'warning' : 'danger'}`;
+  const glyph = document.createElement('i');glyph.className = `bi ${iconMap[type] || 'bi-question-circle-fill'}`;icon.appendChild(glyph);
+  const heading = document.createElement('div');heading.className = 'w2e-confirm-modal__title';heading.textContent = title;
+  const detail = document.createElement('div');detail.className = 'w2e-confirm-modal__desc';detail.textContent = message;
+  const actions = document.createElement('div');actions.className = 'w2e-confirm-modal__actions';
+  const cancel = document.createElement('button');cancel.className = 'w2e-btn w2e-btn--ghost';cancel.type = 'button';cancel.textContent = cancelText;cancel.addEventListener('click', () => hideModal('w2e-confirm-overlay'));
+  const confirm = document.createElement('button');confirm.className = `w2e-btn ${confirmClass}`;confirm.type = 'button';confirm.id = 'w2e-confirm-btn';confirm.textContent = confirmText;
+  actions.append(cancel, confirm);document.getElementById('w2e-confirm-body').replaceChildren(icon, heading, detail, actions);
 
-  document.getElementById('w2e-confirm-btn').addEventListener('click', () => {
+  confirm.addEventListener('click', () => {
     hideModal('w2e-confirm-overlay');
     if (typeof onConfirm === 'function') onConfirm();
   });
@@ -607,7 +600,10 @@ function initTagInputs() {
 
       const tag = document.createElement('span');
       tag.className = 'w2e-tag-input__tag';
-      tag.innerHTML = `<span>${text}</span><button type="button" onclick="this.parentElement.remove()" aria-label="Xóa tag">×</button>`;
+      const label = document.createElement('span');label.textContent = text;
+      const remove = document.createElement('button');remove.type = 'button';remove.textContent = '×';remove.setAttribute('aria-label', `Xóa tag ${text}`);
+      remove.addEventListener('click', () => tag.remove());
+      tag.append(label, remove);
       wrapper.insertBefore(tag, input);
     };
 

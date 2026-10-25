@@ -4,7 +4,6 @@
 
   const DEFAULT_CENTER = [10.7769, 106.7009];
   const SEARCH_RADIUS_METERS = 2000;
-  const CACHE_TTL_MS = 10 * 60 * 1000;
   const REQUEST_TIMEOUT_MS = 12000;
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -162,6 +161,7 @@
         const address = document.createElement('div'); address.textContent = restaurant.address || 'Chưa có địa chỉ';
         const details = [restaurant.category_name, restaurant.cuisine].filter(Boolean).filter((value, index, values) => values.indexOf(value) === index).join(' · ');
         popup.append(name, address);
+        if(restaurant.sponsored){const sponsored=document.createElement('div');sponsored.textContent='Tài trợ';sponsored.className='w2e-sponsored-label';popup.appendChild(sponsored);}
         if (details) { const detail = document.createElement('small'); detail.textContent = details; popup.appendChild(detail); }
         if (Array.isArray(restaurant.public_food_names) && restaurant.public_food_names.length) {
           const dishes = document.createElement('small');
@@ -170,34 +170,11 @@
         }
         const link = document.createElement('a'); link.href = `./restaurant.php?id=${encodeURIComponent(restaurant.id)}`; link.textContent = 'Xem thông tin đã duyệt';
         popup.append(document.createElement('br'), link);
-        if (restaurant.source_url) {
-          const source = document.createElement('a'); source.href = restaurant.source_url; source.target = '_blank'; source.rel = 'noopener noreferrer'; source.textContent = 'Đối chiếu nguồn';
-          popup.append(document.createTextNode(' · '), source);
-        }
         const marker = L.circleMarker([lat, lon], { radius: 9, color: '#fff', weight: 3, fillColor: '#c58b00', fillOpacity: 1 }).bindPopup(popup).addTo(managedMarkers);
         managedMarkerById.set(id, marker);
         managedCount += 1;
       });
       setStatus(statusForData(osmCount, managedCount), osmIsLoading);
-    }
-
-    function cacheKey(center) {
-      return `w2e-osm-restaurants-v3-${center[0].toFixed(3)}-${center[1].toFixed(3)}`;
-    }
-
-    function getCached(center) {
-      try {
-        const cached = JSON.parse(sessionStorage.getItem(cacheKey(center)) || 'null');
-        return cached && Date.now() - cached.savedAt < CACHE_TTL_MS ? cached.data : null;
-      } catch (_) {
-        return null;
-      }
-    }
-
-    function saveCache(center, data) {
-      try {
-        sessionStorage.setItem(cacheKey(center), JSON.stringify({ savedAt: Date.now(), data }));
-      } catch (_) { /* Storage may be disabled; the live request still succeeds. */ }
     }
 
     function coordinatesOf(element) {
@@ -234,10 +211,10 @@
         popup.appendChild(dishes);
       }
       const link = document.createElement('a');
-      link.href = `https://www.openstreetmap.org/${encodeURIComponent(element.type)}/${encodeURIComponent(element.id)}`;
-      link.target = '_blank';
-      link.rel = 'noreferrer';
-      link.textContent = 'Xem dữ liệu OpenStreetMap';
+      const coords = coordinatesOf(element);
+      const query = new URLSearchParams({osm:`${element.type}:${element.id}`,lat:String(coords[0]),lon:String(coords[1])});
+      link.href = `./restaurant.php?${query}`;
+      link.textContent = 'Xem chi tiết trên What2Eat';
       popup.append(document.createElement('br'), link);
       return popup;
     }
@@ -274,14 +251,6 @@
         controller.abort();
       }, REQUEST_TIMEOUT_MS);
 
-      const cached = forceRefresh ? null : getCached(center);
-      if (cached) {
-        window.clearTimeout(timeoutId);
-        drawPlaces(cached);
-        status.textContent += ' (dữ liệu tạm lưu trong phiên, tối đa 10 phút).';
-        return;
-      }
-
       osmIsLoading = true;
       setStatus(forceRefresh ? 'Đang yêu cầu dữ liệu OSM mới…' : 'Đang truy vấn OpenStreetMap…', true);
       try {
@@ -291,7 +260,6 @@
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || `Máy chủ cục bộ trả về HTTP ${response.status}`);
         if (!Array.isArray(data.elements)) throw new Error('Phản hồi dữ liệu OSM không hợp lệ.');
-        saveCache(center, data);
         drawPlaces(data);
       } catch (error) {
         if (controller.signal.aborted && activeController !== controller) return;
@@ -360,17 +328,11 @@
     locateButton.addEventListener('click', locateUser);
     refreshButton.addEventListener('click', () => loadPlaces(undefined, true));
 
-    const cached = getCached(initialCenter);
-    if (cached) {
-      drawPlaces(cached);
-      status.textContent += ' (dữ liệu tạm lưu trong phiên, tối đa 10 phút).';
-    } else {
-      setStatus('Đang tải địa điểm OpenStreetMap quanh khu vực bản đồ…', true);
-    }
+    setStatus('Đang tải địa điểm OpenStreetMap quanh khu vực bản đồ…', true);
     window.dispatchEvent(new CustomEvent('w2e:map-ready', {
-      detail: { center: { lat: initialCenter[0], lon: initialCenter[1] }, hasOsmData: Boolean(cached) },
+      detail: { center: { lat: initialCenter[0], lon: initialCenter[1] }, hasOsmData: false },
     }));
-    if (!cached) loadPlaces(initialCenter);
+    loadPlaces(initialCenter);
     if (focusParams.get('w2e_locate') === '1' && window.isSecureContext !== false) {
       const cleanUrl = new URL(location.href);
       cleanUrl.searchParams.delete('w2e_locate');
