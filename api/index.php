@@ -143,14 +143,19 @@ function fetch_note(int $id, ?int $ownerId = null): array
     return hydrate_note_rows([$note])[0];
 }
 
-function sync_note_tags(int $noteId, int $userId, array $tags): void
+function normalized_note_tags(array $tags): array
 {
-    $tags = array_slice(array_values(array_unique(array_filter(array_map(static function ($tag) {
+    return array_slice(array_values(array_unique(array_filter(array_map(static function ($tag) {
         if (!is_string($tag)) return null;
         $tag = mb_strtolower(trim(ltrim($tag, '#')), 'UTF-8');
         $tag = preg_replace('/\s+/u', '_', $tag) ?? '';
         return $tag !== '' && mb_strlen($tag, 'UTF-8') <= 80 ? $tag : null;
     }, $tags)))), 0, 20);
+}
+
+function sync_note_tags(int $noteId, int $userId, array $tags): void
+{
+    $tags = normalized_note_tags($tags);
     db()->prepare('DELETE FROM food_note_tags WHERE food_note_id=?')->execute([$noteId]);
     $find = db()->prepare('SELECT id FROM tags WHERE user_id=? AND name=?');
     $create = db()->prepare('INSERT INTO tags(user_id,name) VALUES(?,?)');
@@ -161,6 +166,28 @@ function sync_note_tags(int $noteId, int $userId, array $tags): void
         if (!$tagId) { $create->execute([$userId, $tag]); $tagId = db()->lastInsertId(); }
         $link->execute([$noteId, $tagId]);
     }
+}
+
+function remove_note_media_file(string $key): void
+{
+    if (!preg_match('/^[a-f0-9]{48}\.(?:jpg|png|webp|gif|mp4|webm)$/', $key)) return;
+    $file = dirname(__DIR__) . '/storage/uploads/notes/' . $key;
+    if (is_file($file) && !@unlink($file)) error_log('[What2Eat] could not remove Food Note media file.');
+}
+
+function pause_restaurant_sponsorship(int $restaurantId): void
+{
+    db()->prepare("UPDATE restaurant_sponsorships SET status='paused' WHERE restaurant_id=?")->execute([$restaurantId]);
+}
+
+function public_notes_for_place(?int $restaurantId, ?string $osmId): array
+{
+    $where = $restaurantId !== null ? 'n.restaurant_id=?' : "n.restaurant_source='osm' AND n.restaurant_source_id=?";
+    $stmt = db()->prepare("SELECT n.*,u.name AS author_name,COALESCE(r.name,n.restaurant_name_snapshot) AS restaurant_name
+      FROM food_notes n JOIN users u ON u.id=n.user_id LEFT JOIN restaurants r ON r.id=n.restaurant_id
+      WHERE {$where} AND n.privacy='public' AND n.status='published' ORDER BY n.created_at DESC LIMIT 20");
+    $stmt->execute([$restaurantId ?? $osmId]);
+    return hydrate_note_rows($stmt->fetchAll());
 }
 
 function osm_snapshot_places(float $lat, float $lon, int $radius): ?array
@@ -430,6 +457,8 @@ function handle_request(): never
         if ($lat === false || $lon === false || $lat < -90 || $lat > 90 || $lon < -180 || $lon > 180 || $radius === false || $radius < 100 || $radius > 5000) throw new ApiError(400, 'Tọa độ hoặc bán kính tìm kiếm không hợp lệ.');
         if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
         $data = osm_places((float)$lat, (float)$lon, (int)$radius, ($_GET['refresh'] ?? '') === '1');
+        $blocked=array_fill_keys(db()->query('SELECT source_id FROM osm_place_blocks')->fetchAll(PDO::FETCH_COLUMN),true);
+        $data['elements']=array_values(array_filter($data['elements']??[],static fn(array $place): bool => !isset($blocked[($place['type']??'').':'.($place['id']??'')])));
         $sourceIds = [];
         foreach ($data['elements'] ?? [] as $place) if (isset($place['type'], $place['id'])) $sourceIds[] = $place['type'] . ':' . $place['id'];
         try {
@@ -448,8 +477,43 @@ function handle_request(): never
         $data['elements'] = $elements;
         json_response($data);
     }
+    if (preg_match('#^/restaurants/osm/(node|way|relation)/([1-9]\d{0,17})$#',$path,$m) && $method==='GET') {
+        $blocked=db()->prepare('SELECT 1 FROM osm_place_blocks WHERE source_id=?');$blocked->execute([$m[1].':'.$m[2]]);
+        if($blocked->fetchColumn())throw new ApiError(404,'Địa điểm này đã được ẩn sau khi kiểm tra báo cáo.');
+        $lat=filter_var($_GET['lat']??null,FILTER_VALIDATE_FLOAT);$lon=filter_var($_GET['lon']??null,FILTER_VALIDATE_FLOAT);
+        if($lat===false||$lon===false||$lat < -90||$lat > 90||$lon < -180||$lon > 180)throw new ApiError(400,'Tọa độ địa điểm không hợp lệ.');
+        if(session_status()===PHP_SESSION_ACTIVE)session_write_close();
+        $data=osm_snapshot_places((float)$lat,(float)$lon,150);
+        $find=static function(array $rows) use($m): ?array {
+            foreach($rows as $row)if(($row['type']??'')===$m[1]&&(string)($row['id']??'')===$m[2])return $row;
+            return null;
+        };
+        $place=$find($data['elements']??[]);
+        if(!$place){$data=osm_places((float)$lat,(float)$lon,150);$place=$find($data['elements']??[]);}
+        if(!$place)throw new ApiError(404,'Không tìm thấy địa điểm trong dữ liệu hiện có.');
+        $blockedIds=array_fill_keys(db()->query('SELECT source_id FROM osm_place_blocks')->fetchAll(PDO::FETCH_COLUMN),true);
+        $nearby=[];
+        foreach($data['elements']??[] as $candidate){
+            $key=($candidate['type']??'').':'.($candidate['id']??'');
+            if($key===$m[1].':'.$m[2]||isset($blockedIds[$key])||trim((string)($candidate['tags']['name']??''))==='')continue;
+            $candidateLat=$candidate['lat']??$candidate['center']['lat']??null;$candidateLon=$candidate['lon']??$candidate['center']['lon']??null;
+            if(!is_numeric($candidateLat)||!is_numeric($candidateLon))continue;
+            $candidate['lat']=(float)$candidateLat;$candidate['lon']=(float)$candidateLon;$nearby[]=$candidate;
+        }
+        usort($nearby,static function(array $a,array $b) use($lat,$lon): int {
+            $distance=static fn(array $row): float => (($row['lat']-(float)$lat)*111000)**2 + (($row['lon']-(float)$lon)*111000*cos(deg2rad((float)$lat)))**2;
+            return $distance($a)<=>$distance($b);
+        });
+        $nearby=array_slice($nearby,0,4);
+        try{$names=public_food_names_for_places([$m[1].':'.$m[2]],'restaurant_source_id');$place['public_food_names']=$names[$m[1].':'.$m[2]]??[];}
+        catch(Throwable){$place['public_food_names']=[];}
+        json_response(['data'=>$place,'nearby'=>$nearby,'snapshot'=>(bool)($data['snapshot']??false),'snapshot_date'=>$data['snapshot_date']??null]);
+    }
+    if (preg_match('#^/restaurants/osm/(node|way|relation)/([1-9]\d{0,17})/notes$#',$path,$m) && $method==='GET') {
+        json_response(['data'=>public_notes_for_place(null,$m[1].':'.$m[2])]);
+    }
     if ($path === '/health' && $method === 'GET') {
-        try { db()->query('SELECT 1');$version=db()->query('SELECT version FROM schema_migrations ORDER BY applied_at DESC LIMIT 1')->fetchColumn();if(!$version)throw new RuntimeException('Database schema has not been migrated.');json_response(['status'=>'ok','service'=>'What2Eat API','database'=>'connected','schema_version'=>$version]); }
+        try { db()->query('SELECT 1');$version=db()->query('SELECT version FROM schema_migrations ORDER BY applied_at DESC,version DESC LIMIT 1')->fetchColumn();if(!$version)throw new RuntimeException('Database schema has not been migrated.');json_response(['status'=>'ok','service'=>'What2Eat API','database'=>'connected','schema_version'=>$version]); }
         catch (Throwable) { throw new ApiError(503, 'Dịch vụ chưa sẵn sàng.'); }
     }
     if ($path === '/site-info' && $method === 'GET') {
@@ -488,6 +552,7 @@ function handle_request(): never
         db()->prepare("UPDATE users SET status='active',email_verified_at=UTC_TIMESTAMP() WHERE id=? AND status='pending'")->execute([$row['user_id']]);
         db()->prepare('UPDATE email_tokens SET used_at=UTC_TIMESTAMP() WHERE id=?')->execute([$row['id']]);
         audit((int)$row['user_id'], 'account.verified', 'user', (string)$row['user_id']); db()->commit();
+        if (str_contains((string)($_SERVER['HTTP_ACCEPT']??''),'text/html')) { header('Location: /pages/login.php?verification=success',true,303); exit; }
         json_response(['message'=>'Email đã được xác nhận. Bạn có thể đăng nhập.']);
     }
     if ($path === '/auth/resend-verification' && $method === 'POST') {
@@ -495,14 +560,14 @@ function handle_request(): never
     }
     if ($path === '/auth/login' && $method === 'POST') {
         rate_limit('login', 10, 900); $email = clean_email($body['email'] ?? ''); $password = (string)($body['password'] ?? '');
-        $stmt = db()->prepare('SELECT id,name,email,password_hash,role,status FROM users WHERE email=? LIMIT 1'); $stmt->execute([$email]); $user = $stmt->fetch();
+        $stmt = db()->prepare('SELECT id,name,email,password_hash,role,status,session_version FROM users WHERE email=? LIMIT 1'); $stmt->execute([$email]); $user = $stmt->fetch();
         if (!$user || !password_verify($password, $user['password_hash'])) throw new ApiError(401, 'Email hoặc mật khẩu không đúng.');
         if ($user['status'] === 'pending') throw new ApiError(403, 'Hãy xác nhận email trước khi đăng nhập.');
         if ($user['status'] !== 'active') throw new ApiError(403, 'Tài khoản hiện không thể đăng nhập.');
         if (password_needs_rehash($user['password_hash'], defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_DEFAULT)) {
             db()->prepare('UPDATE users SET password_hash=? WHERE id=?')->execute([password_hash($password, defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_DEFAULT), $user['id']]);
         }
-        session_regenerate_id(true); $_SESSION['user_id'] = (int)$user['id']; unset($_SESSION['csrf']); csrf_token();
+        session_regenerate_id(true); $_SESSION['user_id'] = (int)$user['id']; $_SESSION['session_version']=(int)$user['session_version']; unset($_SESSION['csrf']); csrf_token();
         db()->prepare('UPDATE users SET last_login_at=UTC_TIMESTAMP() WHERE id=?')->execute([$user['id']]);
         audit((int)$user['id'], 'auth.login', 'user', (string)$user['id']);
         $safe = ['id'=>(int)$user['id'],'name'=>$user['name'],'email'=>$user['email'],'role'=>$user['role']];
@@ -529,7 +594,7 @@ function handle_request(): never
         if (strlen($token) < 30 || strlen($password) < 8 || strlen($password) > 1024) throw new ApiError(422, 'Liên kết hoặc mật khẩu không hợp lệ.');
         $stmt = db()->prepare("SELECT id,user_id FROM email_tokens WHERE token_hash=? AND purpose='reset' AND used_at IS NULL AND expires_at>UTC_TIMESTAMP() LIMIT 1"); $stmt->execute([token_hash($token)]); $row = $stmt->fetch();
         if (!$row) throw new ApiError(400, 'Liên kết đã hết hạn hoặc đã được sử dụng.');
-        db()->beginTransaction(); db()->prepare('UPDATE users SET password_hash=? WHERE id=?')->execute([password_hash($password, defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_DEFAULT),$row['user_id']]);
+        db()->beginTransaction(); db()->prepare('UPDATE users SET password_hash=?,session_version=session_version+1 WHERE id=?')->execute([password_hash($password, defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_DEFAULT),$row['user_id']]);
         db()->prepare("UPDATE email_tokens SET used_at=UTC_TIMESTAMP() WHERE user_id=? AND purpose='reset' AND used_at IS NULL")->execute([$row['user_id']]);
         audit((int)$row['user_id'], 'auth.password_reset', 'user', (string)$row['user_id']); db()->commit(); json_response(['message'=>'Mật khẩu đã được cập nhật.']);
     }
@@ -561,6 +626,7 @@ function handle_request(): never
             }
             $params[] = $radius;
             $sql = "SELECT r.*,c.name AS category_name,
+                    EXISTS(SELECT 1 FROM restaurant_sponsorships s WHERE s.restaurant_id=r.id AND s.status='active' AND s.starts_at<=UTC_TIMESTAMP() AND s.ends_at>UTC_TIMESTAMP()) AS sponsored,
                     (6371000 * 2 * ASIN(SQRT(LEAST(1,
                       POW(SIN(RADIANS(r.latitude - ?) / 2), 2) +
                       COS(RADIANS(?)) * COS(RADIANS(r.latitude)) * POW(SIN(RADIANS(r.longitude - ?) / 2), 2)
@@ -569,14 +635,19 @@ function handle_request(): never
                     WHERE {$where} HAVING distance_meters <= ? ORDER BY distance_meters,r.name LIMIT 250";
             $stmt = db()->prepare($sql); $stmt->execute($params);
         } else {
-            $stmt = db()->query("SELECT r.*,c.name AS category_name FROM restaurants r LEFT JOIN categories c ON c.id=r.category_id WHERE r.status='published' ORDER BY r.name LIMIT 100");
+            $stmt = db()->query("SELECT r.*,c.name AS category_name,EXISTS(SELECT 1 FROM restaurant_sponsorships s WHERE s.restaurant_id=r.id AND s.status='active' AND s.starts_at<=UTC_TIMESTAMP() AND s.ends_at>UTC_TIMESTAMP()) AS sponsored FROM restaurants r LEFT JOIN categories c ON c.id=r.category_id WHERE r.status='published' ORDER BY sponsored DESC,r.name LIMIT 100");
         }
         $rows=$stmt->fetchAll();$foodNames=public_food_names_for_places(array_map('intval',array_column($rows,'id')),'restaurant_id');
         $data=array_map(static function(array $row) use($foodNames): array {$id=(string)$row['id'];return array_merge(public_restaurant($row),['category_name'=>$row['category_name'],'public_food_names'=>$foodNames[$id]??[]]);},$rows);
         json_response(['data'=>$data]);
     }
     if (preg_match('#^/restaurants/managed/(\d+)$#',$path,$m) && $method==='GET') {
-        $stmt=db()->prepare("SELECT r.*,c.name AS category_name FROM restaurants r LEFT JOIN categories c ON c.id=r.category_id WHERE r.id=? AND r.status='published' LIMIT 1");$stmt->execute([valid_id($m[1])]);$row=$stmt->fetch();if(!$row)throw new ApiError(404,'Không tìm thấy địa điểm đã được công khai.');$foodNames=public_food_names_for_places([(int)$row['id']],'restaurant_id');$data=array_merge(public_restaurant($row),['description'=>$row['description'],'category_name'=>$row['category_name'],'public_food_names'=>$foodNames[(string)$row['id']]??[]]);json_response(['data'=>$data]);
+        $stmt=db()->prepare("SELECT r.*,c.name AS category_name,EXISTS(SELECT 1 FROM restaurant_sponsorships s WHERE s.restaurant_id=r.id AND s.status='active' AND s.starts_at<=UTC_TIMESTAMP() AND s.ends_at>UTC_TIMESTAMP()) AS sponsored FROM restaurants r LEFT JOIN categories c ON c.id=r.category_id WHERE r.id=? AND r.status='published' LIMIT 1");$stmt->execute([valid_id($m[1])]);$row=$stmt->fetch();if(!$row)throw new ApiError(404,'Không tìm thấy địa điểm đã được công khai.');$foodNames=public_food_names_for_places([(int)$row['id']],'restaurant_id');$data=array_merge(public_restaurant($row),['description'=>$row['description'],'category_name'=>$row['category_name'],'public_food_names'=>$foodNames[(string)$row['id']]??[]]);json_response(['data'=>$data]);
+    }
+    if (preg_match('#^/restaurants/managed/(\d+)/notes$#',$path,$m) && $method==='GET') {
+        $id=valid_id($m[1]);$check=db()->prepare("SELECT id FROM restaurants WHERE id=? AND status='published'");$check->execute([$id]);
+        if(!$check->fetchColumn())throw new ApiError(404,'Không tìm thấy địa điểm đã được công khai.');
+        json_response(['data'=>public_notes_for_place($id,null)]);
     }
     if ($path === '/restaurants/proposals' && $method === 'GET') {
         $user=current_user();$stmt=db()->prepare("SELECT r.*,c.name AS category_name FROM restaurants r LEFT JOIN categories c ON c.id=r.category_id WHERE r.created_by=? AND r.source='user' ORDER BY r.created_at DESC");$stmt->execute([$user['id']]);$rows=$stmt->fetchAll();foreach($rows as &$row){$row=array_merge(public_restaurant($row),['description'=>$row['description'],'category_name'=>$row['category_name'],'created_at'=>$row['created_at']]);}unset($row);json_response(['data'=>$rows]);
@@ -590,6 +661,22 @@ function handle_request(): never
         $stmt = db()->prepare("INSERT INTO restaurants(created_by,source,name,address,latitude,longitude,cuisine,phone,website,source_url,description,status) VALUES(?,'user',?,?,?,?,?,?,?,?,?, 'pending')");
         $stmt->execute([$user['id'],$name,$address,$lat,$lon,optional_string($body,'cuisine',255),optional_string($body,'phone',40),optional_http_url($body,'website'),optional_http_url($body,'source_url'),optional_string($body,'description',4000)]);
         $id = (int)db()->lastInsertId(); audit($user['id'],'restaurant.proposed','restaurant',(string)$id); json_response(['id'=>$id,'status'=>'pending','message'=>'Đề xuất đã gửi đến quản trị viên.'],201);
+    }
+    if ($path === '/place-reports' && $method==='POST') {
+        $user=current_user();rate_limit('place_report',10,3600);
+        $source=(string)($body['source']??'');$sourceId=required_string($body,'source_id',80);$name=required_string($body,'place_name',180,2);
+        if($source==='osm'&&!preg_match('/^(node|way|relation):[1-9]\d{0,17}$/',$sourceId))throw new ApiError(422,'Địa điểm OSM không hợp lệ.');
+        if($source==='managed'){$id=valid_id($sourceId);$check=db()->prepare("SELECT id FROM restaurants WHERE id=? AND status='published'");$check->execute([$id]);if(!$check->fetchColumn())throw new ApiError(422,'Địa điểm đã lưu không hợp lệ.');}
+        if(!in_array($source,['osm','managed'],true))throw new ApiError(422,'Nguồn địa điểm không hợp lệ.');
+        $reason=(string)($body['reason']??'');if(!in_array($reason,['closed','moved','wrong_info','other'],true))throw new ApiError(422,'Lý do báo cáo không hợp lệ.');
+        $details=optional_string($body,'details',1000);if($reason==='other'&&$details===null)throw new ApiError(422,'Hãy mô tả thông tin cần kiểm tra.');
+        [$latitude,$longitude]=optional_coordinates($body);
+        $pending=db()->prepare("SELECT id FROM place_reports WHERE user_id=? AND source=? AND source_id=? AND status='pending' LIMIT 1");$pending->execute([$user['id'],$source,$sourceId]);
+        if($pending->fetchColumn())throw new ApiError(409,'Bạn đã gửi báo cáo cho địa điểm này.');
+        $stmt=db()->prepare('INSERT INTO place_reports(user_id,source,source_id,place_name,address,latitude,longitude,reason,details) VALUES(?,?,?,?,?,?,?,?,?)');
+        $stmt->execute([$user['id'],$source,$sourceId,$name,optional_string($body,'address',500),$latitude,$longitude,$reason,$details]);
+        $id=(int)db()->lastInsertId();audit($user['id'],'place.reported','place_report',(string)$id,['reason'=>$reason]);
+        json_response(['id'=>$id,'message'=>'Báo cáo đã được gửi để kiểm tra.'],201);
     }
 
     if ($path === '/food-notes' && $method === 'GET') {
@@ -619,6 +706,32 @@ function handle_request(): never
         $stmt->execute([$user['id'],$restaurantId,$source,$sourceId,$restaurantName,$restaurantAddress,$name,$eatenAt,$price,$rating,$review,$privacy,$state,$shareToken?token_hash($shareToken):null]); $id=(int)db()->lastInsertId(); sync_note_tags($id,$user['id'],(array)($body['tags']??[])); audit($user['id'],'food_note.created','food_note',(string)$id,['privacy'=>$privacy]); db()->commit();
         $result=['data'=>fetch_note($id,$user['id'])]; if($shareToken)$result['share_url']='/pages/food-note.php?share='.rawurlencode($shareToken); json_response($result,201);
     }
+    if (preg_match('#^/food-notes/(\d+)/flags$#',$path,$m) && $method==='PATCH') {
+        $user=current_user();$id=valid_id($m[1]);fetch_note($id,$user['id']);
+        $changes=[];$values=[];
+        foreach (['is_favorite','is_pinned'] as $field) {
+            if (!array_key_exists($field,$body)) continue;
+            if (!is_bool($body[$field]) && !in_array($body[$field],[0,1],true)) throw new ApiError(422,'Trạng thái ghi chú không hợp lệ.');
+            $changes[]="{$field}=?";$values[]=(int)(bool)$body[$field];
+        }
+        if (!$changes) throw new ApiError(422,'Chưa chọn trạng thái cần cập nhật.');
+        $values[]=$id;$values[]=$user['id'];
+        db()->prepare('UPDATE food_notes SET '.implode(',',$changes).' WHERE id=? AND user_id=?')->execute($values);
+        json_response(['data'=>fetch_note($id,$user['id'])]);
+    }
+    if (preg_match('#^/food-notes/(\d+)/share$#',$path,$m) && in_array($method,['POST','DELETE'],true)) {
+        $user=current_user();$id=valid_id($m[1]);$note=fetch_note($id,$user['id']);
+        if ($method==='DELETE') {
+            db()->prepare("UPDATE food_notes SET privacy='private',status='published',share_token_hash=NULL WHERE id=? AND user_id=?")->execute([$id,$user['id']]);
+            audit($user['id'],'food_note.share_revoked','food_note',(string)$id);
+            json_response(['data'=>fetch_note($id,$user['id'])]);
+        }
+        if ($note['privacy']!=='link' || $note['status']!=='published') throw new ApiError(409,'Hãy đăng ghi chú ở chế độ chia sẻ bằng liên kết trước.');
+        $token=make_token();
+        db()->prepare('UPDATE food_notes SET share_token_hash=? WHERE id=? AND user_id=?')->execute([token_hash($token),$id,$user['id']]);
+        audit($user['id'],'food_note.share_rotated','food_note',(string)$id);
+        json_response(['share_url'=>'/pages/food-note.php?share='.rawurlencode($token),'message'=>'Đã tạo liên kết mới. Liên kết cũ không còn hiệu lực.']);
+    }
     if (preg_match('#^/food-notes/(\d+)$#',$path,$m)) {
         $id=valid_id($m[1]); $user=current_user();
         if($method==='GET') { $note=fetch_note($id); if($note['user_id']!==$user['id'] && !($note['privacy']==='public'&&$note['status']==='published')) throw new ApiError(404,'Không tìm thấy Food Note.'); json_response(['data'=>$note]); }
@@ -626,11 +739,40 @@ function handle_request(): never
             $old=fetch_note($id,$user['id']); $name=required_string($body,'food_name',180,1); $privacy=(string)($body['privacy']??$old['privacy']); if(!in_array($privacy,['private','public','link'],true))throw new ApiError(422,'Quyền riêng tư không hợp lệ.');
             $rating=$body['rating']??null; if($rating!==null&&(!is_numeric($rating)||(float)$rating<0||(float)$rating>5))throw new ApiError(422,'Điểm đánh giá cần nằm trong khoảng 0–5.');
             $price=$body['price']??null; if($price!==null&&(!is_numeric($price)||(float)$price<0))throw new ApiError(422,'Giá tiền không hợp lệ.');
-            $restaurantId=isset($body['restaurant_id'])?(int)$body['restaurant_id']:null; $source=isset($body['restaurant_source'])?(string)$body['restaurant_source']:null; if($source!==null&&!in_array($source,['osm','admin','user'],true))throw new ApiError(422,'Nguồn quán ăn không hợp lệ.');$sourceId=optional_string($body,'restaurant_source_id',80);$restaurantName=optional_string($body,'restaurant_name',180);$restaurantAddress=optional_string($body,'restaurant_address',500);$eatenAt=optional_string($body,'eaten_at',10); if($eatenAt&&!preg_match('/^\d{4}-\d{2}-\d{2}$/',$eatenAt))throw new ApiError(422,'Ngày ăn không hợp lệ.');
-            $isDraft=(bool)($body['is_draft']??false);$state=$isDraft?'draft':($privacy==='public'?'pending':'published');$shareToken=null;$shareHash=null;if(!$isDraft&&$privacy==='link'){$existing=db()->prepare('SELECT share_token_hash FROM food_notes WHERE id=? AND user_id=?');$existing->execute([$id,$user['id']]);$shareHash=$existing->fetchColumn()?:null;if($old['privacy']!=='link'||$shareHash===null){$shareToken=make_token();$shareHash=token_hash($shareToken);}}db()->beginTransaction(); db()->prepare('UPDATE food_notes SET restaurant_id=?,restaurant_source=?,restaurant_source_id=?,restaurant_name_snapshot=?,restaurant_address_snapshot=?,food_name=?,eaten_at=?,price=?,rating=?,review=?,privacy=?,status=?,is_favorite=?,is_pinned=?,share_token_hash=? WHERE id=? AND user_id=?')->execute([$restaurantId,$source,$sourceId,$restaurantName,$restaurantAddress,$name,$eatenAt,$price,$rating,optional_string($body,'review',10000),$privacy,$state,(int)(bool)($body['is_favorite']??false),(int)(bool)($body['is_pinned']??false),$shareHash,$id,$user['id']]);
-            sync_note_tags($id,$user['id'],(array)($body['tags']??[]));audit($user['id'],'food_note.updated','food_note',(string)$id);db()->commit();$result=['data'=>fetch_note($id,$user['id'])];if($shareToken)$result['share_url']='/pages/food-note.php?share='.rawurlencode($shareToken);json_response($result);
+            $restaurantId=isset($body['restaurant_id'])?(int)$body['restaurant_id']:null;
+            if ($restaurantId) { $check=db()->prepare('SELECT id FROM restaurants WHERE id=?');$check->execute([$restaurantId]);if(!$check->fetchColumn())throw new ApiError(422,'Quán ăn không tồn tại.'); }
+            $source=isset($body['restaurant_source'])?(string)$body['restaurant_source']:null;
+            if($source!==null&&!in_array($source,['osm','admin','user'],true))throw new ApiError(422,'Nguồn quán ăn không hợp lệ.');
+            $sourceId=optional_string($body,'restaurant_source_id',80);$restaurantName=optional_string($body,'restaurant_name',180);$restaurantAddress=optional_string($body,'restaurant_address',500);
+            if($sourceId!==null&&$source===null)throw new ApiError(422,'Thiếu nguồn của quán ăn.');
+            $eatenAt=optional_string($body,'eaten_at',10);if($eatenAt&&!preg_match('/^\d{4}-\d{2}-\d{2}$/',$eatenAt))throw new ApiError(422,'Ngày ăn không hợp lệ.');
+            $review=optional_string($body,'review',10000);$tags=normalized_note_tags((array)($body['tags']??[]));$oldTags=normalized_note_tags($old['tags']);sort($tags);sort($oldTags);
+            $contentChanged = $name!==$old['food_name'] || $privacy!==$old['privacy'] || $restaurantId!==$old['restaurant_id']
+                || $source!==$old['restaurant_source'] || $sourceId!==$old['restaurant_source_id']
+                || $restaurantName!==$old['restaurant_name_snapshot'] || $restaurantAddress!==$old['restaurant_address_snapshot']
+                || $eatenAt!==$old['eaten_at'] || $review!==$old['review']
+                || ($rating===null?null:(float)$rating)!==$old['rating'] || ($price===null?null:(float)$price)!==$old['price']
+                || $tags!==$oldTags;
+            $isDraft=(bool)($body['is_draft']??false);
+            $state=$isDraft?'draft':($privacy==='public'?($contentChanged?'pending':$old['status']):'published');
+            if($privacy==='public' && !in_array($state,['published','pending','rejected','hidden'],true))$state='pending';
+            $shareToken=null;$shareHash=null;
+            if(!$isDraft&&$privacy==='link'){$existing=db()->prepare('SELECT share_token_hash FROM food_notes WHERE id=? AND user_id=?');$existing->execute([$id,$user['id']]);$shareHash=$existing->fetchColumn()?:null;if($old['privacy']!=='link'||$shareHash===null){$shareToken=make_token();$shareHash=token_hash($shareToken);}}
+            db()->beginTransaction();
+            db()->prepare('UPDATE food_notes SET restaurant_id=?,restaurant_source=?,restaurant_source_id=?,restaurant_name_snapshot=?,restaurant_address_snapshot=?,food_name=?,eaten_at=?,price=?,rating=?,review=?,privacy=?,status=?,is_favorite=?,is_pinned=?,share_token_hash=? WHERE id=? AND user_id=?')
+                ->execute([$restaurantId,$source,$sourceId,$restaurantName,$restaurantAddress,$name,$eatenAt,$price,$rating,$review,$privacy,$state,(int)(bool)($body['is_favorite']??$old['is_favorite']),(int)(bool)($body['is_pinned']??$old['is_pinned']),$shareHash,$id,$user['id']]);
+            sync_note_tags($id,$user['id'],$tags);audit($user['id'],'food_note.updated','food_note',(string)$id);db()->commit();
+            $result=['data'=>fetch_note($id,$user['id'])];if($shareToken)$result['share_url']='/pages/food-note.php?share='.rawurlencode($shareToken);json_response($result);
         }
-        if($method==='DELETE'){db()->prepare('DELETE FROM food_notes WHERE id=? AND user_id=?')->execute([$id,$user['id']]);audit($user['id'],'food_note.deleted','food_note',(string)$id);json_response(['message'=>'Food Note đã được xóa.']);}
+        if($method==='DELETE'){
+            fetch_note($id,$user['id']);
+            $media=db()->prepare('SELECT storage_key FROM food_note_media WHERE food_note_id=?');$media->execute([$id]);$keys=$media->fetchAll(PDO::FETCH_COLUMN);
+            db()->beginTransaction();
+            try { db()->prepare('DELETE FROM food_notes WHERE id=? AND user_id=?')->execute([$id,$user['id']]);audit($user['id'],'food_note.deleted','food_note',(string)$id);db()->commit(); }
+            catch(Throwable $error){if(db()->inTransaction())db()->rollBack();throw $error;}
+            foreach($keys as $key)remove_note_media_file((string)$key);
+            json_response(['message'=>'Food Note đã được xóa.']);
+        }
     }
     if (preg_match('#^/food-notes/(\d+)/media$#',$path,$m) && $method==='POST') {
         $id=valid_id($m[1]);$user=current_user();fetch_note($id,$user['id']);$file=$_FILES['media']??null;
@@ -643,6 +785,15 @@ function handle_request(): never
         if(!move_uploaded_file($file['tmp_name'],$target))throw new ApiError(500,'Không lưu được tệp.');
         try{$stmt=db()->prepare('INSERT INTO food_note_media(food_note_id,storage_key,mime_type,byte_size) VALUES(?,?,?,?)');$stmt->execute([$id,$key,$mime,(int)$file['size']]);$mediaId=(int)db()->lastInsertId();}catch(Throwable $error){@unlink($target);throw $error;}
         json_response(['id'=>$mediaId,'url'=>'/api/v1/media/'.$mediaId,'mime_type'=>$mime],201);
+    }
+    if (preg_match('#^/media/(\d+)$#',$path,$m) && $method==='DELETE') {
+        $user=current_user();$id=valid_id($m[1]);
+        $stmt=db()->prepare('SELECT m.storage_key,n.user_id FROM food_note_media m JOIN food_notes n ON n.id=m.food_note_id WHERE m.id=? LIMIT 1');
+        $stmt->execute([$id]);$media=$stmt->fetch();
+        if(!$media||(int)$media['user_id']!==$user['id'])throw new ApiError(404,'Không tìm thấy tệp.');
+        db()->prepare('DELETE FROM food_note_media WHERE id=?')->execute([$id]);
+        remove_note_media_file((string)$media['storage_key']);
+        json_response(['message'=>'Đã xóa tệp khỏi Food Note.']);
     }
     if (preg_match('#^/media/(\d+)$#',$path,$m) && $method==='GET') {
         $mediaId=valid_id($m[1]);$stmt=db()->prepare('SELECT m.*,n.user_id,n.privacy,n.status,n.share_token_hash FROM food_note_media m JOIN food_notes n ON n.id=m.food_note_id WHERE m.id=? LIMIT 1');$stmt->execute([$mediaId]);$media=$stmt->fetch();if(!$media)throw new ApiError(404,'Không tìm thấy tệp.');
@@ -702,13 +853,39 @@ function handle_request(): never
         $user=current_user();$file=$_FILES['avatar']??null;if(!$file||!isset($file['tmp_name'])||$file['error']!==UPLOAD_ERR_OK||!is_uploaded_file($file['tmp_name']))throw new ApiError(422,'Chưa chọn được ảnh hồ sơ.');if((int)$file['size']>5*1024*1024)throw new ApiError(413,'Ảnh đại diện tối đa 5 MB.');$mime=(new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);$extensions=['image/jpeg'=>'jpg','image/png'=>'png','image/webp'=>'webp'];if(!isset($extensions[$mime]))throw new ApiError(415,'Ảnh đại diện hỗ trợ JPEG, PNG hoặc WEBP.');$dir=dirname(__DIR__).'/storage/uploads/avatars';if(!is_dir($dir)&&!mkdir($dir,0750,true)&&!is_dir($dir))throw new ApiError(503,'Không tạo được vùng lưu ảnh.');$key='avatars/'.bin2hex(random_bytes(24)).'.'.$extensions[$mime];if(!move_uploaded_file($file['tmp_name'],dirname(__DIR__).'/storage/uploads/'.$key))throw new ApiError(500,'Không lưu được ảnh hồ sơ.');$stmt=db()->prepare('SELECT avatar_url FROM users WHERE id=?');$stmt->execute([$user['id']]);$old=(string)$stmt->fetchColumn();db()->prepare('UPDATE users SET avatar_url=? WHERE id=?')->execute([$key,$user['id']]);if(str_starts_with($old,'avatars/')){@unlink(dirname(__DIR__).'/storage/uploads/'.$old);}audit($user['id'],'profile.avatar_updated','user',(string)$user['id']);json_response(['user'=>current_user()]);
     }
     if ($path === '/profile/password' && $method === 'POST') {
-        $user=current_user();$old=(string)($body['current_password']??'');$new=(string)($body['new_password']??'');$stmt=db()->prepare('SELECT password_hash FROM users WHERE id=?');$stmt->execute([$user['id']]);$hash=(string)$stmt->fetchColumn();if(!password_verify($old,$hash))throw new ApiError(401,'Mật khẩu hiện tại không đúng.');if(strlen($new)<8||strlen($new)>1024)throw new ApiError(422,'Mật khẩu mới cần có ít nhất 8 ký tự.');db()->prepare('UPDATE users SET password_hash=? WHERE id=?')->execute([password_hash($new,defined('PASSWORD_ARGON2ID')?PASSWORD_ARGON2ID:PASSWORD_DEFAULT),$user['id']]);audit($user['id'],'profile.password_changed','user',(string)$user['id']);json_response(['message'=>'Mật khẩu đã được cập nhật.']);
+        $user=current_user();$old=(string)($body['current_password']??'');$new=(string)($body['new_password']??'');$stmt=db()->prepare('SELECT password_hash FROM users WHERE id=?');$stmt->execute([$user['id']]);$hash=(string)$stmt->fetchColumn();if(!password_verify($old,$hash))throw new ApiError(401,'Mật khẩu hiện tại không đúng.');if(strlen($new)<8||strlen($new)>1024)throw new ApiError(422,'Mật khẩu mới cần có ít nhất 8 ký tự.');db()->prepare('UPDATE users SET password_hash=?,session_version=session_version+1 WHERE id=?')->execute([password_hash($new,defined('PASSWORD_ARGON2ID')?PASSWORD_ARGON2ID:PASSWORD_DEFAULT),$user['id']]);$_SESSION['session_version']=$user['session_version']+1;session_regenerate_id(true);audit($user['id'],'profile.password_changed','user',(string)$user['id']);json_response(['message'=>'Mật khẩu đã được cập nhật.']);
     }
     if ($path === '/dashboard' && $method === 'GET') {
         $user=current_user();$id=$user['id'];$stats=db()->prepare("SELECT COUNT(*) AS total_notes,COALESCE(SUM(price),0) AS total_spent,AVG(rating) AS average_rating,SUM(eaten_at>=DATE_FORMAT(UTC_DATE(),'%Y-%m-01')) AS month_notes FROM food_notes WHERE user_id=? AND status<>'rejected'");$stats->execute([$id]);$summary=$stats->fetch();$fav=db()->prepare('SELECT COUNT(*) FROM favorite_restaurants WHERE user_id=?');$fav->execute([$id]);$plans=db()->prepare('SELECT COUNT(DISTINCT food_plan_id) FROM food_plan_members WHERE user_id=?');$plans->execute([$id]);$monthly=db()->prepare("SELECT DATE_FORMAT(eaten_at,'%Y-%m') AS month,SUM(COALESCE(price,0)) AS spent,COUNT(*) AS notes FROM food_notes WHERE user_id=? AND eaten_at>=DATE_SUB(UTC_DATE(),INTERVAL 6 MONTH) GROUP BY DATE_FORMAT(eaten_at,'%Y-%m') ORDER BY month");$monthly->execute([$id]);$cats=db()->prepare("SELECT COALESCE(r.cuisine,n.restaurant_name_snapshot,'Chưa phân loại') AS category,COUNT(*) AS total FROM food_notes n LEFT JOIN restaurants r ON r.id=n.restaurant_id WHERE n.user_id=? GROUP BY category ORDER BY total DESC LIMIT 8");$cats->execute([$id]);$recent=db()->prepare('SELECT id,food_name,eaten_at,price,rating,privacy,status FROM food_notes WHERE user_id=? ORDER BY created_at DESC LIMIT 6');$recent->execute([$id]);$top=db()->prepare("SELECT COALESCE(r.name,n.restaurant_name_snapshot) AS name,COUNT(*) AS visits FROM food_notes n LEFT JOIN restaurants r ON r.id=n.restaurant_id WHERE n.user_id=? AND COALESCE(r.name,n.restaurant_name_snapshot) IS NOT NULL GROUP BY name ORDER BY visits DESC LIMIT 5");$top->execute([$id]);$summary['total_notes']=(int)$summary['total_notes'];$summary['total_spent']=(float)$summary['total_spent'];$summary['average_rating']=$summary['average_rating']===null?null:(float)$summary['average_rating'];$summary['total_favorites']=(int)$fav->fetchColumn();$summary['food_plans']=(int)$plans->fetchColumn();$summary['month_notes']=(int)$summary['month_notes'];json_response(['stats'=>$summary,'monthly'=>$monthly->fetchAll(),'categories'=>$cats->fetchAll(),'top_restaurants'=>$top->fetchAll(),'recent_notes'=>$recent->fetchAll()]);
     }
 
     // Admin routes are separated from public and user APIs and always check server-side role.
+    if ($path === '/admin/place-reports' && $method==='GET') {
+        require_admin();$status=(string)($_GET['status']??'pending');if(!in_array($status,['pending','resolved','dismissed','all'],true))throw new ApiError(422,'Trạng thái báo cáo không hợp lệ.');
+        $where=$status==='all'?'':'WHERE p.status=?';$stmt=db()->prepare("SELECT p.*,u.name AS reporter_name FROM place_reports p JOIN users u ON u.id=p.user_id {$where} ORDER BY p.created_at DESC,p.id DESC LIMIT 100");$stmt->execute($status==='all'?[]:[$status]);
+        json_response(['data'=>$stmt->fetchAll()]);
+    }
+    if (preg_match('#^/admin/place-reports/(\d+)$#',$path,$m) && $method==='PATCH') {
+        $admin=require_admin();$id=valid_id($m[1]);$status=(string)($body['status']??'');if(!in_array($status,['resolved','dismissed'],true))throw new ApiError(422,'Trạng thái xử lý không hợp lệ.');
+        $report=db()->prepare("SELECT source,source_id,reason FROM place_reports WHERE id=? AND status='pending' LIMIT 1");$report->execute([$id]);$place=$report->fetch();if(!$place)throw new ApiError(404,'Báo cáo không còn trong hàng chờ.');
+        $hide=!empty($body['hide_place']);if($hide&&$status!=='resolved')throw new ApiError(422,'Chỉ báo cáo đã xác minh mới có thể ẩn địa điểm.');
+        db()->beginTransaction();
+        try{
+            $stmt=db()->prepare("UPDATE place_reports SET status=?,review_note=?,reviewed_by=?,reviewed_at=UTC_TIMESTAMP() WHERE id=? AND status='pending'");
+            $stmt->execute([$status,optional_string($body,'review_note',500),$admin['id'],$id]);if($stmt->rowCount()===0)throw new ApiError(409,'Báo cáo đã được xử lý.');
+            if($hide&&$place['source']==='osm')db()->prepare('INSERT INTO osm_place_blocks(source_id,reason,created_by) VALUES(?,?,?) ON DUPLICATE KEY UPDATE reason=VALUES(reason),created_by=VALUES(created_by)')->execute([$place['source_id'],$place['reason'],$admin['id']]);
+            if($hide&&$place['source']==='managed'){db()->prepare("UPDATE restaurants SET status='hidden',moderated_by=?,moderated_at=UTC_TIMESTAMP() WHERE id=?")->execute([$admin['id'],(int)$place['source_id']]);pause_restaurant_sponsorship((int)$place['source_id']);}
+            audit($admin['id'],'place_report.reviewed','place_report',(string)$id,['status'=>$status,'hide_place'=>$hide]);db()->commit();
+        }catch(Throwable $error){if(db()->inTransaction())db()->rollBack();throw $error;}
+        json_response(['message'=>'Đã xử lý báo cáo địa điểm.']);
+    }
+    if ($path === '/admin/osm-place-blocks' && $method==='GET') {
+        require_admin();json_response(['data'=>db()->query('SELECT source_id,reason,created_at FROM osm_place_blocks ORDER BY created_at DESC LIMIT 200')->fetchAll()]);
+    }
+    if (preg_match('#^/admin/osm-place-blocks/(node|way|relation):([1-9]\d{0,17})$#',$path,$m) && $method==='DELETE') {
+        $admin=require_admin();$id=$m[1].':'.$m[2];db()->prepare('DELETE FROM osm_place_blocks WHERE source_id=?')->execute([$id]);
+        audit($admin['id'],'osm_place.restored','osm_place',$id);json_response(['message'=>'Đã khôi phục địa điểm trên bản đồ.']);
+    }
     if ($path === '/admin/geocode' && $method === 'POST') {
         $admin=require_admin();$address=required_string($body,'address',500,5);$result=nominatim_search($address);
         if($result['found'])audit($admin['id'],'restaurant.geocoded','restaurant',null,['provider'=>'nominatim']);
@@ -728,7 +905,31 @@ function handle_request(): never
         $name=required_string($body,'name',100,1);$slug=mb_strtolower(trim((string)($body['slug']??$name)),'UTF-8');$slug=trim(preg_replace('/[^\pL\pN]+/u','-',$slug)??'','-');if($slug==='')throw new ApiError(422,'Mã danh mục không hợp lệ.');$status=(string)($body['status']??'active');if(!in_array($status,['active','hidden'],true))throw new ApiError(422,'Trạng thái danh mục không hợp lệ.');try{db()->prepare('UPDATE categories SET name=?,slug=?,description=?,icon=?,status=? WHERE id=?')->execute([$name,$slug,optional_string($body,'description',500),optional_string($body,'icon',80),$status,$id]);}catch(PDOException $error){if($error->getCode()==='23000')throw new ApiError(409,'Mã danh mục đã tồn tại.');throw $error;}audit($admin['id'],'category.updated','category',(string)$id);json_response(['message'=>'Danh mục đã được cập nhật.']);
     }
     if ($path === '/admin/restaurants' && $method === 'GET') {
-        require_admin();$status=(string)($_GET['status']??'all');$allowed=['all','pending','published','rejected','hidden'];if(!in_array($status,$allowed,true))throw new ApiError(422,'Trạng thái không hợp lệ.');$where=$status==='all'?'':'WHERE r.status=?';$stmt=db()->prepare("SELECT r.*,c.name AS category_name,u.name AS creator_name FROM restaurants r LEFT JOIN categories c ON c.id=r.category_id LEFT JOIN users u ON u.id=r.created_by {$where} ORDER BY FIELD(r.status,'pending','published','hidden','rejected'),r.created_at DESC LIMIT 500");$stmt->execute($status==='all'?[]:[$status]);$rows=$stmt->fetchAll();foreach($rows as &$row){$row=array_merge(public_restaurant($row),['description'=>$row['description'],'category_name'=>$row['category_name'],'creator_name'=>$row['creator_name'],'created_at'=>$row['created_at']]);}unset($row);json_response(['data'=>$rows]);
+        require_admin();$status=(string)($_GET['status']??'all');$allowed=['all','pending','published','rejected','hidden'];if(!in_array($status,$allowed,true))throw new ApiError(422,'Trạng thái không hợp lệ.');$where=$status==='all'?'':'WHERE r.status=?';$stmt=db()->prepare("SELECT r.*,c.name AS category_name,u.name AS creator_name,s.sponsor_name,s.contract_reference,s.starts_at AS sponsorship_starts_at,s.ends_at AS sponsorship_ends_at,s.status AS sponsorship_status,EXISTS(SELECT 1 FROM restaurant_sponsorships active WHERE active.restaurant_id=r.id AND active.status='active' AND active.starts_at<=UTC_TIMESTAMP() AND active.ends_at>UTC_TIMESTAMP()) AS sponsored FROM restaurants r LEFT JOIN categories c ON c.id=r.category_id LEFT JOIN users u ON u.id=r.created_by LEFT JOIN restaurant_sponsorships s ON s.restaurant_id=r.id {$where} ORDER BY FIELD(r.status,'pending','published','hidden','rejected'),r.created_at DESC LIMIT 500");$stmt->execute($status==='all'?[]:[$status]);$rows=$stmt->fetchAll();foreach($rows as &$row){$row=array_merge(public_restaurant($row),['description'=>$row['description'],'category_name'=>$row['category_name'],'creator_name'=>$row['creator_name'],'created_at'=>$row['created_at'],'sponsor_name'=>$row['sponsor_name'],'contract_reference'=>$row['contract_reference'],'sponsorship_starts_at'=>$row['sponsorship_starts_at'],'sponsorship_ends_at'=>$row['sponsorship_ends_at'],'sponsorship_status'=>$row['sponsorship_status']]);}unset($row);json_response(['data'=>$rows]);
+    }
+    if (preg_match('#^/admin/restaurants/(\d+)/sponsorship$#',$path,$m) && in_array($method,['PUT','DELETE'],true)) {
+        $admin=require_admin();$id=valid_id($m[1]);
+        $restaurant=db()->prepare('SELECT id,name,status,latitude,longitude FROM restaurants WHERE id=? LIMIT 1');$restaurant->execute([$id]);$place=$restaurant->fetch();
+        if(!$place)throw new ApiError(404,'Không tìm thấy quán ăn.');
+        if($method==='DELETE'){
+            db()->prepare("UPDATE restaurant_sponsorships SET status='paused' WHERE restaurant_id=?")->execute([$id]);
+            audit($admin['id'],'restaurant.sponsorship_paused','restaurant',(string)$id);
+            json_response(['message'=>'Đã dừng vị trí tài trợ.']);
+        }
+        $sponsor=required_string($body,'sponsor_name',180,2);$reference=optional_string($body,'contract_reference',120);
+        $status=(string)($body['status']??'paused');if(!in_array($status,['active','paused'],true))throw new ApiError(422,'Trạng thái tài trợ không hợp lệ.');
+        $parseDate=static function(string $value): string {
+            if(!preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/',$value))throw new ApiError(422,'Thời gian tài trợ phải ở định dạng ISO UTC.');
+            try{$date=new DateTimeImmutable($value);}catch(Throwable){throw new ApiError(422,'Thời gian tài trợ không hợp lệ.');}
+            return $date->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+        };
+        $starts=$parseDate(required_string($body,'starts_at',30,20));$ends=$parseDate(required_string($body,'ends_at',30,20));
+        if($ends<=$starts)throw new ApiError(422,'Ngày kết thúc phải sau ngày bắt đầu.');
+        if($status==='active'&&($place['status']!=='published'||$place['latitude']===null||$place['longitude']===null))throw new ApiError(422,'Chỉ quán đã duyệt và có tọa độ mới được tài trợ.');
+        db()->prepare('INSERT INTO restaurant_sponsorships(restaurant_id,sponsor_name,contract_reference,starts_at,ends_at,status,created_by) VALUES(?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE sponsor_name=VALUES(sponsor_name),contract_reference=VALUES(contract_reference),starts_at=VALUES(starts_at),ends_at=VALUES(ends_at),status=VALUES(status)')
+            ->execute([$id,$sponsor,$reference,$starts,$ends,$status,$admin['id']]);
+        audit($admin['id'],'restaurant.sponsorship_updated','restaurant',(string)$id,['status'=>$status,'starts_at'=>$starts,'ends_at'=>$ends]);
+        json_response(['message'=>'Đã cập nhật vị trí tài trợ.']);
     }
     if ($path === '/admin/restaurants' && $method === 'POST') {
         $admin=require_admin();$name=required_string($body,'name',180,1);$address=required_string($body,'address',500,1);$lat=$body['latitude']??null;$lon=$body['longitude']??null;
@@ -741,9 +942,9 @@ function handle_request(): never
         $stmt->execute([$categoryId,$admin['id'],$sourceUrl,$name,$address,$lat,$lon,optional_string($body,'cuisine',255),optional_string($body,'phone',40),optional_http_url($body,'website'),$opening,optional_string($body,'price_range',80),optional_string($body,'description',4000),$status,$admin['id']]);$id=(int)db()->lastInsertId();audit($admin['id'],'restaurant.created','restaurant',(string)$id);json_response(['id'=>$id],201);
     }
     if (preg_match('#^/admin/restaurants/(\d+)$#',$path,$m) && in_array($method,['PUT','PATCH','DELETE'],true)) {
-        $admin=require_admin();$id=valid_id($m[1]);if($method==='DELETE'){db()->prepare("UPDATE restaurants SET status='hidden',moderated_by=?,moderated_at=UTC_TIMESTAMP() WHERE id=?")->execute([$admin['id'],$id]);audit($admin['id'],'restaurant.hidden','restaurant',(string)$id);json_response(['message'=>'Địa điểm đã được ẩn.']);}
-        if($method==='PATCH'&&isset($body['status'])&&!isset($body['name'])&&!isset($body['address'])){$status=(string)$body['status'];if(!in_array($status,['pending','published','rejected','hidden'],true))throw new ApiError(422,'Trạng thái không hợp lệ.');db()->prepare('UPDATE restaurants SET status=?,moderated_by=?,moderated_at=UTC_TIMESTAMP() WHERE id=?')->execute([$status,$admin['id'],$id]);audit($admin['id'],'restaurant.moderated','restaurant',(string)$id,['status'=>$status]);json_response(['message'=>'Trạng thái địa điểm đã được cập nhật.']);}
-        $status=(string)($body['status']??'published');if(!in_array($status,['pending','published','rejected','hidden'],true))throw new ApiError(422,'Trạng thái không hợp lệ.');$lat=$body['latitude']??null;$lon=$body['longitude']??null;if(($lat===null)!==($lon===null))throw new ApiError(422,'Hãy cung cấp cả vĩ độ và kinh độ.');if($lat!==null&&(!is_numeric($lat)||(float)$lat < -90||(float)$lat>90))throw new ApiError(422,'Vĩ độ không hợp lệ.');if($lon!==null&&(!is_numeric($lon)||(float)$lon < -180||(float)$lon>180))throw new ApiError(422,'Kinh độ không hợp lệ.');$categoryId=null;if(isset($body['category_id'])&&$body['category_id']!==''){$categoryId=filter_var($body['category_id'],FILTER_VALIDATE_INT);if(!$categoryId||$categoryId<1)throw new ApiError(422,'Danh mục không hợp lệ.');$check=db()->prepare('SELECT id FROM categories WHERE id=?');$check->execute([$categoryId]);if(!$check->fetchColumn())throw new ApiError(422,'Danh mục không tồn tại.');}$sourceUrl=optional_http_url($body,'source_url');$stmt=db()->prepare('UPDATE restaurants SET category_id=?,name=?,address=?,latitude=?,longitude=?,cuisine=?,phone=?,website=?,source_url=?,opening_hours=?,price_range=?,description=?,status=?,moderated_by=?,moderated_at=UTC_TIMESTAMP() WHERE id=?');$stmt->execute([$categoryId,required_string($body,'name',180,1),required_string($body,'address',500,1),$lat,$lon,optional_string($body,'cuisine',255),optional_string($body,'phone',40),optional_http_url($body,'website'),$sourceUrl,isset($body['opening_hours'])?json_encode($body['opening_hours'],JSON_UNESCAPED_UNICODE):null,optional_string($body,'price_range',80),optional_string($body,'description',4000),$status,$admin['id'],$id]);audit($admin['id'],'restaurant.updated','restaurant',(string)$id);json_response(['message'=>'Địa điểm đã được cập nhật.']);
+        $admin=require_admin();$id=valid_id($m[1]);if($method==='DELETE'){db()->prepare("UPDATE restaurants SET status='hidden',moderated_by=?,moderated_at=UTC_TIMESTAMP() WHERE id=?")->execute([$admin['id'],$id]);pause_restaurant_sponsorship($id);audit($admin['id'],'restaurant.hidden','restaurant',(string)$id);json_response(['message'=>'Địa điểm đã được ẩn.']);}
+        if($method==='PATCH'&&isset($body['status'])&&!isset($body['name'])&&!isset($body['address'])){$status=(string)$body['status'];if(!in_array($status,['pending','published','rejected','hidden'],true))throw new ApiError(422,'Trạng thái không hợp lệ.');db()->prepare('UPDATE restaurants SET status=?,moderated_by=?,moderated_at=UTC_TIMESTAMP() WHERE id=?')->execute([$status,$admin['id'],$id]);if($status!=='published')pause_restaurant_sponsorship($id);audit($admin['id'],'restaurant.moderated','restaurant',(string)$id,['status'=>$status]);json_response(['message'=>'Trạng thái địa điểm đã được cập nhật.']);}
+        $status=(string)($body['status']??'published');if(!in_array($status,['pending','published','rejected','hidden'],true))throw new ApiError(422,'Trạng thái không hợp lệ.');$lat=$body['latitude']??null;$lon=$body['longitude']??null;if(($lat===null)!==($lon===null))throw new ApiError(422,'Hãy cung cấp cả vĩ độ và kinh độ.');if($lat!==null&&(!is_numeric($lat)||(float)$lat < -90||(float)$lat>90))throw new ApiError(422,'Vĩ độ không hợp lệ.');if($lon!==null&&(!is_numeric($lon)||(float)$lon < -180||(float)$lon>180))throw new ApiError(422,'Kinh độ không hợp lệ.');$categoryId=null;if(isset($body['category_id'])&&$body['category_id']!==''){$categoryId=filter_var($body['category_id'],FILTER_VALIDATE_INT);if(!$categoryId||$categoryId<1)throw new ApiError(422,'Danh mục không hợp lệ.');$check=db()->prepare('SELECT id FROM categories WHERE id=?');$check->execute([$categoryId]);if(!$check->fetchColumn())throw new ApiError(422,'Danh mục không tồn tại.');}$sourceUrl=optional_http_url($body,'source_url');$stmt=db()->prepare('UPDATE restaurants SET category_id=?,name=?,address=?,latitude=?,longitude=?,cuisine=?,phone=?,website=?,source_url=?,opening_hours=?,price_range=?,description=?,status=?,moderated_by=?,moderated_at=UTC_TIMESTAMP() WHERE id=?');$stmt->execute([$categoryId,required_string($body,'name',180,1),required_string($body,'address',500,1),$lat,$lon,optional_string($body,'cuisine',255),optional_string($body,'phone',40),optional_http_url($body,'website'),$sourceUrl,isset($body['opening_hours'])?json_encode($body['opening_hours'],JSON_UNESCAPED_UNICODE):null,optional_string($body,'price_range',80),optional_string($body,'description',4000),$status,$admin['id'],$id]);if($status!=='published'||$lat===null)pause_restaurant_sponsorship($id);audit($admin['id'],'restaurant.updated','restaurant',(string)$id);json_response(['message'=>'Địa điểm đã được cập nhật.']);
     }
     if ($path === '/admin/food-notes' && $method === 'GET') {
         require_admin();$status=(string)($_GET['status']??'pending');$allowed=['all','pending','published','hidden','rejected','draft'];if(!in_array($status,$allowed,true))throw new ApiError(422,'Trạng thái không hợp lệ.');$page=max(1,(int)($_GET['page']??1));$perPage=max(10,min(100,(int)($_GET['per_page']??50)));$where=$status==='all'?'':'WHERE n.status=?';$params=$status==='all'?[]:[$status];$count=db()->prepare("SELECT COUNT(*) FROM food_notes n {$where}");$count->execute($params);$total=(int)$count->fetchColumn();$pages=max(1,(int)ceil($total/$perPage));$page=min($page,$pages);$offset=($page-1)*$perPage;$stmt=db()->prepare("SELECT n.id,n.user_id,n.food_name,n.eaten_at,n.price,n.rating,n.review,n.privacy,n.status,n.created_at,u.name AS author_name,COALESCE(r.name,n.restaurant_name_snapshot) AS restaurant_name FROM food_notes n JOIN users u ON u.id=n.user_id LEFT JOIN restaurants r ON r.id=n.restaurant_id {$where} ORDER BY n.created_at DESC LIMIT {$perPage} OFFSET {$offset}");$stmt->execute($params);json_response(['data'=>$stmt->fetchAll(),'pagination'=>['page'=>$page,'per_page'=>$perPage,'total'=>$total,'pages'=>$pages]]);
@@ -766,6 +967,9 @@ function handle_request(): never
 try {
     handle_request();
 } catch (ApiError $error) {
+    if (request_method()==='GET' && route_path()==='/auth/verify' && str_contains((string)($_SERVER['HTTP_ACCEPT']??''),'text/html')) {
+        header('Location: /pages/login.php?verification=invalid',true,303);exit;
+    }
     json_response(['error'=>$error->getMessage(),'details'=>$error->details],$error->status);
 } catch (PDOException $error) {
     error_log('[What2Eat] database error: ' . $error->getMessage());

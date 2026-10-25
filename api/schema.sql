@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
   name VARCHAR(100) NOT NULL,
   email VARCHAR(254) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
+  session_version INT UNSIGNED NOT NULL DEFAULT 0,
   avatar_url VARCHAR(500) NULL,
   phone VARCHAR(32) NULL,
   preferences JSON NULL,
@@ -82,6 +83,22 @@ CREATE TABLE IF NOT EXISTS restaurants (
   CONSTRAINT fk_restaurants_category FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
   CONSTRAINT fk_restaurants_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
   CONSTRAINT fk_restaurants_moderator FOREIGN KEY (moderated_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS restaurant_sponsorships (
+  restaurant_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  sponsor_name VARCHAR(180) NOT NULL,
+  contract_reference VARCHAR(120) NULL,
+  starts_at DATETIME NOT NULL,
+  ends_at DATETIME NOT NULL,
+  status ENUM('active','paused') NOT NULL DEFAULT 'paused',
+  created_by BIGINT UNSIGNED NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY ix_sponsorships_schedule (status, starts_at, ends_at),
+  CONSTRAINT fk_sponsorships_restaurant FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE,
+  CONSTRAINT fk_sponsorships_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+  CONSTRAINT ck_sponsorships_dates CHECK (ends_at > starts_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS food_notes (
@@ -243,4 +260,34 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   KEY ix_audit_logs_created (created_at),
   KEY ix_audit_logs_entity (entity_type, entity_id),
   CONSTRAINT fk_audit_logs_actor FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS place_reports (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NOT NULL,
+  source ENUM('osm','managed') NOT NULL,
+  source_id VARCHAR(80) NOT NULL,
+  place_name VARCHAR(180) NOT NULL,
+  address VARCHAR(500) NULL,
+  latitude DECIMAL(10,7) NULL,
+  longitude DECIMAL(10,7) NULL,
+  reason ENUM('closed','moved','wrong_info','other') NOT NULL,
+  details VARCHAR(1000) NULL,
+  status ENUM('pending','resolved','dismissed') NOT NULL DEFAULT 'pending',
+  review_note VARCHAR(500) NULL,
+  reviewed_by BIGINT UNSIGNED NULL,
+  reviewed_at DATETIME NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY ix_place_reports_status_created (status, created_at),
+  KEY ix_place_reports_place (source, source_id),
+  CONSTRAINT fk_place_reports_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_place_reports_reviewer FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS osm_place_blocks (
+  source_id VARCHAR(80) NOT NULL PRIMARY KEY,
+  reason VARCHAR(500) NULL,
+  created_by BIGINT UNSIGNED NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_osm_place_blocks_admin FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

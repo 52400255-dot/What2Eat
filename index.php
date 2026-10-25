@@ -579,8 +579,7 @@ $pageTitle = 'What2Eat – Hôm nay ăn gì?';
                 <span class="open-badge" hidden></span>
               </div>
               <div class="d-flex gap-2">
-                <a href="./pages/discovery.php" id="rLink" class="btn-primary-w2e" style="font-size:.85rem;padding:8px 18px;">Mở nguồn OpenStreetMap</a>
-                <a href="#" id="rSourceLink" class="btn-outline-w2e" target="_blank" rel="noopener noreferrer" hidden>Đối chiếu nguồn ↗</a>
+                <a href="./pages/discovery.php" id="rLink" class="btn-primary-w2e" style="font-size:.85rem;padding:8px 18px;">Xem chi tiết</a>
                 <button class="btn-outline-w2e" style="font-size:.85rem;padding:8px 18px;" onclick="randomFood()">Chọn lại</button>
               </div>
             </div>
@@ -730,8 +729,7 @@ async function randomFood(){
     document.getElementById('rRating').textContent=item.source;
     document.getElementById('rPrice').textContent='Giá và đánh giá chỉ hiển thị khi nguồn cung cấp dữ liệu.';
     const image=document.getElementById('rImg');if(image){image.removeAttribute('src');image.hidden=true;}
-    const link=document.getElementById('rLink');if(link){link.href=item.mapUrl||item.url;link.removeAttribute('target');link.removeAttribute('rel');link.textContent='Xem trên bản đồ What2Eat';}
-    const sourceLink=document.getElementById('rSourceLink');if(sourceLink){sourceLink.href=item.sourceUrl||item.url;sourceLink.hidden=!item.sourceUrl;}
+    const link=document.getElementById('rLink');if(link){link.href=item.url;link.removeAttribute('target');link.removeAttribute('rel');link.textContent='Xem chi tiết';}
     const result=document.getElementById('randomResult');result.style.display='block';
     const card=document.getElementById('resultCard');card.style.animation='none';card.offsetHeight;card.style.animation='popIn .4s cubic-bezier(.34,1.56,.64,1)';
   } catch(error) {

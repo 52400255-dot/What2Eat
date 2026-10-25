@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-function load_app_env(): void
+function load_app_env(): array
 {
-    static $loaded = false;
-    if ($loaded) return;
-    $loaded = true;
+    static $values = null;
+    if ($values !== null) return $values;
+    $values = [];
     $file = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env';
-    if (!is_file($file)) return;
+    if (!is_file($file)) return $values;
     foreach (file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line) {
         $line = trim($line);
         if ($line === '' || str_starts_with($line, '#') || !str_contains($line, '=')) continue;
@@ -17,8 +17,9 @@ function load_app_env(): void
         if ($value !== '' && (($value[0] === '"' && str_ends_with($value, '"')) || ($value[0] === "'" && str_ends_with($value, "'")))) {
             $value = substr($value, 1, -1);
         }
-        if ($key !== '' && getenv($key) === false) putenv($key . '=' . $value);
+        if ($key !== '') $values[$key] = $value;
     }
+    return $values;
 }
 
 load_app_env();
@@ -34,7 +35,8 @@ final class ApiError extends RuntimeException
 function env_value(string $key, ?string $default = null): ?string
 {
     $value = getenv($key);
-    return $value === false ? $default : $value;
+    if ($value !== false) return $value;
+    return load_app_env()[$key] ?? $default;
 }
 
 function is_local_development_origin(?string $origin = null): bool
@@ -195,16 +197,17 @@ function current_user(bool $required = true): ?array
         if ($required) throw new ApiError(401, 'Vui lòng đăng nhập để tiếp tục.');
         return null;
     }
-    $query = db()->prepare("SELECT id,name,email,avatar_url,phone,preferences,role,status,email_verified_at,created_at,last_login_at FROM users WHERE id=? AND status='active' LIMIT 1");
+    $query = db()->prepare("SELECT id,name,email,avatar_url,phone,preferences,role,status,session_version,email_verified_at,created_at,last_login_at FROM users WHERE id=? AND status='active' LIMIT 1");
     $query->execute([$id]);
     $user = $query->fetch();
-    if (!$user) {
+    if (!$user || (int)$user['session_version'] !== (int)($_SESSION['session_version'] ?? 0)) {
         $_SESSION = [];
         if (session_status() === PHP_SESSION_ACTIVE) session_destroy();
         if ($required) throw new ApiError(401, 'Phiên đăng nhập đã hết hạn.');
         return null;
     }
     $user['id'] = (int)$user['id'];
+    $user['session_version'] = (int)$user['session_version'];
     $user['preferences'] = $user['preferences'] ? json_decode($user['preferences'], true) : [];
     if ($user['avatar_url']) $user['avatar_url'] = '/api/v1/avatar/' . $user['id'];
     return $user;
@@ -247,8 +250,10 @@ function send_app_mail(string $to, string $subject, string $html): bool
     if (is_local_development_origin()) {
         $storage = dirname(__DIR__) . '/storage';
         if (!is_dir($storage) || !is_writable($storage)) return false;
+        $logName = (string)env_value('W2E_DEV_MAIL_LOG', 'dev-mail.log');
+        if (!preg_match('/^[A-Za-z0-9._-]+\.log$/', $logName)) return false;
         $entry = "\n--- " . gmdate('Y-m-d H:i:s') . " UTC ---\nTo: {$to}\nSubject: {$subject}\n{$html}\n";
-        return file_put_contents($storage . '/dev-mail.log', $entry, FILE_APPEND | LOCK_EX) !== false;
+        return file_put_contents($storage . '/' . $logName, $entry, FILE_APPEND | LOCK_EX) !== false;
     }
     $from = env_value('W2E_MAIL_FROM');
     if (!$from || str_contains($from, "\r") || str_contains($from, "\n")) return false;
@@ -267,5 +272,6 @@ function public_restaurant(array $row): array
         'opening_hours' => $row['opening_hours'] ? json_decode($row['opening_hours'], true) : null,
         'price_range' => $row['price_range'], 'source' => $row['source'], 'source_id' => $row['source_id'],
         'source_url' => $row['source_url'], 'status' => $row['status'], 'category_id' => $row['category_id'] ? (int)$row['category_id'] : null,
+        'sponsored' => $row['status'] === 'published' && !empty($row['sponsored']),
     ];
 }

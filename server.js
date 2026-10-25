@@ -153,7 +153,8 @@ function serveStatic(response, pathname) {
   const topLevel = (pathParts[0] || '').toLowerCase();
   const publicRoots = new Set(['assets', 'pages', 'admin']);
   const isHomePage = ['index.html', 'index.php'].includes(relativePath.toLowerCase());
-  if ((!isHomePage && !publicRoots.has(topLevel)) || pathParts.some((part) => part.startsWith('.'))
+  const publicTopLevelFiles = new Set(['manifest.json', 'sw.js', 'offline.html']);
+  if ((!isHomePage && !publicTopLevelFiles.has(relativePath.toLowerCase()) && !publicRoots.has(topLevel)) || pathParts.some((part) => part.startsWith('.'))
       || pathParts.some((part) => part.toLowerCase() === 'api' || part.toLowerCase() === 'storage')) {
     response.writeHead(404);
     response.end('Not found');
