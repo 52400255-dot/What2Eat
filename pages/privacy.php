@@ -23,7 +23,7 @@ $pageTitle = 'Quyền riêng tư – What2Eat';
     <p class="policy-notice">What2Eat đang được chuẩn bị triển khai. Trước khi mở đăng ký công khai, chủ website cần bổ sung thông tin pháp nhân/chủ thể vận hành và kiểm tra lại tài liệu này cho đúng với nơi lưu trữ, nhà cung cấp email và cấu hình thực tế.</p>
 
     <h2>Dữ liệu tài khoản và nội dung</h2>
-    <p>Tài khoản lưu tên, email, mật khẩu ở dạng mã băm, số điện thoại nếu bạn cung cấp, tùy chọn ăn uống, ảnh đại diện, trạng thái xác thực và thời điểm tạo/đăng nhập. What2Eat lưu Food Notes, nhãn, đánh giá, ngày ăn, giá do bạn nhập, tệp ảnh/video, địa điểm yêu thích và Food Plans do bạn tham gia.</p>
+    <p>Tài khoản lưu tên, email, mật khẩu ở dạng mã băm, số điện thoại nếu bạn cung cấp, tùy chọn ăn uống, ảnh đại diện, trạng thái xác thực và thời điểm tạo/đăng nhập. What2Eat lưu Food Notes, nhãn, đánh giá, ngày ăn, giá do bạn nhập, tệp ảnh/video, địa điểm yêu thích, Food Plans và báo cáo sai thông tin địa điểm do bạn gửi.</p>
 
     <h2>Vị trí và bản đồ</h2>
     <p>Nếu bạn cho phép trình duyệt lấy vị trí hoặc chọn một vị trí trên bản đồ, tọa độ được gửi đến dịch vụ What2Eat để tìm địa điểm ăn uống từ OpenStreetMap. Máy chủ lưu bộ nhớ đệm kết quả bản đồ theo khu vực trong thời gian ngắn; tọa độ không được ghi vào hồ sơ tài khoản. Bản đồ và dữ liệu địa điểm phụ thuộc vào OpenStreetMap, các máy chủ Overpass và nhà cung cấp bản đồ được cấu hình.</p>
@@ -37,7 +37,7 @@ $pageTitle = 'Quyền riêng tư – What2Eat';
     <p>Quản trị viên có thể xem nội dung cần kiểm duyệt, xử lý báo cáo vận hành và quản lý các địa điểm do người dùng đề xuất.</p>
 
     <h2>Cookie, bộ nhớ trình duyệt và nhà cung cấp</h2>
-    <p>Đăng nhập dùng cookie phiên bảo mật và mã CSRF. Nếu chọn “Ghi nhớ đăng nhập”, địa chỉ email được lưu trên trình duyệt để điền lại; mật khẩu không được lưu ở đó. Website hiện tải một số thư viện/giao diện từ CDN và dùng dịch vụ OpenStreetMap/HOT; các nhà cung cấp này nhận yêu cầu mạng từ trình duyệt hoặc máy chủ theo cách dịch vụ của họ hoạt động. Phiên bản mã hiện tại không tích hợp quảng cáo hay hệ thống phân tích hành vi.</p>
+    <p>Đăng nhập dùng cookie phiên bảo mật và mã CSRF. Nếu chọn “Ghi nhớ đăng nhập”, địa chỉ email được lưu trên trình duyệt để điền lại; mật khẩu không được lưu ở đó. Nội dung Food Note chưa gửi có thể được lưu tạm trên chính thiết bị bằng bộ nhớ trình duyệt để khôi phục khi tải lại trang; ảnh/video chỉ được lưu sau khi bạn bấm Lưu Nháp hoặc Đăng Food Note. Bản nháp trên thiết bị được xóa khi đăng xuất hoặc xóa tài khoản. Website hiện tải một số thư viện/giao diện từ CDN và dùng dịch vụ OpenStreetMap/HOT; các nhà cung cấp này nhận yêu cầu mạng từ trình duyệt hoặc máy chủ theo cách dịch vụ của họ hoạt động. Địa điểm được tài trợ, nếu có, được gắn nhãn “Tài trợ”; phiên bản hiện tại không tích hợp hệ thống phân tích hành vi.</p>
 
     <h2>Xuất và xóa dữ liệu</h2>
     <p>Trong Hồ sơ, bạn có thể tải JSON gồm hồ sơ, Food Notes, địa điểm yêu thích và Food Plans mà tài khoản được phép xem. Xóa tài khoản cần xác nhận bằng mật khẩu; Food Notes, yêu thích, Food Plans và tệp đính kèm liên quan bị xóa. Địa điểm đã gửi vào thư mục dùng chung có thể được giữ lại sau khi tách khỏi tài khoản người đóng góp. Nhật ký bảo mật có thể được giữ lại phục vụ vận hành.</p>
