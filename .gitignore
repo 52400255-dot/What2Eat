@@ -8,3 +8,5 @@
 !/storage/uploads/avatars/.gitkeep
 *.log
 *.sql.gz
+/vendor/
+/storage/backups/

@@ -1,0 +1,336 @@
+body.w2e-food-notes-page {
+  min-height: 100vh;
+  padding-bottom: 86px;
+  color: #302218;
+  background: radial-gradient(ellipse at 4% 27%, rgba(217, 164, 30, .11), transparent 28rem), radial-gradient(ellipse at 96% 72%, rgba(104, 63, 35, .08), transparent 32rem), #f6f0e5;
+}
+body.w2e-food-notes-page .container { width: min(100% - 48px, 1260px); max-width: 1260px; }
+.w2e-food-notes-page .w2e-navbar {
+  position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid #e8ddcd;
+  background: rgba(255, 251, 243, .96); box-shadow: 0 5px 18px rgba(67, 43, 24, .045);
+  backdrop-filter: blur(14px);
+}
+.w2e-food-notes-page .w2e-navbar .container { min-height: 68px; }
+.w2e-food-notes-page .w2e-navbar .navbar-brand { color: #4a2c1a !important; font-size: 1.28rem; font-weight: 700; letter-spacing: -.045em; }
+.w2e-food-notes-page .w2e-navbar .navbar-brand span { color: #d19a0b; }
+.w2e-food-notes-page .w2e-navbar .nav-link { padding: .55rem .8rem !important; border-radius: 8px; color: #6f6256 !important; font-size: .84rem; font-weight: 500; transition: color .18s ease, background .18s ease; }
+.w2e-food-notes-page .w2e-navbar .nav-link:hover,
+.w2e-food-notes-page .w2e-navbar .nav-link.w2e-active { background: #f5e9c8; color: #704916 !important; }
+.w2e-food-notes-page .w2e-navbar .w2e-btn-create,
+.w2e-food-notes-page .w2e-btn-primary {
+  display: inline-flex; min-height: 42px; align-items: center; justify-content: center; padding: .65rem 1.05rem;
+  border: 1px solid #c58b00; border-radius: 8px; background: #c58b00; color: #fffdf7;
+  font-size: .83rem; font-weight: 600; text-decoration: none; transition: background .18s ease, border-color .18s ease, transform .18s ease;
+}
+.w2e-food-notes-page .w2e-navbar .w2e-btn-create:hover,
+.w2e-food-notes-page .w2e-btn-primary:hover { transform: translateY(-1px); border-color: #a87500; background: #a87500; color: #fff; }
+.w2e-food-notes-page .navbar-toggler { padding: .45rem .68rem; border: 1px solid #d9cbb7 !important; border-radius: 7px; color: #4a2c1a; font-size: .8rem; font-weight: 600; }
+
+.w2e-food-notes-page .w2e-page-header {
+  position: relative; isolation: isolate; overflow: hidden; padding: 34px 0 38px; border: 0;
+  background: linear-gradient(115deg, #3f281a 0%, #56351f 68%, #6b431f 100%);
+}
+.w2e-food-notes-page .w2e-page-header::before,
+.w2e-food-notes-page .w2e-page-header::after { position: absolute; z-index: -1; border: 1px solid rgba(255, 249, 235, .12); border-radius: 50%; content: ''; pointer-events: none; }
+.w2e-food-notes-page .w2e-page-header::before { top: -300px; right: 5%; width: 620px; height: 620px; }
+.w2e-food-notes-page .w2e-page-header::after { top: -220px; right: 12%; width: 460px; height: 460px; }
+.w2e-food-notes-page .w2e-page-header .container > .d-flex {
+  position: relative; gap: 24px; padding: clamp(24px, 4vw, 42px);
+  border: 1px solid rgba(255, 248, 235, .16); border-radius: 20px;
+  background: linear-gradient(105deg, rgba(255, 249, 237, .075), rgba(255, 249, 237, .025));
+  box-shadow: 0 18px 46px rgba(30, 17, 9, .16);
+}
+.w2e-food-notes-page .w2e-page-eyebrow { margin: 0 0 9px; color: #edc862; font-size: .69rem; font-weight: 700; letter-spacing: .16em; }
+.w2e-food-notes-page .w2e-page-header h1 { margin: 0 0 8px; color: #fffaf1; font-size: clamp(1.8rem, 3vw, 2.5rem); font-weight: 600; letter-spacing: -.04em; }
+.w2e-food-notes-page .w2e-page-header p:not(.w2e-page-eyebrow) { max-width: 530px; margin: 0; color: rgba(255, 250, 241, .74); font-size: .91rem; line-height: 1.6; }
+.w2e-food-notes-page .w2e-page-header .w2e-btn-primary { min-width: 148px; border-color: #dfad28; background: #dfad28; color: #342414; }
+.w2e-food-notes-page .w2e-page-header .w2e-btn-primary:hover { border-color: #f0c24a; background: #f0c24a; }
+
+.w2e-food-notes-page .w2e-notes-main { padding-top: 26px; padding-bottom: 64px; }
+.w2e-food-notes-page .w2e-toolbar {
+  margin: 0 0 17px; padding: 18px 20px 15px; border: 1px solid #e5d7c3; border-radius: 15px;
+  background: rgba(255, 251, 243, .94); box-shadow: 0 8px 24px rgba(67, 43, 24, .055);
+}
+.w2e-food-notes-page .w2e-toolbar .row { row-gap: 10px !important; }
+.w2e-food-notes-page #noteSearch,
+.w2e-food-notes-page .w2e-select {
+  min-height: 43px; padding: .62rem .8rem; border: 1px solid #e4d6c3; border-radius: 8px;
+  background-color: #fffdf9; color: #473528; font-family: inherit; font-size: .82rem;
+}
+.w2e-food-notes-page #noteSearch::placeholder { color: #a09384; }
+.w2e-food-notes-page #noteSearch:focus,
+.w2e-food-notes-page .w2e-select:focus { border-color: #c58b00; outline: 3px solid rgba(197, 139, 0, .13); box-shadow: none; }
+.w2e-food-notes-page .w2e-tag-filter { gap: 7px; margin-top: 14px; padding-top: 12px; border-top: 1px solid #eee4d6; }
+.w2e-food-notes-page .w2e-tag-filter > span { margin-right: 2px; color: #756657; font-size: .75rem; }
+.w2e-food-notes-page .w2e-tag-btn { padding: 5px 10px; border: 1px solid #e4d6c3; border-radius: 7px; background: #f7f0e4; color: #6d5a43; font-size: .73rem; font-weight: 500; transition: background .16s ease, color .16s ease, border-color .16s ease; }
+.w2e-food-notes-page .w2e-tag-btn:hover { border-color: #d4a32b; color: #704916; }
+.w2e-food-notes-page .w2e-tag-btn.active { border-color: #59391f; background: #59391f; color: #fff9ef; }
+.w2e-food-notes-page .w2e-view-toggle { gap: 5px; }
+.w2e-food-notes-page .w2e-view-btn { width: auto; min-width: 58px; height: 38px; padding: 0 11px; border: 1px solid #e2d3bf; border-radius: 7px; background: #fffdf9; color: #756657; font-family: inherit; font-size: .76rem; font-weight: 600; }
+.w2e-food-notes-page .w2e-view-btn.active,
+.w2e-food-notes-page .w2e-view-btn:hover { border-color: #c58b00; background: #f3e5c1; color: #674512; }
+
+.w2e-food-notes-page .w2e-stats-bar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0 0 27px; }
+.w2e-food-notes-page .w2e-stat-chip { min-height: 88px; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; padding: 14px 17px; border: 1px solid #e5d7c3; border-radius: 12px; background: linear-gradient(135deg, #fffaf1, #f7edd8); color: #82715e; font-size: .73rem; letter-spacing: .025em; }
+.w2e-food-notes-page .w2e-stat-chip strong { color: #49301c; font-size: 1.42rem; font-weight: 600; letter-spacing: -.04em; line-height: 1.05; }
+
+.w2e-food-notes-page .w2e-section-title { display: flex; min-height: 31px; align-items: baseline; justify-content: space-between; gap: 14px; margin: 0 0 14px; color: #4c301c; font-size: 1.05rem; font-weight: 600; letter-spacing: -.015em; }
+.w2e-food-notes-page .w2e-note-results { color: #958572; font-size: .75rem; font-weight: 500; letter-spacing: 0; }
+.w2e-food-notes-page .w2e-pinned-section { margin: 0 0 26px; padding: 19px; border: 1px solid #e0ca91; border-radius: 14px; background: linear-gradient(115deg, #f4e8c8, #fbf4e5 65%, #efe1bc); box-shadow: inset 4px 0 #c58b00; }
+.w2e-food-notes-page .w2e-pinned-section[hidden] { display: none !important; }
+.w2e-food-notes-page .w2e-pinned-section .w2e-section-title { margin-bottom: 13px; }
+
+.w2e-food-notes-page .w2e-notes-grid { gap: 17px; }
+.w2e-food-notes-page .w2e-notes-grid.grid-3 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.w2e-food-notes-page .w2e-note-card {
+  display: flex; min-width: 0; flex-direction: column; border: 1px solid #e6d8c4; border-radius: 15px;
+  background: #fffdf8; box-shadow: 0 7px 19px rgba(67, 43, 24, .07);
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.w2e-food-notes-page .w2e-note-card:hover { transform: translateY(-3px); border-color: #d2aa51; box-shadow: 0 13px 27px rgba(67, 43, 24, .12); }
+.w2e-food-notes-page .w2e-note-card .w2e-card-img { width: 100%; height: 190px; object-fit: cover; background: #e9deca; }
+.w2e-food-notes-page .w2e-note-card .w2e-card-body { display: flex; flex: 1; flex-direction: column; align-items: flex-start; padding: 17px 17px 14px; }
+.w2e-food-notes-page .w2e-note-card .w2e-food-name { max-width: 100%; margin: 0 0 8px; color: #3e2a1a; font-size: 1rem; font-weight: 600; letter-spacing: -.02em; line-height: 1.35; white-space: normal; }
+.w2e-food-notes-page .w2e-note-card .w2e-rating { margin: 0 0 6px; color: #956400; font-size: .75rem; font-weight: 600; }
+.w2e-food-notes-page .w2e-note-card .w2e-note-restaurant { margin-bottom: 5px; color: #786653; font-size: .77rem; }
+.w2e-food-notes-page .w2e-note-card .w2e-price { margin-bottom: 7px; color: #a36b00; font-size: .88rem; font-weight: 700; }
+.w2e-food-notes-page .w2e-note-card .w2e-comment { color: #726455; font-size: .8rem; line-height: 1.6; }
+.w2e-food-notes-page .w2e-note-card .w2e-tags { gap: 6px; margin: 3px 0 9px; }
+.w2e-food-notes-page .w2e-tag-badge { padding: 4px 8px; border: 1px solid #eadbb8; border-radius: 6px; background: #f6edda; color: #745522; font-size: .67rem; font-weight: 500; }
+.w2e-food-notes-page .w2e-privacy-badge { top: 12px; right: 12px; padding: 5px 9px; border: 1px solid rgba(255, 255, 255, .35); border-radius: 6px; background: rgba(59, 39, 23, .82); color: #fff8e9; font-size: .66rem; letter-spacing: .02em; }
+.w2e-food-notes-page .w2e-privacy-public { background: rgba(71, 103, 73, .9); }
+.w2e-food-notes-page .w2e-privacy-link { background: rgba(156, 105, 32, .92); }
+.w2e-food-notes-page .w2e-privacy-pending { background: rgba(156, 105, 32, .92); }
+.w2e-food-notes-page .w2e-privacy-rejected { background: rgba(128, 52, 42, .9); }
+.w2e-food-notes-page .w2e-note-card .w2e-card-footer { display: flex; flex-direction: column; align-items: stretch; gap: 9px; padding: 12px 15px 14px; border-top: 1px solid #eee5d8; background: #fcf7ed; }
+.w2e-food-notes-page .w2e-note-card .w2e-date { color: #938370; font-size: .7rem; }
+.w2e-food-notes-page .w2e-note-card .w2e-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.w2e-food-notes-page .w2e-action-btn { width: auto; height: 30px; padding: 0 9px; border: 1px solid #e6d7c1; border-radius: 6px; background: #fffdf9; color: #604b35; font-family: inherit; font-size: .69rem; font-weight: 600; text-decoration: none; white-space: nowrap; transition: background .16s ease, border-color .16s ease, color .16s ease; }
+.w2e-food-notes-page .w2e-action-btn:hover { border-color: #d0a84d; background: #f6ebd0; color: #694615; }
+.w2e-food-notes-page .w2e-action-btn[aria-pressed="true"] { border-color: #c58b00; background: #f3e5c1; color: #674512; }
+.w2e-food-notes-page .w2e-action-btn.w2e-danger { color: #8e4c3d; }
+.w2e-food-notes-page .w2e-action-btn.w2e-danger:hover { border-color: #c98b7b; background: #fbefeb; color: #8a392a; }
+.w2e-food-notes-page .w2e-note-card.pinned { border-color: #c58b00; }
+.w2e-food-notes-page .w2e-note-card.pinned::before { border-radius: 15px 15px 0 0; }
+.w2e-food-notes-page .w2e-notes-grid.grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.w2e-food-notes-page .w2e-note-item { margin-bottom: 10px; padding: 16px 18px; border: 1px solid #e6d8c4; border-radius: 10px; background: #fffdf8; color: #4c3825; }
+.w2e-food-notes-page #loadMoreNotes { min-height: 42px; padding: 0 20px; border: 1px solid #c58b00; border-radius: 8px; background: transparent; color: #765112; font-size: .82rem; font-weight: 600; }
+.w2e-food-notes-page #loadMoreNotes:hover { background: #f3e5c1; }
+.w2e-food-notes-page .w2e-empty-state { margin-top: 10px; padding: 48px 24px; border: 1px dashed #d5bd81; border-radius: 16px; background: rgba(255, 250, 241, .8); }
+.w2e-food-notes-page .w2e-empty-state h3 { color: #4a2c1a; font-weight: 600; }
+.w2e-food-notes-page .w2e-empty-state p { max-width: 460px; margin: 0 auto; color: #76685a; line-height: 1.6; }
+
+.w2e-food-notes-page .w2e-topbar-notify { position: relative; width: auto; min-height: 36px; margin-left: 12px; padding: 0 10px; border: 1px solid #e2d5c2; border-radius: 7px; background: #fffdf9; color: #61472e; font: inherit; font-size: .72rem; font-weight: 600; }
+.w2e-food-notes-page .w2e-topbar-notify:hover { border-color: #d1a238; background: #f6ebd0; }
+.w2e-food-notes-page .w2e-topbar-notify-dot { top: 3px; right: 3px; }
+.w2e-food-notes-page .w2e-notifications { z-index: 1200; border: 1px solid #e1d3bf; border-radius: 12px; background: #fffaf1; box-shadow: 0 15px 40px rgba(50, 32, 18, .17); }
+
+.w2e-food-notes-page .w2e-bottom-nav { border-top: 1px solid #e3d6c3; background: rgba(255, 251, 243, .97); box-shadow: 0 -5px 22px rgba(67, 43, 24, .06); backdrop-filter: blur(12px); }
+.w2e-food-notes-page .w2e-bottom-nav-inner { justify-content: center; gap: 8px; }
+.w2e-food-notes-page .w2e-bnav-item { min-width: 100px; padding: 9px 12px; border-radius: 7px; color: #746657; font-size: .74rem; }
+.w2e-food-notes-page .w2e-bnav-item.active { background: #f4e7c6; color: #694615; font-weight: 600; }
+.w2e-food-notes-page :focus-visible { outline: 3px solid rgba(197, 139, 0, .45); outline-offset: 2px; }
+
+@media (max-width: 1199px) {
+  .w2e-food-notes-page .w2e-notes-grid.grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 991px) {
+  body.w2e-food-notes-page .container { width: min(100% - 36px, 760px); }
+  .w2e-food-notes-page .w2e-notes-grid.grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .w2e-food-notes-page .w2e-navbar .navbar-collapse { padding: 12px 0 14px; }
+  .w2e-food-notes-page .w2e-topbar-notify { margin: 0 0 10px; }
+}
+@media (max-width: 767px) {
+  body.w2e-food-notes-page { padding-bottom: 82px; }
+  body.w2e-food-notes-page .container { width: min(100% - 28px, 620px); }
+  .w2e-food-notes-page .w2e-page-header { padding: 22px 0 25px; }
+  .w2e-food-notes-page .w2e-page-header .container > .d-flex { padding: 24px 20px; border-radius: 15px; }
+  .w2e-food-notes-page .w2e-page-header .w2e-btn-primary { width: 100%; }
+  .w2e-food-notes-page .w2e-notes-main { padding-top: 17px; }
+  .w2e-food-notes-page .w2e-toolbar { padding: 14px; }
+  .w2e-food-notes-page .w2e-stats-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 21px; }
+  .w2e-food-notes-page .w2e-stat-chip { min-height: 76px; padding: 12px; }
+  .w2e-food-notes-page .w2e-notes-grid { gap: 12px; }
+  .w2e-food-notes-page .w2e-note-card .w2e-card-img { height: 175px; }
+  .w2e-food-notes-page .w2e-notes-grid.grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .w2e-food-notes-page .w2e-bottom-nav-inner { justify-content: space-around; gap: 0; }
+  .w2e-food-notes-page .w2e-bnav-item { min-width: 0; flex: 1; padding: 9px 4px; font-size: .64rem; }
+}
+@media (max-width: 520px) {
+  body.w2e-food-notes-page .container { width: calc(100% - 24px); }
+  .w2e-food-notes-page .w2e-notes-grid.grid-3,
+  .w2e-food-notes-page .w2e-notes-grid.grid-2 { grid-template-columns: minmax(0, 1fr); }
+  .w2e-food-notes-page .w2e-note-card .w2e-card-img { height: 210px; }
+  .w2e-food-notes-page .w2e-section-title { align-items: flex-start; flex-direction: column; gap: 2px; }
+  .w2e-food-notes-page .w2e-tag-filter { max-height: 116px; overflow: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .w2e-food-notes-page *,
+  .w2e-food-notes-page *::before,
+  .w2e-food-notes-page *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}
+
+
+/* Editorial refinement: quieter color, wider frame, and useful side notes. */
+body.w2e-food-notes-page { background: #f2ede3; color: #342719; font-size: 16px; }
+body.w2e-food-notes-page .w2e-page-header { padding: 29px 0 31px; border-bottom: 2px solid #b88722; background: #4a2c1a; }
+.w2e-food-notes-page .w2e-page-header::before,
+.w2e-food-notes-page .w2e-page-header::after { display: none; }
+.w2e-food-notes-page .w2e-page-header .container > .d-flex { padding: 12px 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.w2e-food-notes-page .w2e-page-eyebrow { margin-bottom: 10px; color: #d9b765; font-size: .76rem; font-weight: 500; letter-spacing: .12em; }
+.w2e-food-notes-page .w2e-page-header h1 { font-family: var(--font-display); font-size: clamp(2.15rem, 3vw, 2.6rem); font-weight: 700; letter-spacing: -.035em; }
+.w2e-food-notes-page .w2e-page-header p:not(.w2e-page-eyebrow) { font-size: .98rem; }
+.w2e-food-notes-page .w2e-navbar .nav-link { font-size: .9rem; }
+.w2e-food-notes-page .w2e-navbar .w2e-btn-create,
+.w2e-food-notes-page .w2e-btn-primary { font-size: .88rem; font-weight: 500; }
+.w2e-food-notes-page .w2e-notes-main { display: block; padding-top: 29px; }
+.w2e-food-notes-page .w2e-notes-content { min-width: 0; }
+.w2e-food-notes-page .w2e-toolbar { border-radius: 10px; background: #faf7f0; box-shadow: none; }
+.w2e-food-notes-page #noteSearch,
+.w2e-food-notes-page .w2e-select { font-size: .9rem; }
+.w2e-food-notes-page .w2e-tag-filter > span,
+.w2e-food-notes-page .w2e-tag-btn { font-size: .8rem; }
+.w2e-food-notes-page .w2e-view-btn { font-size: .84rem; }
+.w2e-food-notes-page .w2e-stats-bar { gap: 0; padding: 7px 0; border-top: 1px solid #d9cbb6; border-bottom: 1px solid #d9cbb6; background: #eee6d8; }
+.w2e-food-notes-page .w2e-stat-chip { min-height: 68px; padding: 10px 17px; border: 0; border-right: 1px solid #d9cbb6; border-radius: 0; background: transparent; font-size: .82rem; letter-spacing: 0; }
+.w2e-food-notes-page .w2e-stat-chip:last-child { border-right: 0; }
+.w2e-food-notes-page .w2e-stat-chip strong { font-family: var(--font-display); font-size: 1.65rem; font-weight: 600; }
+.w2e-food-notes-page .w2e-section-title { font-size: 1.16rem; font-weight: 500; }
+.w2e-food-notes-page .w2e-note-results { font-size: .84rem; }
+.w2e-food-notes-page .w2e-pinned-section { border: 1px solid #ddc997; border-left: 3px solid #bd8d28; border-radius: 9px; background: #f6efdf; box-shadow: none; }
+.w2e-food-notes-page .w2e-note-card { border-radius: 9px; background: #faf8f2; box-shadow: 0 2px 8px rgba(67, 43, 24, .04); transition: border-color .18s ease, box-shadow .18s ease; }
+.w2e-food-notes-page .w2e-note-card:hover { transform: none; border-color: #caa75a; box-shadow: 0 5px 14px rgba(67, 43, 24, .08); }
+.w2e-food-notes-page .w2e-note-card .w2e-card-img { height: 202px; }
+.w2e-food-notes-page .w2e-note-card .w2e-card-body { padding: 18px 18px 15px; }
+.w2e-food-notes-page .w2e-note-card .w2e-food-name { font-size: 1.12rem; font-weight: 500; }
+.w2e-food-notes-page .w2e-note-card .w2e-rating,
+.w2e-food-notes-page .w2e-note-card .w2e-note-restaurant { font-size: .86rem; }
+.w2e-food-notes-page .w2e-note-card .w2e-price { font-size: .96rem; font-weight: 600; }
+.w2e-food-notes-page .w2e-note-card .w2e-comment { font-size: .88rem; }
+.w2e-food-notes-page .w2e-tag-badge { font-size: .74rem; }
+.w2e-food-notes-page .w2e-privacy-badge { border-radius: 5px; font-size: .73rem; font-weight: 500; }
+.w2e-food-notes-page .w2e-note-card .w2e-card-footer { background: #f5f0e6; }
+.w2e-food-notes-page .w2e-note-card .w2e-date { font-size: .78rem; }
+.w2e-food-notes-page .w2e-action-btn { height: 32px; padding: 0 10px; border-radius: 5px; font-size: .78rem; font-weight: 500; }
+.w2e-food-notes-page .w2e-notes-rail[hidden] { display: none !important; }
+.w2e-food-notes-page .w2e-notes-rail { align-self: start; position: sticky; top: 105px; margin-top: 4px; padding: 14px 4px 16px; border-top: 1px solid #cdbb9e; border-bottom: 1px solid #ddd0bb; color: #56432e; }
+.w2e-food-notes-page .w2e-notes-rail__eyebrow,
+.w2e-food-notes-page .w2e-notes-rail__label { margin: 0 0 15px; color: #8a714c; font-size: .74rem; font-weight: 500; letter-spacing: .12em; }
+.w2e-food-notes-page .w2e-notes-rail__count { display: flex; align-items: baseline; gap: 8px; margin: 0 0 20px; color: #796b5a; font-size: .84rem; }
+.w2e-food-notes-page .w2e-notes-rail__count strong { color: #49301c; font-family: var(--font-display); font-size: 2.55rem; font-weight: 600; line-height: 1; }
+.w2e-food-notes-page .w2e-notes-rail__rule { width: 38px; height: 2px; margin: 0 0 18px; background: #bd8d28; }
+.w2e-food-notes-page .w2e-notes-rail__list { display: grid; gap: 0; }
+.w2e-food-notes-page .w2e-notes-rail__item { display: block; padding: 11px 0; border-bottom: 1px solid #e1d7c8; color: #473629; text-decoration: none; }
+.w2e-food-notes-page .w2e-notes-rail__item:hover { color: #976c15; }
+.w2e-food-notes-page .w2e-notes-rail__item-name { display: block; font-size: .92rem; font-weight: 500; line-height: 1.4; }
+.w2e-food-notes-page .w2e-notes-rail__item-date { display: block; margin-top: 4px; color: #938370; font-size: .78rem; }
+.w2e-food-notes-page .w2e-notes-rail--latest { padding-top: 16px; border-top: 2px solid #bd8d28; }
+.w2e-food-notes-page .w2e-notes-rail__date { margin: 0 0 12px; color: #90764f; font-size: .81rem; }
+.w2e-food-notes-page .w2e-notes-rail--latest h2 { margin: 0 0 8px; color: #49301c; font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; line-height: 1.25; }
+.w2e-food-notes-page .w2e-notes-rail__restaurant { margin: 0 0 12px; color: #806e58; font-size: .86rem; }
+.w2e-food-notes-page .w2e-notes-rail__review { margin: 0 0 15px; color: #665744; font-size: .88rem; line-height: 1.65; }
+.w2e-food-notes-page .w2e-notes-rail--latest > a { color: #7b5817; font-size: .86rem; text-decoration: underline; text-decoration-color: #c9ad70; text-underline-offset: 4px; }
+.w2e-food-notes-page .w2e-notes-rail--latest > a:hover { color: #4a2c1a; }
+@media (min-width: 1440px) {
+  body.w2e-food-notes-page .container { width: min(calc(100% - 80px), 1640px); max-width: 1640px; }
+  .w2e-food-notes-page .w2e-notes-main.has-notes { display: grid; grid-template-columns: minmax(150px, 185px) minmax(0, 1fr) minmax(175px, 205px); align-items: start; column-gap: clamp(22px, 2vw, 34px); }
+  .w2e-food-notes-page .w2e-notes-main.has-notes > .w2e-notes-rail { display: block; }
+  .w2e-food-notes-page .w2e-notes-main:not(.has-notes) { display: block; }
+}
+@media (max-width: 1439px) {
+  .w2e-food-notes-page .w2e-notes-rail { display: none; }
+  .w2e-food-notes-page .w2e-notes-content { width: 100%; }
+}
+@media (max-width: 767px) {
+  .w2e-food-notes-page .w2e-stats-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .w2e-food-notes-page .w2e-stat-chip:nth-child(2) { border-right: 0; }
+  .w2e-food-notes-page .w2e-stat-chip:nth-child(-n+2) { border-bottom: 1px solid #d9cbb6; }
+  .w2e-food-notes-page .w2e-note-card .w2e-food-name { font-size: 1.12rem; }
+}
+
+@media (min-width: 1200px) {
+  body.w2e-food-notes-page .container { width: min(calc(100% - 60px), 1640px); max-width: 1640px; }
+  .w2e-food-notes-page .w2e-notes-main.has-notes { display: grid; grid-template-columns: minmax(130px, 160px) minmax(0, 1fr) minmax(145px, 175px); align-items: start; column-gap: clamp(16px, 1.6vw, 28px); }
+  .w2e-food-notes-page .w2e-notes-main.has-notes > .w2e-notes-rail { display: block; }
+  .w2e-food-notes-page .w2e-notes-grid.grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1600px) {
+  .w2e-food-notes-page .w2e-notes-main.has-notes { grid-template-columns: minmax(160px, 185px) minmax(0, 1fr) minmax(175px, 205px); column-gap: clamp(22px, 2vw, 34px); }
+  .w2e-food-notes-page .w2e-notes-grid.grid-3 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (min-width: 1200px) and (max-width: 1599px) {
+  .w2e-food-notes-page .w2e-notes-rail__item-name,
+  .w2e-food-notes-page .w2e-notes-rail--latest h2 { font-size: 1.02rem; }
+}
+@media (max-width: 1199px) {
+  .w2e-food-notes-page .w2e-notes-rail { display: none; }
+  .w2e-food-notes-page .w2e-notes-content { width: 100%; }
+}
+.w2e-food-notes-page .w2e-notes-rail__item-name,
+.w2e-food-notes-page .w2e-notes-rail--latest h2 { overflow-wrap: anywhere; }
+
+/* Clear paper frames for the filter and editorial side notes. */
+.w2e-food-notes-page .w2e-toolbar {
+  padding: 17px 18px 15px;
+  border: 1px solid #bfa982;
+  border-radius: 8px;
+  background: #fbf8f1;
+  box-shadow: 0 3px 10px rgba(67, 43, 24, .055);
+}
+.w2e-food-notes-page .w2e-toolbar-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+  padding: 0 2px 11px;
+  border-bottom: 1px solid #ded0b8;
+}
+.w2e-food-notes-page .w2e-toolbar-heading h2 {
+  margin: 0;
+  color: #49301c;
+  font-size: 1.04rem;
+  font-weight: 500;
+}
+.w2e-food-notes-page .w2e-toolbar-heading p {
+  margin: 0;
+  color: #81715d;
+  font-size: .84rem;
+}
+.w2e-food-notes-page #noteSearch,
+.w2e-food-notes-page .w2e-select {
+  border-color: #cbb99b;
+  background: #fffdf9;
+}
+.w2e-food-notes-page .w2e-tag-filter { border-top-color: #d9c8ad; }
+.w2e-food-notes-page .w2e-tag-btn { border-color: #d2c1a4; }
+.w2e-food-notes-page .w2e-notes-rail {
+  padding: 17px 15px 18px;
+  border: 1px solid #c6b28e;
+  border-top: 3px solid #8a6331;
+  border-radius: 6px;
+  background: #faf7f0;
+  box-shadow: 0 3px 9px rgba(67, 43, 24, .045);
+}
+.w2e-food-notes-page .w2e-notes-rail--latest { border-top: 3px solid #b7831b; }
+.w2e-food-notes-page .w2e-notes-rail__eyebrow,
+.w2e-food-notes-page .w2e-notes-rail__label {
+  display: table;
+  margin-bottom: 14px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #d9c49a;
+  color: #775c33;
+  font-size: .77rem;
+  letter-spacing: .1em;
+}
+.w2e-food-notes-page .w2e-notes-rail__count { font-size: .87rem; }
+.w2e-food-notes-page .w2e-notes-rail__count strong { color: #4a2c1a; }
+.w2e-food-notes-page .w2e-notes-rail__rule { display: none; }
+.w2e-food-notes-page .w2e-notes-rail__item { padding: 12px 0; border-bottom-color: #e0d5c3; }
+.w2e-food-notes-page .w2e-notes-rail__item-name { color: #493a29; font-size: .96rem; }
+.w2e-food-notes-page .w2e-notes-rail--latest h2 { margin: 0 0 10px; font-size: 1.55rem; }
+.w2e-food-notes-page .w2e-notes-rail__review { padding-top: 11px; border-top: 1px solid #e0d5c3; }
+.w2e-food-notes-page .w2e-notes-rail--latest > a { font-weight: 500; }
+@media (max-width: 767px) {
+  .w2e-food-notes-page .w2e-toolbar-heading { align-items: flex-start; flex-direction: column; gap: 3px; }
+}

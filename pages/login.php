@@ -13,13 +13,13 @@ $pageTitle = 'Đăng nhập – What2Eat';
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
-  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/style.css?v=20261030-typography" />
   <link rel="stylesheet" href="../assets/css/auth.css" />
 
-  <link rel="stylesheet" href="../assets/css/live-data.css">
+  <link rel="stylesheet" href="../assets/css/live-data.css?v=20261028-activity">
 </head>
 
 <body class="w2e-auth-page">
@@ -84,6 +84,16 @@ $pageTitle = 'Đăng nhập – What2Eat';
           <button type="submit" class="w2e-btn-primary w-100" id="loginBtn">Đăng nhập</button>
         </form>
 
+        <div class="w2e-google-divider" aria-hidden="true"><span>hoặc</span></div>
+        <div class="w2e-google-signin">
+          <button class="w2e-google-fallback" type="button" disabled aria-describedby="googleAuthStatus">
+            <svg aria-hidden="true" viewBox="0 0 48 48" width="20" height="20"><path fill="#4285F4" d="M43.6 24.5c0-1.4-.1-2.7-.4-4H24v7.6h11a9.4 9.4 0 0 1-4.1 6.2v5h6.6c3.9-3.6 6.1-8.8 6.1-14.8Z"/><path fill="#34A853" d="M24 44c5.5 0 10.1-1.8 13.5-4.8l-6.6-5c-1.8 1.2-4.1 2-6.9 2-5.3 0-9.8-3.6-11.4-8.4H5.8v5.2A20 20 0 0 0 24 44Z"/><path fill="#FBBC05" d="M12.6 27.8a12 12 0 0 1 0-7.6V15H5.8a20 20 0 0 0 0 18Z"/><path fill="#EA4335" d="M24 11.8c3 0 5.6 1 7.7 3.1l5.8-5.8C34 5.8 29.5 4 24 4A20 20 0 0 0 5.8 15l6.8 5.2c1.6-4.8 6.1-8.4 11.4-8.4Z"/></svg>
+            <span>Đăng nhập bằng Google</span>
+          </button>
+          <div id="googleSignInButton" hidden></div>
+          <p class="w2e-google-status" id="googleAuthStatus" role="status" aria-live="polite">Đăng nhập Google hiện chưa khả dụng.</p>
+        </div>
+
         <div class="w2e-auth-footer-link">
           Chưa có tài khoản? <a href="./register.php">Tạo tài khoản miễn phí</a>
         </div>
@@ -123,6 +133,7 @@ $pageTitle = 'Đăng nhập – What2Eat';
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="../assets/js/app.js"></script>
-  <script src="../assets/js/site.js"></script>
+  <script src="../assets/js/site.js?v=20261028-activity"></script>
+  <script src="../assets/js/google-auth.js"></script>
 </body>
 </html>

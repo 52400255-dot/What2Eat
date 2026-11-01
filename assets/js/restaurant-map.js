@@ -9,9 +9,18 @@
   document.addEventListener('DOMContentLoaded', () => {
     const mapElement = document.getElementById('map-container');
     if (!mapElement) return;
+    // Local .local hosts are not trusted origins for browser geolocation.
+    if (!window.isSecureContext && location.hostname.toLowerCase().endsWith('.local')) {
+      const localUrl = new URL(location.href);
+      localUrl.hostname = `${localUrl.hostname.slice(0, -'.local'.length)}.localhost`;
+      location.replace(localUrl.href);
+      return;
+    }
     const status = document.getElementById('mapStatus');
     const locateButton = document.getElementById('locateMapBtn');
     const refreshButton = document.getElementById('refreshMapBtn');
+    const pickButton = document.getElementById('pickMapLocationBtn');
+    const locationStatus = document.getElementById('locationStatus');
     if (!window.L) {
       status.textContent = 'Không tải được Leaflet từ CDN. Hãy kiểm tra kết nối rồi tải lại trang.';
       return;
@@ -51,6 +60,15 @@
     mapElement.appendChild(legend);
     let searchCenter = initialCenter;
     let userMarker;
+    let accuracyCircle;
+    let locating = false;
+    let locationWatch = null;
+    let locationTimer;
+    let hasLocationFix = false;
+    let lastScannedCenter = null;
+    let lastScannedAt = 0;
+    let lastScannedAccuracy = Infinity;
+    let pickingLocation = false;
     let activeController;
 
     const tileLayer = L.tileLayer('/tiles/{z}/{x}/{y}.png', {
@@ -229,9 +247,6 @@
 
     window.addEventListener('w2e:managed-data', (event) => {
       managedRestaurants = (event.detail?.restaurants || []).filter(restaurant => restaurant.latitude !== null && restaurant.latitude !== '' && restaurant.longitude !== null && restaurant.longitude !== '' && Number.isFinite(Number(restaurant.latitude)) && Number.isFinite(Number(restaurant.longitude)));
-      if (event.detail?.center && Number.isFinite(event.detail.center.lat) && Number.isFinite(event.detail.center.lon)) {
-        searchCenter = [event.detail.center.lat, event.detail.center.lon];
-      }
       renderMarkers();
     });
 
@@ -240,7 +255,7 @@
       renderMarkers();
     });
 
-    async function loadPlaces(center = [map.getCenter().lat(), map.getCenter().lng()], forceRefresh = false) {
+    async function loadPlaces(center = [map.getCenter().lat, map.getCenter().lng], forceRefresh = false) {
       searchCenter = center;
       if (activeController) activeController.abort();
       activeController = new AbortController();
@@ -260,6 +275,7 @@
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || `Máy chủ cục bộ trả về HTTP ${response.status}`);
         if (!Array.isArray(data.elements)) throw new Error('Phản hồi dữ liệu OSM không hợp lệ.');
+        if (activeController !== controller) return;
         drawPlaces(data);
       } catch (error) {
         if (controller.signal.aborted && activeController !== controller) return;
@@ -277,67 +293,165 @@
       }
     }
 
+    function stopLocating() {
+      if (locationWatch !== null) navigator.geolocation.clearWatch(locationWatch);
+      locationWatch = null;
+      locating = false;
+      window.clearTimeout(locationTimer);
+      locationTimer = null;
+      locateButton.disabled = false;
+      locateButton.removeAttribute('aria-busy');
+      locateButton.setAttribute('aria-pressed', 'false');
+      locateButton.setAttribute('aria-label', 'Bật theo dõi vị trí của tôi');
+    }
+
+    function showLocation(center, accuracy, follow = false) {
+      const coordinates = `${center[0].toFixed(5)}, ${center[1].toFixed(5)}`;
+      const label = `Tọa độ thiết bị: ${coordinates} · sai số trình duyệt báo ±${Math.ceil(accuracy)} m`;
+      if (!userMarker) {
+        userMarker = L.circleMarker(center, {
+          radius: 9, color: '#fff', weight: 3, fillColor: '#1769d2', fillOpacity: 1,
+        }).addTo(map).bindPopup(label);
+      } else {
+        userMarker.setLatLng(center);
+        userMarker.setPopupContent(label);
+      }
+      if (!accuracyCircle) {
+        accuracyCircle = L.circle(center, { radius: accuracy, color: '#1769d2', weight: 1, fillOpacity: 0.12 }).addTo(map);
+      } else {
+        accuracyCircle.setLatLng(center).setRadius(accuracy);
+      }
+      locateButton.removeAttribute('aria-busy');
+      if (follow && !hasLocationFix) map.setView(center, accuracy <= 100 ? 16 : accuracy <= 1000 ? 14 : 12);
+      else if (follow) map.panTo(center, { animate: true, duration: 0.35 });
+      hasLocationFix = true;
+    }
+
+    function scanLocation(center, accuracy, initial = false) {
+      const improvedAccuracy = accuracy < lastScannedAccuracy * 0.65
+        && Date.now() - lastScannedAt >= 15000;
+      const movedEnough = lastScannedCenter && distanceMeters(lastScannedCenter, center) >= 250;
+      if (!initial && !movedEnough && !improvedAccuracy) return;
+      lastScannedCenter = center;
+      lastScannedAt = Date.now();
+      lastScannedAccuracy = accuracy;
+      const coordinates = `${center[0].toFixed(5)}, ${center[1].toFixed(5)}`;
+      locationStatus.textContent = accuracy > 1000
+        ? `Thiết bị báo tọa độ ${coordinates}, sai số khoảng ±${Math.ceil(accuracy)} m. Đang bám ghim và quét quanh tọa độ này; bật Vị trí chính xác để thu hẹp sai số. Bấm lại nút để tắt.`
+        : `Thiết bị báo tọa độ ${coordinates}, sai số khoảng ±${Math.ceil(accuracy)} m. Đang theo dõi và quét quán quanh bạn. Bấm lại nút để tắt.`;
+      loadPlaces(center, initial);
+    }
+
+    function finishLocating(error) {
+      if (!locating) return;
+      if (error?.code === 1) {
+        stopLocating();
+        locationStatus.textContent = 'Quyền Vị trí của trang đang bị từ chối. Bấm biểu tượng bên trái địa chỉ trang, cho phép Vị trí, tải lại trang rồi thử lại.';
+      } else {
+        locateButton.removeAttribute('aria-busy');
+        locationStatus.textContent = error?.code === 3
+          ? hasLocationFix
+            ? 'Chưa nhận được tọa độ mới. Ghim giữ vị trí thiết bị báo lần cuối; trang vẫn tiếp tục theo dõi.'
+            : 'Chưa nhận được tọa độ từ thiết bị. Bản đồ vẫn ở tâm mặc định Quận 1, đây không phải vị trí của bạn. Hãy bật Dịch vụ vị trí; trang vẫn tiếp tục thử.'
+          : hasLocationFix
+            ? 'Thiết bị chưa gửi tọa độ mới. Ghim giữ vị trí lần cuối và trang vẫn tiếp tục theo dõi.'
+            : 'Thiết bị chưa gửi tọa độ. Tâm bản đồ Quận 1 vẫn là mặc định, chưa phải vị trí của bạn.';
+      }
+    }
+
     function locateUser() {
-      if (window.isSecureContext === false) {
-        const secureUrl = new URL(location.href);
-        const localHost = secureUrl.hostname.toLowerCase();
-        if (localHost.endsWith('.local')) {
-          secureUrl.hostname = `${localHost.slice(0, -'.local'.length)}.localhost`;
-          secureUrl.searchParams.set('w2e_locate', '1');
-          setStatus('Đang chuyển sang địa chỉ hỗ trợ GPS…', true);
-          location.assign(secureUrl.href);
-        } else {
-          setStatus('Trình duyệt chặn định vị trên HTTP. Hãy mở trang qua HTTPS hoặc localhost để dùng GPS; bạn vẫn có thể di chuyển bản đồ rồi tải lại.', false);
-        }
+      if (locating) {
+        stopLocating();
+        locationStatus.textContent = 'Đã tắt theo dõi vị trí. Bản đồ giữ nguyên vị trí cuối cùng.';
+        return;
+      }
+      pickingLocation = false;
+      pickButton.setAttribute('aria-pressed', 'false');
+      if (!window.isSecureContext) {
+        locationStatus.textContent = 'Trình duyệt chỉ cho phép định vị trên HTTPS hoặc localhost. Hãy mở trang bằng địa chỉ đó rồi thử lại.';
         return;
       }
       if (!navigator.geolocation) {
-        setStatus('Trình duyệt không cấp quyền định vị cho trang này. Hãy dùng HTTPS/localhost, kiểm tra quyền vị trí của trang rồi thử lại.', false);
+        locationStatus.textContent = 'Trình duyệt không hỗ trợ định vị. Bạn có thể chọn vị trí trên bản đồ.';
         return;
       }
-      setStatus('Đang xin vị trí từ trình duyệt. Nếu có hộp thoại quyền vị trí, hãy chọn “Cho phép”…', true);
-      navigator.geolocation.getCurrentPosition((position) => {
-        searchCenter = [position.coords.latitude, position.coords.longitude];
-        map.setView(searchCenter, 15);
-        if (userMarker) map.removeLayer(userMarker);
-        userMarker = L.circleMarker(searchCenter, {
-          radius: 8, color: '#fff', weight: 3, fillColor: '#c58b00', fillOpacity: 1,
-        }).addTo(map).bindPopup('Vị trí của bạn');
-        loadPlaces(searchCenter, true);
-      }, (error) => {
-        const fallbackMessage = error?.code === 1
-          ? 'Quyền Vị trí đang bị từ chối cho trang này. Hãy cho phép Vị trí trong cài đặt của trình duyệt rồi thử lại.'
-          : (error?.code === 2 || error?.code === 3
-            ? 'Trình duyệt chưa nhận được tọa độ. Hãy bật Dịch vụ vị trí của Windows; hoặc kéo bản đồ đến khu vực cần tìm rồi bấm “Tải lại”.'
-            : 'Không lấy được vị trí. Hãy kiểm tra quyền định vị hoặc di chuyển bản đồ đến nơi cần tìm.');
-        if (navigator.permissions?.query) {
-          navigator.permissions.query({ name: 'geolocation' }).then(({ state }) => {
-            const message = state === 'prompt'
-              ? 'Trình duyệt chưa cấp quyền Vị trí cho what2eat.localhost. Hãy chọn “Cho phép” trong hộp thoại quyền vị trí rồi thử lại.'
-              : (state === 'denied'
-                ? 'Quyền Vị trí đang bị chặn cho what2eat.localhost. Hãy bật quyền Vị trí trong cài đặt trang của trình duyệt rồi thử lại.'
-                : fallbackMessage);
-            setStatus(message, false);
-          }).catch(() => setStatus(fallbackMessage, false));
-        } else {
-          setStatus(fallbackMessage, false);
-        }
-      }, { enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 });
+      stopLocating();
+      locating = true;
+      locateButton.setAttribute('aria-busy', 'true');
+      locateButton.setAttribute('aria-pressed', 'true');
+      locateButton.setAttribute('aria-label', 'Tắt theo dõi vị trí của tôi');
+      locationStatus.textContent = 'Đang yêu cầu tọa độ từ trình duyệt… Nếu chưa nhận được tọa độ mới, tâm Quận 1 vẫn chỉ là vị trí mặc định.';
+      locationTimer = window.setTimeout(() => {
+        if (locating && !hasLocationFix) finishLocating({ code: 3 });
+      }, 30000);
+      try {
+        locationWatch = navigator.geolocation.watchPosition((position) => {
+          if (!locating) return;
+          const { latitude, longitude, accuracy } = position.coords;
+          if (![latitude, longitude, accuracy, position.timestamp].every(Number.isFinite)
+            || Math.abs(latitude) > 90 || Math.abs(longitude) > 180 || accuracy < 0
+            || position.timestamp < Date.now() - 120000) return;
+          const center = [latitude, longitude];
+          const initial = !hasLocationFix;
+          showLocation(center, accuracy, true);
+          if (locationTimer) {
+            window.clearTimeout(locationTimer);
+            locationTimer = null;
+          }
+          scanLocation(center, accuracy, initial);
+        }, finishLocating, { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 });
+      } catch (error) {
+        finishLocating(error);
+      }
     }
+
+    pickButton.addEventListener('click', () => {
+      stopLocating();
+      pickingLocation = !pickingLocation;
+      pickButton.setAttribute('aria-pressed', String(pickingLocation));
+      locationStatus.textContent = pickingLocation
+        ? 'Bấm vào vị trí của bạn trên bản đồ để tìm quán quanh đó.'
+        : 'Đã hủy chọn vị trí. Khu vực tìm kiếm vẫn giữ nguyên.';
+    });
+    map.on('click', (event) => {
+      if (!pickingLocation) return;
+      pickingLocation = false;
+      pickButton.setAttribute('aria-pressed', 'false');
+      const center = [event.latlng.lat, event.latlng.lng];
+      if (userMarker) map.removeLayer(userMarker);
+      if (accuracyCircle) map.removeLayer(accuracyCircle);
+      userMarker = L.circleMarker(center, { radius: 9, color: '#fff', weight: 3, fillColor: '#c58b00', fillOpacity: 1 }).addTo(map).bindPopup('Vị trí bạn chọn trên bản đồ').openPopup();
+      accuracyCircle = null;
+      map.setView(center, 16);
+      locationStatus.textContent = 'Đang tìm quanh vị trí bạn chọn trên bản đồ.';
+      lastScannedCenter = center;
+      lastScannedAt = Date.now();
+      loadPlaces(center, true);
+    });
+    window.addEventListener('pagehide', stopLocating);
 
     locateButton.addEventListener('click', locateUser);
     refreshButton.addEventListener('click', () => loadPlaces(undefined, true));
 
     setStatus('Đang tải địa điểm OpenStreetMap quanh khu vực bản đồ…', true);
+    if (window.isSecureContext && navigator.permissions?.query) {
+      navigator.permissions.query({ name: 'geolocation' }).then((permission) => {
+        if (permission.state === 'denied' && !locating) {
+          locationStatus.textContent = 'Trình duyệt đang chặn quyền Vị trí của trang này. Bấm biểu tượng bên trái địa chỉ trang để cho phép, rồi tải lại.';
+        } else if (permission.state === 'granted' && !locating) {
+          locationStatus.textContent = 'Quyền Vị trí đã được cấp cho trang này. Bấm “Vị trí của tôi” để lấy tọa độ hiện tại.';
+        }
+      }).catch(() => {});
+    }
     window.dispatchEvent(new CustomEvent('w2e:map-ready', {
       detail: { center: { lat: initialCenter[0], lon: initialCenter[1] }, hasOsmData: false },
     }));
     loadPlaces(initialCenter);
-    if (focusParams.get('w2e_locate') === '1' && window.isSecureContext !== false) {
+    if (focusParams.get('w2e_locate') === '1') {
       const cleanUrl = new URL(location.href);
       cleanUrl.searchParams.delete('w2e_locate');
       history.replaceState(null, '', `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
-      window.setTimeout(locateUser, 0);
+      locationStatus.textContent = 'Bấm “Vị trí của tôi” để trình duyệt xin quyền Vị trí.';
     }
   });
 })();

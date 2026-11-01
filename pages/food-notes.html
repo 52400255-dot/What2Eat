@@ -6,10 +6,9 @@
   <title>Food Note Của Tôi – What2Eat</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
-  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/style.css?v=20261030-typography" />
   <style>
     /* ============================================================
        FOOD NOTES PAGE – CUSTOM STYLES
@@ -438,8 +437,9 @@
     .w2e-stat-chip strong { color: var(--w2e-text); }
   </style>
   <link rel="stylesheet" href="../assets/css/live-data.css">
+  <link rel="stylesheet" href="../assets/css/food-notes-page.css?v=20261030-apple-type">
 </head>
-<body>
+<body class="w2e-food-notes-page">
 
 <!-- ===================== NAVBAR ===================== -->
 <nav class="navbar navbar-expand-lg w2e-navbar">
@@ -447,20 +447,18 @@
     <a class="navbar-brand" href="../index.php">
       What<span>2</span>Eat
     </a>
-    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
-      <span class="navbar-toggler-icon"></span>
+    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-label="Mở menu">
+      <span>Menu</span>
     </button>
     <div class="collapse navbar-collapse" id="mainNav">
       <ul class="navbar-nav ms-auto align-items-lg-center gap-1 mb-2 mb-lg-0">
-        <li class="nav-item"><a class="nav-link" href="../index.php"><i class="bi bi-house me-1"></i>Trang Chủ</a></li>
-        <li class="nav-item"><a class="nav-link" href="./discovery.php"><i class="bi bi-compass me-1"></i>Khám Phá</a></li>
-        <li class="nav-item"><a class="nav-link w2e-active" href="./food-notes.php"><i class="bi bi-journal-text me-1"></i>Food Note</a></li>
-        <li class="nav-item"><a class="nav-link" href="./food-plans.php"><i class="bi bi-calendar3 me-1"></i>Food Plan</a></li>
-        <li class="nav-item"><a class="nav-link" href="./dashboard.php"><i class="bi bi-grid me-1"></i>Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="../index.php">Trang Chủ</a></li>
+        <li class="nav-item"><a class="nav-link" href="./discovery.php">Khám Phá</a></li>
+        <li class="nav-item"><a class="nav-link w2e-active" href="./food-notes.php">Food Note</a></li>
+        <li class="nav-item"><a class="nav-link" href="./food-plans.php">Food Plan</a></li>
+        <li class="nav-item"><a class="nav-link" href="./dashboard.php">Dashboard</a></li>
         <li class="nav-item ms-lg-2">
-          <a href="./create-food-note.php" class="w2e-btn-create">
-            <i class="bi bi-plus-lg"></i> Tạo Food Note
-          </a>
+          <a href="./create-food-note.php" class="w2e-btn-create">Tạo Food Note</a>
         </li>
       </ul>
     </div>
@@ -472,36 +470,46 @@
   <div class="container">
     <div class="d-flex align-items-start align-items-md-center justify-content-between flex-column flex-md-row gap-3">
       <div>
+      <p class="w2e-page-eyebrow">NHẬT KÝ ẨM THỰC</p>
       <h1 class="mb-1">Food Note Của Tôi</h1>
         <p>Lưu lại những trải nghiệm ăn uống đáng nhớ</p>
       </div>
       <a href="./create-food-note.php" class="w2e-btn-primary">
-        <i class="bi bi-plus-lg"></i> Tạo Food Note
+        Tạo Food Note
       </a>
     </div>
   </div>
 </div>
 
 <!-- ===================== MAIN CONTENT ===================== -->
-<div class="container mt-0">
+<main class="container mt-0 w2e-notes-main">
+
+  <aside hidden class="w2e-notes-rail w2e-notes-rail--recent" aria-label="Ghi chú gần đây">
+    <p class="w2e-notes-rail__eyebrow">SỔ GHI CHÉP</p>
+    <p class="w2e-notes-rail__count"><strong id="noteRailCount">—</strong><span>ghi chú đã lưu</span></p>
+    <div class="w2e-notes-rail__rule"></div>
+    <p class="w2e-notes-rail__label">MỚI CẬP NHẬT</p>
+    <div id="noteRecentList" class="w2e-notes-rail__list"><span>Đang tải ghi chú...</span></div>
+  </aside>
+  <div class="w2e-notes-content">
 
   <!-- TOOLBAR -->
   <div class="w2e-toolbar">
+    <div class="w2e-toolbar-heading"><h2>Tìm lại ghi chú</h2><p>Lọc theo món ăn, quán hoặc cảm nhận</p></div>
     <div class="row g-2 align-items-center">
       <!-- Search -->
       <div class="col-12 col-md-5">
         <div class="w2e-search-wrap">
-          <i class="bi bi-search w2e-search-icon"></i>
-          <input type="text" id="noteSearch" class="form-control w2e-search-wrap" placeholder="Tìm kiếm ghi chú..." />
+          <input type="text" id="noteSearch" class="form-control w2e-search-wrap" placeholder="Tìm món ăn, quán hoặc nội dung ghi chú..." aria-label="Tìm kiếm Food Note" />
         </div>
       </div>
       <!-- Rating filter -->
       <div class="col-6 col-md-2">
         <select class="form-select w2e-select w-100" id="ratingFilter">
-        <option value="">Tất cả sao</option>
-        <option value="5">5 sao</option>
-        <option value="4">4+ sao</option>
-        <option value="3">3+ sao</option>
+        <option value="">Mọi đánh giá</option>
+        <option value="5">5 / 5</option>
+        <option value="4">Từ 4 / 5</option>
+        <option value="3">Từ 3 / 5</option>
         </select>
       </div>
       <!-- Time filter -->
@@ -514,13 +522,9 @@
       <!-- View toggle -->
       <div class="col-12 col-md-3 d-flex justify-content-md-end gap-2 align-items-center">
         <span style="font-size:.8rem;color:var(--w2e-text-sec)">Hiển thị:</span>
-        <div class="w2e-view-toggle">
-          <button class="w2e-view-btn active" id="btnGrid" title="Dạng lưới" onclick="setView('grid')">
-            <i class="bi bi-grid-3x3-gap"></i>
-          </button>
-          <button class="w2e-view-btn" id="btnList" title="Dạng danh sách" onclick="setView('list')">
-            <i class="bi bi-list-ul"></i>
-          </button>
+        <div class="w2e-view-toggle" aria-label="Kiểu hiển thị">
+          <button class="w2e-view-btn active" id="btnGrid" type="button" aria-pressed="true" onclick="setView('grid')">Thẻ</button>
+          <button class="w2e-view-btn" id="btnList" type="button" aria-pressed="false" onclick="setView('list')">Danh sách</button>
         </div>
       </div>
     </div>
@@ -530,17 +534,17 @@
 
   <!-- STATS BAR -->
   <div class="w2e-stats-bar">
-    <div class="w2e-stat-chip"><i class="bi bi-journal-text" style="color:var(--w2e-primary)"></i><strong id="foodNoteCount">—</strong> ghi chú</div>
-    <div class="w2e-stat-chip"><i class="bi bi-pin-angle" style="color:var(--w2e-primary)"></i><strong id="pinnedFoodNoteCount">—</strong> đã ghim</div>
-    <div class="w2e-stat-chip"><i class="bi bi-star-fill" style="color:var(--warning)"></i>TB <strong id="foodNoteAverage">—</strong> / 5</div>
-    <div class="w2e-stat-chip"><i class="bi bi-heart-fill" style="color:var(--w2e-error)"></i><strong id="favoriteFoodNoteCount">—</strong> yêu thích</div>
+    <div class="w2e-stat-chip"><strong id="foodNoteCount">—</strong><span>Ghi chú</span></div>
+    <div class="w2e-stat-chip"><strong id="pinnedFoodNoteCount">—</strong><span>Đã ghim</span></div>
+    <div class="w2e-stat-chip"><strong id="foodNoteAverage">—</strong><span>Điểm trung bình / 5</span></div>
+    <div class="w2e-stat-chip"><strong id="favoriteFoodNoteCount">—</strong><span>Được yêu thích</span></div>
   </div>
 
   <!-- ====== PINNED NOTES ====== -->
-  <div class="w2e-pinned-section"><div class="w2e-section-title">Đã Ghim</div><div class="w2e-notes-grid grid-2"></div></div>
+  <div class="w2e-pinned-section" hidden><div class="w2e-section-title">Ghi chú đã ghim</div><div class="w2e-notes-grid grid-2"></div></div>
 
   <!-- ====== FOOD NOTE GRID ====== -->
-  <div class="w2e-section-title">Tất Cả Ghi Chú</div>
+  <div class="w2e-section-title"><span>Tất cả ghi chú</span><span class="w2e-note-results" id="noteResultsLabel">Bộ sưu tập của bạn</span></div>
 
   <!-- GRID VIEW -->
   <div id="gridView" class="w2e-notes-grid grid-3">
@@ -559,19 +563,28 @@
     <h3>Chưa có ghi chú nào</h3>
     <p>Hãy bắt đầu lưu lại những trải nghiệm ăn uống đáng nhớ của bạn!</p>
     <a href="./create-food-note.php" class="w2e-btn-primary mt-3 mx-auto" style="width:fit-content">
-      <i class="bi bi-plus-lg"></i> Tạo Food Note Đầu Tiên
+      Tạo Food Note đầu tiên
     </a>
   </div>
-</div><!-- /.container -->
+  </div>
+  <aside hidden class="w2e-notes-rail w2e-notes-rail--latest" aria-label="Food Note mới nhất">
+    <p class="w2e-notes-rail__eyebrow">GHI CHÚ MỚI NHẤT</p>
+    <p class="w2e-notes-rail__date" id="noteLatestDate">Chưa có ngày</p>
+    <h2 id="noteLatestName">Đang tải...</h2>
+    <p class="w2e-notes-rail__restaurant" id="noteLatestRestaurant"></p>
+    <p class="w2e-notes-rail__review" id="noteLatestReview"></p>
+    <a id="noteLatestLink" href="#gridView">Đến ghi chú</a>
+  </aside>
+</main><!-- /.w2e-notes-main -->
 
 <!-- ===================== MOBILE BOTTOM NAV ===================== -->
 <nav class="w2e-bottom-nav">
   <div class="w2e-bottom-nav-inner">
-    <a class="w2e-bnav-item" href="../index.php"><i class="bi bi-house"></i><span>Trang Chủ</span></a>
-    <a class="w2e-bnav-item" href="./discovery.php"><i class="bi bi-compass"></i><span>Khám Phá</span></a>
-    <a class="w2e-bnav-item active" href="./food-notes.php"><i class="bi bi-journal-text"></i><span>Notes</span></a>
-    <a class="w2e-bnav-item" href="./food-plans.php"><i class="bi bi-calendar3"></i><span>Plans</span></a>
-    <a class="w2e-bnav-item" href="./dashboard.php"><i class="bi bi-person"></i><span>Cá Nhân</span></a>
+    <a class="w2e-bnav-item" href="../index.php"><span>Trang Chủ</span></a>
+    <a class="w2e-bnav-item" href="./discovery.php"><span>Khám Phá</span></a>
+    <a class="w2e-bnav-item active" href="./food-notes.php"><span>Food Note</span></a>
+    <a class="w2e-bnav-item" href="./food-plans.php"><span>Food Plan</span></a>
+    <a class="w2e-bnav-item" href="./dashboard.php"><span>Cá Nhân</span></a>
   </div>
 </nav>
 
@@ -588,11 +601,15 @@
       list.classList.add('w2e-hidden');
       btnGrid.classList.add('active');
       btnList.classList.remove('active');
+      btnGrid.setAttribute('aria-pressed','true');
+      btnList.setAttribute('aria-pressed','false');
     } else {
       list.classList.remove('w2e-hidden');
       grid.classList.add('w2e-hidden');
       btnList.classList.add('active');
       btnGrid.classList.remove('active');
+      btnList.setAttribute('aria-pressed','true');
+      btnGrid.setAttribute('aria-pressed','false');
     }
   }
 
@@ -602,33 +619,7 @@
     el.classList.add('active');
   }
 
-  // ---- HEART TOGGLE ----
-  document.querySelectorAll('.w2e-action-btn').forEach(btn => {
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      const icon = this.querySelector('i');
-      if (icon && icon.classList.contains('bi-heart')) {
-        icon.classList.replace('bi-heart', 'bi-heart-fill');
-        icon.style.color = '#E05A5A';
-      } else if (icon && icon.classList.contains('bi-heart-fill')) {
-        icon.classList.replace('bi-heart-fill', 'bi-heart');
-        icon.style.color = '';
-      }
-    });
-  });
-
-  // ---- PIN TOGGLE ----
-  document.querySelectorAll('.w2e-action-btn').forEach(btn => {
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      const icon = this.querySelector('i');
-      if (icon && icon.classList.contains('bi-pin-angle')) {
-        icon.classList.replace('bi-pin-angle', 'bi-pin-angle-fill');
-        icon.style.color = 'var(--w2e-primary)';
-      }
-    });
-  });
 </script>
-  <script src="../assets/js/site.js"></script>
+  <script src="../assets/js/site.js?v=20261030-food-notes-2"></script>
 </body>
 </html>

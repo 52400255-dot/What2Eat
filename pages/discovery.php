@@ -11,11 +11,11 @@ $pageTitle = 'Khám Phá Quán Ăn – What2Eat';
   <title><?= w2e_escape($pageTitle) ?></title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link href="../assets/css/style.css" rel="stylesheet" />
+  <link href="../assets/css/style.css?v=20261030-typography" rel="stylesheet" />
   <style>
     /* ===== DISCOVERY PAGE SPECIFIC STYLES ===== */
     body {
@@ -113,7 +113,7 @@ $pageTitle = 'Khám Phá Quán Ăn – What2Eat';
     }
     .w2e-search-box input {
       width: 100%;
-      padding: 16px 60px 16px 52px;
+      padding: 16px 105px 16px 52px;
       border: none;
       border-radius: 14px;
       font-family: inherit;
@@ -154,6 +154,7 @@ $pageTitle = 'Khám Phá Quán Ăn – What2Eat';
     .w2e-search-box .w2e-search-btn:hover {
     background: var(--primary-dark);
     }
+    .w2e-page-header small { color: rgba(255,255,255,0.88); }
 
     /* ---------- FILTER SECTION ---------- */
     .w2e-filter-section {
@@ -604,13 +605,17 @@ $pageTitle = 'Khám Phá Quán Ăn – What2Eat';
     }
     @media (max-width: 575px) {
       .w2e-card-img-wrap { height: 160px; }
+      .w2e-search-box input { padding: 14px 16px 14px 48px; }
+      .w2e-search-box .w2e-search-icon { top: 24px; }
+      .w2e-search-box .w2e-search-btn { position: static; transform: none; width: 100%; margin-top: 8px; padding: 11px; }
     }
     .w2e-live-map-section { margin: 1.5rem 0 2rem; padding: 1.25rem; background: #fff; border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,.04); }
     .w2e-live-map-heading { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem; }
     .w2e-live-map-heading h2 { margin:0 0 .3rem; color:var(--text); font-size:1.2rem; font-weight:700; }
     .w2e-live-map-heading p { margin:0; color:var(--text-secondary); font-size:.86rem; }
-    .w2e-live-map-actions { display:flex; gap:.5rem; flex-shrink:0; }
+    .w2e-live-map-actions { display:flex; flex-wrap:wrap; gap:.5rem; flex-shrink:0; }
     .w2e-live-map-btn { display:inline-flex; align-items:center; gap:.4rem; padding:.6rem .85rem; border:1px solid var(--border); border-radius:10px; background:#fff; color:var(--text); font:inherit; font-size:.85rem; font-weight:600; cursor:pointer; }
+    #locateMapBtn[aria-pressed="true"] { border-color:#1769d2; background:#eaf2ff; color:#1455a3; }
     .w2e-live-map-btn--primary { border-color:var(--primary); background:var(--primary); color:#fff; }
     #map-container { position:relative; width:100%; height:420px; border-radius:12px; background:#f2eee7; z-index:0; }
     .w2e-map-tile-notice { position:absolute; z-index:500; top:12px; left:50%; transform:translateX(-50%); max-width:calc(100% - 24px); padding:.55rem .8rem; border:1px solid #e8ded2; border-radius:10px; background:#fffdf8; box-shadow:0 3px 14px rgba(0,0,0,.12); color:#4a2c1a; font-size:.82rem; }
@@ -623,7 +628,8 @@ $pageTitle = 'Khám Phá Quán Ăn – What2Eat';
     .w2e-live-map-footer a { color:inherit; }
     @media (max-width:600px) { .w2e-live-map-section { padding:.85rem; } .w2e-live-map-heading { align-items:flex-start; flex-direction:column; } .w2e-live-map-actions { width:100%; } .w2e-live-map-btn { flex:1; justify-content:center; } #map-container { height:340px; } .w2e-live-map-footer { flex-direction:column; gap:.2rem; } }
   </style>
-  <link rel="stylesheet" href="../assets/css/live-data.css">
+  <link rel="stylesheet" href="../assets/css/live-data.css?v=20261028-activity">
+  <link rel="stylesheet" href="../assets/css/discovery-cards.css?v=20261101-location">
 </head>
 <body>
 
@@ -807,14 +813,16 @@ $pageTitle = 'Khám Phá Quán Ăn – What2Eat';
               <p>Địa điểm được truy vấn từ OpenStreetMap; dữ liệu do cộng đồng đóng góp.</p>
           </div>
           <div class="w2e-live-map-actions">
-            <button type="button" class="w2e-live-map-btn" id="locateMapBtn"><i class="bi bi-crosshair"></i> Vị trí của tôi</button>
+            <button type="button" class="w2e-live-map-btn" id="locateMapBtn" aria-pressed="false" aria-label="Bật theo dõi vị trí của tôi"><i class="bi bi-crosshair"></i> Vị trí của tôi</button>
+            <button type="button" class="w2e-live-map-btn" id="pickMapLocationBtn" aria-pressed="false"><i class="bi bi-pin-map"></i> Chọn trên bản đồ</button>
             <button type="button" class="w2e-live-map-btn w2e-live-map-btn--primary" id="refreshMapBtn"><i class="bi bi-arrow-clockwise"></i> Tải lại</button>
           </div>
         </div>
+        <p id="locationStatus" class="small text-secondary mb-2" role="status" aria-live="polite">Bản đồ đang hiển thị khu vực tìm kiếm, chưa phải vị trí hiện tại của bạn. Bấm “Vị trí của tôi” hoặc “Chọn trên bản đồ”.</p>
         <div id="map-container" role="region" aria-label="Bản đồ quán ăn thực tế" aria-busy="true"></div>
         <div class="w2e-live-map-footer">
           <span id="mapStatus" role="status" aria-live="polite">Đang tải địa điểm…</span>
-          <a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noreferrer">© OpenStreetMap contributors · Humanitarian OpenStreetMap Team · Báo lỗi bản đồ</a>
+          <span>© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a> · Humanitarian OpenStreetMap Team</span>
         </div>
       </section>
 
@@ -872,7 +880,7 @@ $pageTitle = 'Khám Phá Quán Ăn – What2Eat';
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="../assets/js/app.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="../assets/js/restaurant-map.js?v=20261018-gps4"></script>
-  <script src="../assets/js/site.js?v=20261018"></script>
+  <script src="../assets/js/restaurant-map.js?v=20261101-gps9"></script>
+  <script src="../assets/js/site.js?v=20261101-location"></script>
 </body>
 </html>

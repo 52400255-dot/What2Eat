@@ -11,10 +11,10 @@ $pageTitle = 'Tạo Food Note – What2Eat';
   <title><?= w2e_escape($pageTitle) ?></title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
-  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/style.css?v=20261030-typography" />
   <style>
     /* ============================================================
        CREATE FOOD NOTE PAGE – CUSTOM STYLES
@@ -295,7 +295,9 @@ $pageTitle = 'Tạo Food Note – What2Eat';
     .w2e-restaurant-item .w2e-rest-name { font-weight: 600; color: var(--w2e-text); }
     .w2e-restaurant-item .w2e-rest-addr { font-size: 0.77rem; color: var(--w2e-text-sec); }
   </style>
-  <link rel="stylesheet" href="../assets/css/live-data.css">
+  <link rel="stylesheet" href="../assets/css/live-data.css?v=20261028-activity">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 
@@ -358,6 +360,7 @@ $pageTitle = 'Tạo Food Note – What2Eat';
 
           <!-- Image Previews -->
           <div class="w2e-preview-grid" id="previewGrid"></div>
+          <div class="w2e-preview-grid" id="existingMedia"></div>
         </div>
       </div>
 
@@ -576,7 +579,13 @@ $pageTitle = 'Tạo Food Note – What2Eat';
     selectedTags.forEach(tag => {
       const span = document.createElement('span');
       span.className = 'w2e-selected-tag';
-      span.innerHTML = `${tag}<button type="button" onclick="removeTag('${tag}')">✕</button>`;
+      span.appendChild(document.createTextNode(tag));
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.textContent = '✕';
+      remove.setAttribute('aria-label', `Xóa nhãn ${tag}`);
+      remove.addEventListener('click', () => removeTag(tag));
+      span.appendChild(remove);
       tagWrap.insertBefore(span, tagInput);
     });
     triggerAutoSave();
@@ -592,6 +601,14 @@ $pageTitle = 'Tạo Food Note – What2Eat';
   function addSuggestedTag(tag) {
     addTag(tag);
   }
+  window.replaceFoodNoteTags = (tags) => {
+    selectedTags = [];
+    (tags || []).forEach((tag) => {
+      const clean = String(tag).trim().replace(/^#/, '').replace(/[,\s]+/g, '_').toLowerCase();
+      if (clean && !selectedTags.includes('#' + clean)) selectedTags.push('#' + clean);
+    });
+    renderTags();
+  };
 
   // ============================================================
   // FILE UPLOAD & PREVIEW
@@ -710,6 +727,6 @@ $pageTitle = 'Tạo Food Note – What2Eat';
   // DRAFT / PUBLISH
   // ============================================================
 </script>
-  <script src="../assets/js/site.js?v=20261018"></script>
+  <script src="../assets/js/site.js?v=20261028-activity"></script>
 </body>
 </html>

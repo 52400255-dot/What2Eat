@@ -13,7 +13,7 @@ $pageTitle = 'Hồ Sơ Cá Nhân – What2Eat';
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
   <!-- Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
 
@@ -21,7 +21,7 @@ $pageTitle = 'Hồ Sơ Cá Nhân – What2Eat';
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
   <!-- What2Eat Global CSS -->
-  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/style.css?v=20261030-typography" />
 
   <style>
     /* ===== PROFILE PAGE STYLES ===== */
@@ -577,7 +577,8 @@ $pageTitle = 'Hồ Sơ Cá Nhân – What2Eat';
       .w2e-profile-tabs .nav-link { padding: 0.7rem 0.8rem; font-size: 0.8rem; }
     }
   </style>
-  <link rel="stylesheet" href="../assets/css/live-data.css">
+  <link rel="stylesheet" href="../assets/css/live-data.css?v=20261028-activity">
+  <link rel="stylesheet" href="../assets/css/profile-page.css?v=20261030-activity-redesign">
 </head>
 
 <body>
@@ -1238,6 +1239,6 @@ $pageTitle = 'Hồ Sơ Cá Nhân – What2Eat';
 <!-- Bootstrap 5 JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  <script src="../assets/js/site.js"></script>
+  <script src="../assets/js/site.js?v=20261030-profile-activity"></script>
 </body>
 </html>

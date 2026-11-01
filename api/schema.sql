@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
   name VARCHAR(100) NOT NULL,
   email VARCHAR(254) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
+  google_sub VARCHAR(255) NULL,
   session_version INT UNSIGNED NOT NULL DEFAULT 0,
   avatar_url VARCHAR(500) NULL,
   phone VARCHAR(32) NULL,
@@ -23,6 +24,7 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   last_login_at DATETIME NULL,
   UNIQUE KEY uq_users_email (email),
+  UNIQUE KEY uq_users_google_sub (google_sub),
   KEY ix_users_status_created (status, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -290,4 +292,24 @@ CREATE TABLE IF NOT EXISTS osm_place_blocks (
   created_by BIGINT UNSIGNED NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_osm_place_blocks_admin FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS place_catalog (
+ source_id VARCHAR(80) PRIMARY KEY,name VARCHAR(180) NOT NULL,address VARCHAR(500) NOT NULL DEFAULT '',
+ phone VARCHAR(40) NULL,opening_hours VARCHAR(255) NULL,website VARCHAR(500) NULL,price_range VARCHAR(80) NULL,
+ verification_status ENUM('unverified','verified_active','reported_closed') NOT NULL DEFAULT 'unverified',
+ verification_source VARCHAR(255) NULL, verification_note VARCHAR(1000) NULL,
+ verified_by BIGINT UNSIGNED NULL, verified_at DATETIME NULL,
+ payload JSON NOT NULL, KEY ix_catalog_name(name), KEY ix_catalog_verification(verification_status),
+ CONSTRAINT fk_catalog_verification_user FOREIGN KEY (verified_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS place_corrections (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,user_id BIGINT UNSIGNED NOT NULL,source_id VARCHAR(80) NOT NULL,
+ fields JSON NOT NULL,status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ KEY ix_correction_place(source_id,status),FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS notifications (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,user_id BIGINT UNSIGNED NOT NULL,message VARCHAR(500) NOT NULL,url VARCHAR(500) NOT NULL,
+ read_at DATETIME NULL,created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,KEY ix_notification_user(user_id,read_at),
+ FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

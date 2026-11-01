@@ -312,6 +312,68 @@ body.w2e-auth-page {
   background: var(--hairline);
 }
 
+.w2e-google-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 14px;
+  color: var(--gray-2);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.w2e-google-divider::before,
+.w2e-google-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--hairline);
+}
+
+.w2e-google-signin {
+  width: 100%;
+}
+
+.w2e-google-fallback {
+  width: 100%;
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 18px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--btn-radius);
+  background: var(--surface);
+  color: var(--gray);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: not-allowed;
+}
+
+.w2e-google-fallback:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--gold) 35%, transparent);
+  outline-offset: 2px;
+}
+
+.w2e-google-signin [hidden] {
+  display: none !important;
+}
+
+.w2e-google-status {
+  margin: 8px 0 0;
+  color: var(--gray-2);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+#googleSignInButton iframe {
+  max-width: 100%;
+}
+
 .w2e-forgot-link {
   color: var(--gray);
   font-size: 0.75rem;

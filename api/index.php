@@ -2,6 +2,8 @@
 declare(strict_types=1);
 
 require __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/google-auth.php';
+require_once __DIR__ . '/completion.php';
 
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: strict-origin-when-cross-origin');
@@ -57,16 +59,107 @@ function token_mail(string $email, string $subject, string $heading, string $tok
     if ($base === '' || (!preg_match('#^https://#i', $base) && !is_local_development_origin($base))) return false;
     $url = $base . $path . rawurlencode($token);
     $safeUrl = htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-    $html = '<div style="font:16px/1.6 Arial,sans-serif;max-width:560px;margin:auto;color:#2b2118">'
-        . '<h2>' . htmlspecialchars($heading, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</h2><p>'
-        . htmlspecialchars($description, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p><p><a href="' . $safeUrl . '">Tiếp tục trên What2Eat</a></p>'
-        . '<p>Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email.</p></div>';
-    return send_app_mail($email, $subject, $html);
+    $isVerification = str_contains($path, '/auth/verify');
+    $action = $isVerification ? 'Xác nhận email' : 'Đặt lại mật khẩu';
+    $intro = $isVerification
+        ? 'Hoàn tất bước này để kích hoạt tài khoản What2Eat của bạn.'
+        : 'Dùng liên kết bảo mật bên dưới để tạo mật khẩu mới cho tài khoản What2Eat.';
+    $safeHeading = htmlspecialchars($heading, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $safeIntro = htmlspecialchars($intro, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $safeDescription = htmlspecialchars($description, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $safeAction = htmlspecialchars($action, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $html = <<<HTML
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{$safeHeading}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#FAF7F0;color:#2B2118;font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">{$safeIntro} {$safeDescription}</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FAF7F0" style="width:100%;border-collapse:collapse;background-color:#FAF7F0;">
+    <tr><td align="center" style="padding:32px 14px;">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;border-collapse:separate;border-spacing:0;">
+        <tr>
+          <td width="58%" height="4" bgcolor="#D4A017" style="height:4px;background-color:#D4A017;font-size:0;line-height:0;">&nbsp;</td>
+          <td width="24%" bgcolor="#D66D32" style="background-color:#D66D32;font-size:0;line-height:0;">&nbsp;</td>
+          <td width="18%" bgcolor="#50774A" style="background-color:#50774A;font-size:0;line-height:0;">&nbsp;</td>
+        </tr>
+        <tr>
+          <td colspan="3" bgcolor="#4A2C1A" style="padding:24px 30px;background-color:#4A2C1A;border-radius:0 0 8px 8px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+              <tr>
+                <td valign="middle" style="color:#FFFDF8;font-size:25px;font-weight:700;line-height:1.2;">
+                  What<span style="color:#E5B83B;">2</span>Eat
+                  <div style="padding-top:7px;color:#E9DCCF;font-size:11px;font-weight:400;letter-spacing:1px;">ĂN NGON · GHI NHỚ · CHIA SẺ</div>
+                </td>
+                <td width="82" align="right" valign="middle">
+                  <table role="presentation" width="64" height="64" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFDF8" style="width:64px;height:64px;border:2px solid #D4A017;border-radius:50%;background-color:#FFFDF8;">
+                    <tr><td align="center" valign="middle">
+                      <table role="presentation" width="43" height="43" cellpadding="0" cellspacing="0" border="0" style="width:43px;height:43px;border:2px solid #F3DFB3;border-radius:50%;">
+                        <tr><td align="center" valign="middle">
+                          <table role="presentation" width="22" height="22" cellpadding="0" cellspacing="0" border="0" bgcolor="#D66D32" style="width:22px;height:22px;border-radius:50%;background-color:#D66D32;">
+                            <tr><td style="font-size:0;line-height:0;">&nbsp;</td></tr>
+                          </table>
+                        </td></tr>
+                      </table>
+                    </td></tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr><td colspan="3" bgcolor="#FFFFFF" style="padding:38px 42px 34px;background-color:#FFFFFF;border:1px solid #E8DED2;border-top:0;border-radius:0 0 8px 8px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+            <tr>
+              <td width="25" valign="middle" style="width:25px;padding-right:8px;">
+                <table role="presentation" width="18" height="3" cellpadding="0" cellspacing="0" border="0" bgcolor="#D4A017" style="width:18px;height:3px;background-color:#D4A017;"><tr><td style="font-size:0;line-height:0;">&nbsp;</td></tr></table>
+              </td>
+              <td style="color:#8B5A2B;font-size:11px;font-weight:700;letter-spacing:1.3px;line-height:1.4;">WHAT2EAT · TÀI KHOẢN</td>
+            </tr>
+          </table>
+          <h1 style="margin:18px 0 12px;color:#2B2118;font-family:Arial,Helvetica,sans-serif;font-size:27px;font-weight:700;line-height:1.25;">{$safeHeading}</h1>
+          <p style="margin:0 0 20px;color:#6F6258;font-size:16px;line-height:1.7;">{$safeIntro}</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFF8E9" style="width:100%;border-collapse:collapse;background-color:#FFF8E9;">
+            <tr>
+              <td width="4" bgcolor="#D4A017" style="width:4px;background-color:#D4A017;font-size:0;line-height:0;">&nbsp;</td>
+              <td style="padding:13px 16px;color:#6B3E26;font-size:14px;line-height:1.6;">{$safeDescription}</td>
+            </tr>
+          </table>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 20px;border-collapse:separate;">
+            <tr><td align="center" bgcolor="#C58B00" style="border-radius:6px;background-color:#C58B00;">
+              <a href="{$safeUrl}" target="_blank" style="display:inline-block;padding:15px 25px;border:1px solid #C58B00;border-radius:6px;color:#FFFFFF;font-size:15px;font-weight:700;line-height:1.2;text-align:center;text-decoration:none;">{$safeAction}</a>
+            </td></tr>
+          </table>
+          <p style="margin:0 0 7px;color:#6F6258;font-size:13px;line-height:1.6;">Nếu nút không mở được, hãy dùng liên kết này:</p>
+          <p style="margin:0;color:#8B5A2B;font-size:12px;line-height:1.6;word-break:break-all;overflow-wrap:anywhere;"><a href="{$safeUrl}" target="_blank" style="color:#8B5A2B;text-decoration:underline;word-break:break-all;">{$safeUrl}</a></p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin-top:28px;border-collapse:collapse;">
+            <tr><td height="1" bgcolor="#F0E8DF" style="height:1px;background-color:#F0E8DF;font-size:0;line-height:0;">&nbsp;</td></tr>
+          </table>
+          <p style="margin:18px 0 0;color:#8A7B70;font-size:13px;line-height:1.65;">Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email. Tài khoản của bạn sẽ không thay đổi.</p>
+        </td></tr>
+        <tr><td colspan="3" align="center" style="padding:19px 20px 0;color:#8A7B70;font-size:11px;line-height:1.7;">
+          <span style="color:#6B3E26;font-weight:700;">What2Eat</span> · Email tự động, vui lòng không trả lời.<br>
+          Lưu giữ những cuộc hẹn ngon miệng.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
+HTML;
+    $plainText = $intro . "\n\n" . $description . "\n\n" . $action . ":\n" . $url
+        . "\n\nNếu bạn không thực hiện yêu cầu này, hãy bỏ qua email. Tài khoản của bạn sẽ không thay đổi.";
+    return send_app_mail($email, $subject, $html, $plainText);
 }
 
 function issue_email_token(int $userId, string $purpose, int $minutes = 30): string
 {
     $token = make_token();
+    db()->prepare('UPDATE email_tokens SET used_at=UTC_TIMESTAMP() WHERE user_id=? AND purpose=? AND used_at IS NULL')->execute([$userId,$purpose]);
     $stmt = db()->prepare('INSERT INTO email_tokens(user_id,purpose,token_hash,expires_at) VALUES(?,?,?,DATE_ADD(UTC_TIMESTAMP(),INTERVAL ? MINUTE))');
     $stmt->execute([$userId, $purpose, token_hash($token), $minutes]);
     return $token;
@@ -175,6 +268,39 @@ function remove_note_media_file(string $key): void
     if (is_file($file) && !@unlink($file)) error_log('[What2Eat] could not remove Food Note media file.');
 }
 
+function delete_user_account(int $userId, int $actorId, string $action, ?string $confirmedEmail = null): void
+{
+    $pdo = db();
+    $pdo->beginTransaction();
+    try {
+        $accountQuery = $pdo->prepare('SELECT email, role, avatar_url FROM users WHERE id=? FOR UPDATE');
+        $accountQuery->execute([$userId]);
+        $account = $accountQuery->fetch();
+        if (!$account) throw new ApiError(404, 'Không tìm thấy tài khoản.');
+        if ($account['role'] !== 'user') throw new ApiError(403, 'Không thể xóa tài khoản quản trị viên.');
+        if ($confirmedEmail !== null && !hash_equals((string)$account['email'], strtolower(trim($confirmedEmail)))) {
+            throw new ApiError(422, 'Email xác nhận không khớp với tài khoản đã chọn.');
+        }
+        $mediaQuery = $pdo->prepare('SELECT m.storage_key FROM food_note_media m JOIN food_notes n ON n.id=m.food_note_id WHERE n.user_id=?');
+        $mediaQuery->execute([$userId]);
+        $mediaKeys = $mediaQuery->fetchAll(PDO::FETCH_COLUMN);
+        audit($actorId, $action, 'user', (string)$userId);
+        $delete = $pdo->prepare("DELETE FROM users WHERE id=? AND role='user'");
+        $delete->execute([$userId]);
+        if ($delete->rowCount() !== 1) throw new ApiError(409, 'Tài khoản đã thay đổi. Hãy tải lại danh sách.');
+        $pdo->commit();
+    } catch (Throwable $error) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        throw $error;
+    }
+    foreach ($mediaKeys as $key) remove_note_media_file((string)$key);
+    $avatar = (string)$account['avatar_url'];
+    if (preg_match('#^avatars/[A-Za-z0-9_-]+\.(?:jpg|png|webp)$#i', $avatar)) {
+        $file = dirname(__DIR__) . '/storage/uploads/' . $avatar;
+        if (is_file($file) && !@unlink($file)) error_log('[What2Eat] could not remove account avatar.');
+    }
+}
+
 function pause_restaurant_sponsorship(int $restaurantId): void
 {
     db()->prepare("UPDATE restaurant_sponsorships SET status='paused' WHERE restaurant_id=?")->execute([$restaurantId]);
@@ -221,6 +347,7 @@ function osm_snapshot_places(float $lat, float $lon, int $radius): ?array
         if ($distance > $radius) continue;
 
         $tags = ['name' => (string)($properties['name'] ?? '')];
+        foreach (['phone','website','opening_hours'] as $field) if(!empty($properties[$field])) $tags[$field]=$properties[$field];
         if (!empty($properties['cuisine'])) $tags['cuisine'] = (string)$properties['cuisine'];
         $elements[] = [
             'type' => $match[1],
@@ -449,6 +576,7 @@ function handle_request(): never
     $segments = array_values(array_filter(explode('/', trim($path, '/')), 'strlen'));
     $body = in_array($method, ['POST','PUT','PATCH','DELETE'], true) && !(str_starts_with((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'multipart/form-data')) ? json_body() : [];
     if ($method !== 'GET') require_csrf();
+    completion_routes($path,$method,$body);
 
     // The older Leaflet client calls this alias and expects the raw Overpass shape.
     if ($path === '/restaurants' && $method === 'GET') {
@@ -474,7 +602,8 @@ function handle_request(): never
             $place['public_food_names'] = $foodNames[$place['type'] . ':' . $place['id']] ?? [];
         }
         unset($place);
-        $data['elements'] = $elements;
+        catalog_store($elements);
+        $data['elements'] = array_map('catalog_enrich',$elements);
         json_response($data);
     }
     if (preg_match('#^/restaurants/osm/(node|way|relation)/([1-9]\d{0,17})$#',$path,$m) && $method==='GET') {
@@ -507,6 +636,7 @@ function handle_request(): never
         $nearby=array_slice($nearby,0,4);
         try{$names=public_food_names_for_places([$m[1].':'.$m[2]],'restaurant_source_id');$place['public_food_names']=$names[$m[1].':'.$m[2]]??[];}
         catch(Throwable){$place['public_food_names']=[];}
+        $place=reverse_address(catalog_enrich($place));
         json_response(['data'=>$place,'nearby'=>$nearby,'snapshot'=>(bool)($data['snapshot']??false),'snapshot_date'=>$data['snapshot_date']??null]);
     }
     if (preg_match('#^/restaurants/osm/(node|way|relation)/([1-9]\d{0,17})/notes$#',$path,$m) && $method==='GET') {
@@ -517,16 +647,16 @@ function handle_request(): never
         catch (Throwable) { throw new ApiError(503, 'Dịch vụ chưa sẵn sàng.'); }
     }
     if ($path === '/site-info' && $method === 'GET') {
-        $email=env_value('W2E_SUPPORT_EMAIL');json_response(['support_email'=>$email&&filter_var($email,FILTER_VALIDATE_EMAIL)?$email:null]);
+        $email=env_value('W2E_SUPPORT_EMAIL');json_response(['support_email'=>$email&&filter_var($email,FILTER_VALIDATE_EMAIL)?$email:null,'google_client_id'=>env_value('W2E_GOOGLE_CLIENT_ID')]);
     }
     if ($path === '/auth/csrf' && $method === 'GET') json_response(['csrf_token'=>csrf_token()]);
 
     if ($path === '/auth/register' && $method === 'POST') {
-        rate_limit('register', 5, 3600);
+        rate_limit('register', is_local_development_origin() ? 100 : 5, 3600);
         $name = required_string($body, 'name', 100, 2); $email = clean_email($body['email'] ?? ''); $password = (string)($body['password'] ?? '');
         if (strlen($password) < 8 || strlen($password) > 1024) throw new ApiError(422, 'Mật khẩu cần có ít nhất 8 ký tự.');
         $baseUrl = (string)env_value('W2E_BASE_URL', '');
-        $devMailCapture = is_local_development_origin($baseUrl);
+        $devMailCapture = env_value('W2E_MAIL_TRANSPORT','smtp') === 'log' && is_local_development_origin($baseUrl);
         if (!$baseUrl || (!env_value('W2E_MAIL_FROM') && !$devMailCapture)) throw new ApiError(503, 'Chức năng đăng ký cần cấu hình dịch vụ email trước khi mở website.');
         db()->beginTransaction();
         try {
@@ -541,14 +671,14 @@ function handle_request(): never
             db()->rollBack(); if ($error->getCode() === '23000') throw new ApiError(409, 'Email này đã được đăng ký.'); throw $error;
         } catch (Throwable $error) {
             db()->rollBack(); if ($error instanceof ApiError) throw $error;
-            error_log('[What2Eat] registration email delivery failed'); throw new ApiError(503, 'Chưa gửi được email xác nhận. Hãy thử lại sau.');
+            error_log('[What2Eat] registration email delivery failed'); throw new ApiError(503, 'Chưa gửi được email xác nhận. Quản trị viên cần kiểm tra cấu hình SMTP và kết nối máy chủ email.');
         }
     }
     if ($path === '/auth/verify' && $method === 'GET') {
         $token = (string)($_GET['token'] ?? ''); if (strlen($token) < 30 || strlen($token) > 120) throw new ApiError(400, 'Liên kết xác nhận không hợp lệ.');
-        $stmt = db()->prepare("SELECT id,user_id FROM email_tokens WHERE token_hash=? AND purpose='verify' AND used_at IS NULL AND expires_at>UTC_TIMESTAMP() LIMIT 1");
-        $stmt->execute([token_hash($token)]); $row = $stmt->fetch(); if (!$row) throw new ApiError(400, 'Liên kết đã hết hạn hoặc đã được sử dụng.');
         db()->beginTransaction();
+        $stmt = db()->prepare("SELECT id,user_id FROM email_tokens WHERE token_hash=? AND purpose='verify' AND used_at IS NULL AND expires_at>UTC_TIMESTAMP() LIMIT 1 FOR UPDATE");
+        $stmt->execute([token_hash($token)]); $row = $stmt->fetch(); if (!$row) {db()->rollBack();throw new ApiError(400, 'Liên kết đã hết hạn hoặc đã được sử dụng.');}
         db()->prepare("UPDATE users SET status='active',email_verified_at=UTC_TIMESTAMP() WHERE id=? AND status='pending'")->execute([$row['user_id']]);
         db()->prepare('UPDATE email_tokens SET used_at=UTC_TIMESTAMP() WHERE id=?')->execute([$row['id']]);
         audit((int)$row['user_id'], 'account.verified', 'user', (string)$row['user_id']); db()->commit();
@@ -556,7 +686,10 @@ function handle_request(): never
         json_response(['message'=>'Email đã được xác nhận. Bạn có thể đăng nhập.']);
     }
     if ($path === '/auth/resend-verification' && $method === 'POST') {
-        rate_limit('resend_verify',3,3600);$email=clean_email($body['email']??'');$stmt=db()->prepare("SELECT id FROM users WHERE email=? AND status='pending' LIMIT 1");$stmt->execute([$email]);$userId=$stmt->fetchColumn();if($userId){$token=issue_email_token((int)$userId,'verify',1440);if(!token_mail($email,'Xác nhận email What2Eat','Xác nhận địa chỉ email',$token,'/api/v1/auth/verify?token=','Liên kết này có hiệu lực trong 24 giờ.'))error_log('[What2Eat] verification resend delivery failed');}json_response(['message'=>'Nếu tài khoản cần xác nhận, email hướng dẫn sẽ được gửi lại.']);
+        rate_limit('resend_verify',3,3600);rate_limit('resend_verify_minute',1,60);
+        $email=clean_email($body['email']??'');$stmt=db()->prepare("SELECT id FROM users WHERE email=? AND status='pending'");$stmt->execute([$email]);$id=$stmt->fetchColumn();
+        if($id){db()->beginTransaction();try{$token=issue_email_token((int)$id,'verify',1440);if(!token_mail($email,'Xác nhận email What2Eat','Xác nhận địa chỉ email',$token,'/api/v1/auth/verify?token=','Liên kết có hiệu lực trong 24 giờ.'))throw new ApiError(503,'Không gửi được email. Vui lòng kiểm tra cấu hình SMTP.');db()->commit();}catch(Throwable $e){db()->rollBack();error_log('[What2Eat] resend delivery failed');throw $e;}}
+        json_response(['message'=>'Đã xử lý yêu cầu. Nếu tài khoản đang chờ xác nhận, vui lòng kiểm tra hộp thư.']);
     }
     if ($path === '/auth/login' && $method === 'POST') {
         rate_limit('login', 10, 900); $email = clean_email($body['email'] ?? ''); $password = (string)($body['password'] ?? '');
@@ -572,6 +705,65 @@ function handle_request(): never
         audit((int)$user['id'], 'auth.login', 'user', (string)$user['id']);
         $safe = ['id'=>(int)$user['id'],'name'=>$user['name'],'email'=>$user['email'],'role'=>$user['role']];
         json_response(['user'=>$safe,'csrf_token'=>csrf_token()]);
+    }
+    if ($path === '/auth/google' && $method === 'POST') {
+        rate_limit('google_login', 20, 900);
+        $claims = verify_google_id_token(required_string($body, 'credential', 8192), (string)env_value('W2E_GOOGLE_CLIENT_ID', ''));
+        $googleSub = (string)$claims['sub'];
+        $email = clean_email($claims['email']);
+        $name = trim((string)($claims['name'] ?? ''));
+        $name = preg_replace('/[\p{C}]+/u', '', $name) ?? '';
+        if ($name === '') $name = strstr($email, '@', true) ?: 'Google user';
+        $name = mb_substr($name, 0, 100, 'UTF-8');
+
+        db()->beginTransaction();
+        try {
+            $lookup = db()->prepare('SELECT id,name,email,google_sub,role,status,session_version,email_verified_at FROM users WHERE google_sub=? LIMIT 1 FOR UPDATE');
+            $lookup->execute([$googleSub]);
+            $user = $lookup->fetch();
+
+            if (!$user) {
+                $lookup = db()->prepare('SELECT id,name,email,google_sub,role,status,session_version,email_verified_at FROM users WHERE email=? LIMIT 1 FOR UPDATE');
+                $lookup->execute([$email]);
+                $user = $lookup->fetch();
+                if ($user) {
+                    $emailDomain = strtolower((string)substr(strrchr($email, '@') ?: '', 1));
+                    $hostedDomain = is_string($claims['hd'] ?? null) ? strtolower(trim($claims['hd'])) : '';
+                    $googleEmailIsAuthoritative = $emailDomain === 'gmail.com' || ($hostedDomain !== '' && hash_equals($emailDomain, $hostedDomain));
+                    if (!$googleEmailIsAuthoritative || empty($user['email_verified_at'])) {
+                        throw new ApiError(409, 'Email này đã có tài khoản. Hãy xác nhận email và đăng nhập bằng mật khẩu trước khi liên kết Google.');
+                    }
+                    if (!empty($user['google_sub']) && !hash_equals((string)$user['google_sub'], $googleSub)) {
+                        throw new ApiError(409, 'Email này đã được liên kết với một tài khoản Google khác.');
+                    }
+                    db()->prepare('UPDATE users SET google_sub=? WHERE id=? AND google_sub IS NULL')->execute([$googleSub, $user['id']]);
+                    $user['google_sub'] = $googleSub;
+                } else {
+                    $passwordHash = password_hash(bin2hex(random_bytes(32)), defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_DEFAULT);
+                    db()->prepare("INSERT INTO users(name,email,password_hash,google_sub,preferences,role,status,email_verified_at) VALUES(?,?,?,?,?,'user','active',UTC_TIMESTAMP())")
+                        ->execute([$name, $email, $passwordHash, $googleSub, json_encode([])]);
+                    $userId = (int)db()->lastInsertId();
+                    $lookup = db()->prepare('SELECT id,name,email,google_sub,role,status,session_version,email_verified_at FROM users WHERE id=? LIMIT 1');
+                    $lookup->execute([$userId]);
+                    $user = $lookup->fetch();
+                }
+            }
+
+            if (!$user || $user['status'] !== 'active') throw new ApiError(403, 'Tài khoản hiện không thể đăng nhập.');
+            db()->prepare('UPDATE users SET last_login_at=UTC_TIMESTAMP() WHERE id=?')->execute([$user['id']]);
+            audit((int)$user['id'], 'auth.google_login', 'user', (string)$user['id']);
+            db()->commit();
+        } catch (Throwable $error) {
+            if (db()->inTransaction()) db()->rollBack();
+            throw $error;
+        }
+
+        session_regenerate_id(true);
+        $_SESSION['user_id'] = (int)$user['id'];
+        $_SESSION['session_version'] = (int)$user['session_version'];
+        unset($_SESSION['csrf']);
+        csrf_token();
+        json_response(['user'=>['id'=>(int)$user['id'],'name'=>$user['name'],'email'=>$user['email'],'role'=>$user['role']],'csrf_token'=>csrf_token()]);
     }
     if ($path === '/auth/logout' && $method === 'POST') {
         $userId = (int)($_SESSION['user_id'] ?? 0); if ($userId) audit($userId, 'auth.logout', 'user', (string)$userId);
@@ -696,7 +888,7 @@ function handle_request(): never
         $user=current_user(); $name=required_string($body,'food_name',180,1); $privacy=(string)($body['privacy']??'private'); if(!in_array($privacy,['private','public','link'],true)) throw new ApiError(422,'Quyền riêng tư không hợp lệ.');
         $rating=$body['rating']??null; if($rating!==null && (!is_numeric($rating)||(float)$rating<0||(float)$rating>5)) throw new ApiError(422,'Điểm đánh giá cần nằm trong khoảng 0–5.');
         $price=$body['price']??null; if($price!==null && (!is_numeric($price)||(float)$price<0)) throw new ApiError(422,'Giá tiền không hợp lệ.');
-        $restaurantId=isset($body['restaurant_id'])?(int)$body['restaurant_id']:null; if($restaurantId){$chk=db()->prepare("SELECT id FROM restaurants WHERE id=? AND status='published'");$chk->execute([$restaurantId]);if(!$chk->fetchColumn())throw new ApiError(422,'Quán ăn không tồn tại hoặc chưa được duyệt.');}
+        $restaurantId=isset($body['restaurant_id'])?(int)$body['restaurant_id']:null; if($restaurantId){$chk=db()->prepare("SELECT id FROM restaurants WHERE id=? AND (status='published' OR (created_by=? AND status='pending'))");$chk->execute([$restaurantId,$user['id']]);if(!$chk->fetchColumn())throw new ApiError(422,'Quán ăn không tồn tại hoặc chưa được duyệt.');}
         $eatenAt=optional_string($body,'eaten_at',10); if($eatenAt && !preg_match('/^\d{4}-\d{2}-\d{2}$/',$eatenAt))throw new ApiError(422,'Ngày ăn không hợp lệ.');
         $source=isset($body['restaurant_source'])?(string)$body['restaurant_source']:null; if($source!==null&&!in_array($source,['osm','admin','user'],true))throw new ApiError(422,'Nguồn quán ăn không hợp lệ.');
         $sourceId=optional_string($body,'restaurant_source_id',80); $restaurantName=optional_string($body,'restaurant_name',180); $restaurantAddress=optional_string($body,'restaurant_address',500);
@@ -740,7 +932,7 @@ function handle_request(): never
             $rating=$body['rating']??null; if($rating!==null&&(!is_numeric($rating)||(float)$rating<0||(float)$rating>5))throw new ApiError(422,'Điểm đánh giá cần nằm trong khoảng 0–5.');
             $price=$body['price']??null; if($price!==null&&(!is_numeric($price)||(float)$price<0))throw new ApiError(422,'Giá tiền không hợp lệ.');
             $restaurantId=isset($body['restaurant_id'])?(int)$body['restaurant_id']:null;
-            if ($restaurantId) { $check=db()->prepare('SELECT id FROM restaurants WHERE id=?');$check->execute([$restaurantId]);if(!$check->fetchColumn())throw new ApiError(422,'Quán ăn không tồn tại.'); }
+            if ($restaurantId) { $check=db()->prepare("SELECT id FROM restaurants WHERE id=? AND (status='published' OR (created_by=? AND status='pending'))");$check->execute([$restaurantId,$user['id']]);if(!$check->fetchColumn())throw new ApiError(422,'Quán ăn không tồn tại hoặc chưa được duyệt.'); }
             $source=isset($body['restaurant_source'])?(string)$body['restaurant_source']:null;
             if($source!==null&&!in_array($source,['osm','admin','user'],true))throw new ApiError(422,'Nguồn quán ăn không hợp lệ.');
             $sourceId=optional_string($body,'restaurant_source_id',80);$restaurantName=optional_string($body,'restaurant_name',180);$restaurantAddress=optional_string($body,'restaurant_address',500);
@@ -817,20 +1009,20 @@ function handle_request(): never
     }
     if ($path === '/food-plans' && $method === 'POST') {
         $user=current_user();$name=required_string($body,'name',150,1);$description=optional_string($body,'description',1000);$eventAt=optional_string($body,'event_at',35);if($eventAt){$timestamp=strtotime($eventAt);if($timestamp===false)throw new ApiError(422,'Ngày giờ dự kiến không hợp lệ.');$eventAt=gmdate('Y-m-d H:i:s',$timestamp);}$token=make_token();
-        db()->beginTransaction();$stmt=db()->prepare("INSERT INTO food_plans(creator_id,name,description,event_at,status,invite_token_hash) VALUES(?,?,?,?, 'open',?)");$stmt->execute([$user['id'],$name,$description,$eventAt,token_hash($token)]);$id=(int)db()->lastInsertId();db()->prepare("INSERT INTO food_plan_members(food_plan_id,user_id,role) VALUES(?,?,'owner')")->execute([$id,$user['id']]);audit($user['id'],'food_plan.created','food_plan',(string)$id);db()->commit();json_response(['id'=>$id,'name'=>$name,'invite_token'=>$token,'invite_url'=>'/pages/food-plans.php?join='.rawurlencode($token)],201);
+        db()->beginTransaction();$stmt=db()->prepare("INSERT INTO food_plans(creator_id,name,description,event_at,status,invite_token_hash) VALUES(?,?,?,?, 'open',?)");$stmt->execute([$user['id'],$name,$description,$eventAt,token_hash($token)]);$id=(int)db()->lastInsertId();db()->prepare("INSERT INTO food_plan_members(food_plan_id,user_id,role) VALUES(?,?,'owner')")->execute([$id,$user['id']]);audit($user['id'],'food_plan.created','food_plan',(string)$id);db()->commit();json_response(['id'=>$id,'name'=>$name,'invite_token'=>$token,'invite_url'=>rtrim((string)env_value('W2E_BASE_URL'),'/').'/pages/food-plans.php?join='.rawurlencode($token)],201);
     }
     if ($path === '/food-plans/join' && $method === 'POST') {
-        $user=current_user();$token=required_string($body,'token',120,30);$stmt=db()->prepare('SELECT id FROM food_plans WHERE invite_token_hash=? AND status IN (\'open\',\'decided\') LIMIT 1');$stmt->execute([token_hash($token)]);$planId=(int)$stmt->fetchColumn();if(!$planId)throw new ApiError(404,'Liên kết mời không hợp lệ hoặc Food Plan đã đóng.');db()->prepare("INSERT IGNORE INTO food_plan_members(food_plan_id,user_id,role) VALUES(?,?,'member')")->execute([$planId,$user['id']]);json_response(['id'=>$planId,'message'=>'Bạn đã tham gia Food Plan.']);
+        $user=current_user();$token=required_string($body,'token',120,30);$stmt=db()->prepare('SELECT id FROM food_plans WHERE invite_token_hash=? AND status IN (\'open\',\'decided\') LIMIT 1');$stmt->execute([token_hash($token)]);$planId=(int)$stmt->fetchColumn();if(!$planId)throw new ApiError(404,'Liên kết mời không hợp lệ hoặc Food Plan đã đóng.');$membership=db()->prepare("INSERT IGNORE INTO food_plan_members(food_plan_id,user_id,role) VALUES(?,?,'member')");$membership->execute([$planId,$user['id']]);if(!$membership->rowCount())json_response(['id'=>$planId,'message'=>'Bạn đã là thành viên của kế hoạch này.']);notify_plan($planId,(int)$user['id'],$user['name'].' đã tham gia Food Plan.');db()->prepare('INSERT INTO notifications(user_id,message,url) VALUES(?,?,?)')->execute([$user['id'],'Bạn đã nhận lời mời tham gia Food Plan.','/pages/food-plans.php?plan='.$planId]);json_response(['id'=>$planId,'message'=>'Bạn đã tham gia Food Plan.']);
     }
     if (preg_match('#^/food-plans/(\d+)$#',$path,$m) && $method==='GET') {
         $user=current_user();$planId=valid_id($m[1]);$plan=require_plan_member($planId,$user['id']);unset($plan['invite_token_hash']);$proposal=db()->prepare('SELECT rp.*,u.name AS proposed_by_name,(SELECT COUNT(*) FROM votes v WHERE v.proposal_id=rp.id) AS votes,(SELECT 1 FROM votes v WHERE v.proposal_id=rp.id AND v.user_id=?) AS my_vote FROM restaurant_proposals rp JOIN users u ON u.id=rp.proposed_by WHERE rp.food_plan_id=? ORDER BY votes DESC,rp.created_at');$proposal->execute([$user['id'],$planId]);$members=db()->prepare('SELECT u.id,u.name,u.avatar_url,m.role,m.joined_at FROM food_plan_members m JOIN users u ON u.id=m.user_id WHERE m.food_plan_id=? ORDER BY m.role DESC,m.joined_at');$members->execute([$planId]);$plan['id']=(int)$plan['id'];$plan['proposals']=$proposal->fetchAll();$plan['members']=$members->fetchAll();json_response(['data'=>$plan]);
     }
     if (preg_match('#^/food-plans/(\d+)/invite$#',$path,$m) && $method==='POST') {
-        $user=current_user();$planId=valid_id($m[1]);$plan=require_plan_member($planId,$user['id']);if($plan['member_role']!=='owner')throw new ApiError(403,'Chỉ chủ Food Plan mới có thể tạo liên kết mời.');if(!in_array($plan['status'],['open','decided'],true))throw new ApiError(409,'Food Plan đã đóng.');$token=make_token();db()->prepare('UPDATE food_plans SET invite_token_hash=? WHERE id=?')->execute([token_hash($token),$planId]);audit($user['id'],'food_plan.invite_rotated','food_plan',(string)$planId);json_response(['invite_url'=>'/pages/food-plans.php?join='.rawurlencode($token)]);
+        $user=current_user();$planId=valid_id($m[1]);$plan=require_plan_member($planId,$user['id']);if($plan['member_role']!=='owner')throw new ApiError(403,'Chỉ chủ Food Plan mới có thể tạo liên kết mời.');if(!in_array($plan['status'],['open','decided'],true))throw new ApiError(409,'Food Plan đã đóng.');$token=make_token();db()->prepare('UPDATE food_plans SET invite_token_hash=? WHERE id=?')->execute([token_hash($token),$planId]);audit($user['id'],'food_plan.invite_rotated','food_plan',(string)$planId);json_response(['invite_url'=>rtrim((string)env_value('W2E_BASE_URL'),'/').'/pages/food-plans.php?join='.rawurlencode($token)]);
     }
     if (preg_match('#^/food-plans/(\d+)/proposals$#',$path,$m) && $method==='POST') {
         $user=current_user();$planId=valid_id($m[1]);$plan=require_plan_member($planId,$user['id']);if($plan['status']!=='open')throw new ApiError(409,'Food Plan đã đóng bình chọn.');$source=(string)($body['source']??'osm');if(!in_array($source,['osm','admin','user'],true))throw new ApiError(422,'Nguồn địa điểm không hợp lệ.');$sourceId=required_string($body,'source_id',80);$name=required_string($body,'name',180,1);$address=optional_string($body,'address',500);
-        [$latitude,$longitude]=optional_coordinates($body);$restaurantId=null;if(isset($body['restaurant_id'])&&$body['restaurant_id']!==''){$restaurantId=filter_var($body['restaurant_id'],FILTER_VALIDATE_INT);if(!$restaurantId||$restaurantId<1)throw new ApiError(422,'Địa điểm đã lưu không hợp lệ.');$restaurant=db()->prepare("SELECT id,source FROM restaurants WHERE id=? AND status='published' LIMIT 1");$restaurant->execute([$restaurantId]);$managed=$restaurant->fetch();if(!$managed||$managed['source']!==$source||$sourceId!=='managed:'.$restaurantId)throw new ApiError(422,'Địa điểm đã lưu không khớp với nguồn.');}$stmt=db()->prepare('INSERT INTO restaurant_proposals(food_plan_id,proposed_by,restaurant_id,source,source_id,name,address,latitude,longitude,source_url) VALUES(?,?,?,?,?,?,?,?,?,?)');try{$stmt->execute([$planId,$user['id'],$restaurantId,$source,$sourceId,$name,$address,$latitude,$longitude,optional_http_url($body,'source_url')]);}catch(PDOException $error){if($error->getCode()==='23000')throw new ApiError(409,'Địa điểm này đã được đề xuất.');throw $error;}json_response(['id'=>(int)db()->lastInsertId()],201);
+        [$latitude,$longitude]=optional_coordinates($body);$restaurantId=null;if(isset($body['restaurant_id'])&&$body['restaurant_id']!==''){$restaurantId=filter_var($body['restaurant_id'],FILTER_VALIDATE_INT);if(!$restaurantId||$restaurantId<1)throw new ApiError(422,'Địa điểm đã lưu không hợp lệ.');$restaurant=db()->prepare("SELECT id,source FROM restaurants WHERE id=? AND status='published' LIMIT 1");$restaurant->execute([$restaurantId]);$managed=$restaurant->fetch();if(!$managed||$managed['source']!==$source||$sourceId!=='managed:'.$restaurantId)throw new ApiError(422,'Địa điểm đã lưu không khớp với nguồn.');}$stmt=db()->prepare('INSERT INTO restaurant_proposals(food_plan_id,proposed_by,restaurant_id,source,source_id,name,address,latitude,longitude,source_url) VALUES(?,?,?,?,?,?,?,?,?,?)');try{$stmt->execute([$planId,$user['id'],$restaurantId,$source,$sourceId,$name,$address,$latitude,$longitude,optional_http_url($body,'source_url')]);}catch(PDOException $error){if($error->getCode()==='23000')throw new ApiError(409,'Địa điểm này đã được đề xuất.');throw $error;}$proposalId=(int)db()->lastInsertId();notify_plan($planId,(int)$user['id'],$user['name'].' đã đề xuất quán '.$name);json_response(['id'=>$proposalId],201);
     }
     if (preg_match('#^/food-plans/(\d+)/vote$#',$path,$m) && $method==='POST') {
         $user=current_user();$planId=valid_id($m[1]);$proposalId=(int)($body['proposal_id']??0);if($proposalId<1)throw new ApiError(422,'Lựa chọn không hợp lệ.');db()->beginTransaction();$plan=require_plan_member($planId,$user['id'],true);if($plan['status']!=='open')throw new ApiError(409,'Bình chọn đã đóng.');$check=db()->prepare('SELECT id FROM restaurant_proposals WHERE id=? AND food_plan_id=?');$check->execute([$proposalId,$planId]);if(!$check->fetchColumn())throw new ApiError(404,'Không tìm thấy đề xuất.');db()->prepare('DELETE v FROM votes v JOIN restaurant_proposals rp ON rp.id=v.proposal_id WHERE rp.food_plan_id=? AND v.user_id=?')->execute([$planId,$user['id']]);db()->prepare('INSERT INTO votes(proposal_id,user_id) VALUES(?,?)')->execute([$proposalId,$user['id']]);audit($user['id'],'food_plan.vote','food_plan',(string)$planId,['proposal_id'=>$proposalId]);db()->commit();json_response(['message'=>'Bình chọn đã được ghi nhận.']);
@@ -953,10 +1145,36 @@ function handle_request(): never
         $admin=require_admin();$id=valid_id($m[1]);$status=$method==='DELETE'?'hidden':(string)($body['status']??'');if(!in_array($status,['published','hidden','rejected'],true))throw new ApiError(422,'Trạng thái kiểm duyệt không hợp lệ.');db()->prepare('UPDATE food_notes SET status=?,moderated_by=?,moderated_at=UTC_TIMESTAMP() WHERE id=?')->execute([$status,$admin['id'],$id]);audit($admin['id'],'food_note.moderated','food_note',(string)$id,['status'=>$status]);json_response(['message'=>'Trạng thái Food Note đã được cập nhật.']);
     }
     if ($path === '/admin/users' && $method === 'GET') {
-        require_admin();$page=max(1,(int)($_GET['page']??1));$perPage=max(10,min(100,(int)($_GET['per_page']??50)));$search=trim((string)($_GET['q']??''));$role=(string)($_GET['role']??'');$status=(string)($_GET['status']??'');if(mb_strlen($search,'UTF-8')>100)throw new ApiError(422,'Từ khóa tìm kiếm quá dài.');if($role!==''&&!in_array($role,['user','admin'],true))throw new ApiError(422,'Vai trò không hợp lệ.');if($status!==''&&!in_array($status,['active','suspended'],true))throw new ApiError(422,'Trạng thái không hợp lệ.');$where=[];$params=[];if($search!==''){$where[]='(u.name LIKE ? OR u.email LIKE ?)';$needle='%'.$search.'%';$params[]=$needle;$params[]=$needle;}if($role!==''){$where[]='u.role=?';$params[]=$role;}if($status!==''){$where[]='u.status=?';$params[]=$status;}$clause=$where?' WHERE '.implode(' AND ',$where):'';$count=db()->prepare('SELECT COUNT(*) FROM users u'.$clause);$count->execute($params);$total=(int)$count->fetchColumn();$pages=max(1,(int)ceil($total/$perPage));$page=min($page,$pages);$offset=($page-1)*$perPage;$stmt=db()->prepare("SELECT u.id,u.name,u.email,u.role,u.status,u.email_verified_at,u.created_at,u.last_login_at,(SELECT COUNT(*) FROM food_notes n WHERE n.user_id=u.id) AS notes_count FROM users u{$clause} ORDER BY u.created_at DESC LIMIT {$perPage} OFFSET {$offset}");$stmt->execute($params);$counts=db()->query("SELECT COUNT(*) AS total,SUM(role='user' AND status='active') AS active,SUM(status='suspended') AS suspended,SUM(role='admin') AS admins FROM users")->fetch();json_response(['data'=>$stmt->fetchAll(),'counts'=>array_map('intval',$counts),'pagination'=>['page'=>$page,'per_page'=>$perPage,'total'=>$total,'pages'=>$pages]]);
+        require_admin();$page=max(1,(int)($_GET['page']??1));$perPage=max(10,min(100,(int)($_GET['per_page']??50)));$search=trim((string)($_GET['q']??''));$role=(string)($_GET['role']??'');$status=(string)($_GET['status']??'');if(mb_strlen($search,'UTF-8')>100)throw new ApiError(422,'Từ khóa tìm kiếm quá dài.');if($role!==''&&!in_array($role,['user','admin'],true))throw new ApiError(422,'Vai trò không hợp lệ.');if($status!==''&&!in_array($status,['pending','active','suspended'],true))throw new ApiError(422,'Trạng thái tài khoản không hợp lệ.');$where=[];$params=[];if($search!==''){$where[]='(u.name LIKE ? OR u.email LIKE ?)';$needle='%'.$search.'%';$params[]=$needle;$params[]=$needle;}if($role!==''){$where[]='u.role=?';$params[]=$role;}if($status!==''){$where[]='u.status=?';$params[]=$status;}$clause=$where?' WHERE '.implode(' AND ',$where):'';$count=db()->prepare('SELECT COUNT(*) FROM users u'.$clause);$count->execute($params);$total=(int)$count->fetchColumn();$pages=max(1,(int)ceil($total/$perPage));$page=min($page,$pages);$offset=($page-1)*$perPage;$stmt=db()->prepare("SELECT u.id,u.name,u.email,u.role,u.status,u.email_verified_at,u.created_at,u.last_login_at,(SELECT COUNT(*) FROM food_notes n WHERE n.user_id=u.id) AS notes_count FROM users u{$clause} ORDER BY u.created_at DESC LIMIT {$perPage} OFFSET {$offset}");$stmt->execute($params);$counts=db()->query("SELECT COUNT(*) AS total,SUM(role='user' AND status='active') AS active,SUM(status='suspended') AS suspended,SUM(role='admin') AS admins FROM users")->fetch();json_response(['data'=>$stmt->fetchAll(),'counts'=>array_map('intval',$counts),'pagination'=>['page'=>$page,'per_page'=>$perPage,'total'=>$total,'pages'=>$pages]]);
     }
-    if (preg_match('#^/admin/users/(\d+)$#',$path,$m) && in_array($method,['PATCH','DELETE'],true)) {
-        $admin=require_admin();$id=valid_id($m[1]);if($id===$admin['id'])throw new ApiError(409,'Không thể thay đổi trạng thái tài khoản admin đang đăng nhập.');$status=$method==='DELETE'?'suspended':(string)($body['status']??'');if(!in_array($status,['active','suspended'],true))throw new ApiError(422,'Trạng thái tài khoản không hợp lệ.');db()->prepare("UPDATE users SET status=? WHERE id=? AND role='user'")->execute([$status,$id]);audit($admin['id'],'user.status_changed','user',(string)$id,['status'=>$status]);json_response(['message'=>'Trạng thái tài khoản đã được cập nhật.']);
+    if (preg_match('#^/admin/users/(\d+)$#',$path,$m) && $method==='PATCH') {
+        $admin = require_admin();
+        $id = valid_id($m[1]);
+        if ($id === $admin['id']) throw new ApiError(409, 'Không thể thay đổi trạng thái tài khoản admin đang đăng nhập.');
+        $status = (string)($body['status'] ?? '');
+        if (!in_array($status, ['active', 'suspended'], true)) throw new ApiError(422, 'Trạng thái tài khoản không hợp lệ.');
+        $check = db()->prepare('SELECT role, email_verified_at FROM users WHERE id=?');
+        $check->execute([$id]);
+        $account = $check->fetch();
+        if (!$account) throw new ApiError(404, 'Không tìm thấy tài khoản.');
+        if ($account['role'] !== 'user') throw new ApiError(403, 'Không thể thay đổi tài khoản quản trị viên.');
+        if ($status === 'active' && !$account['email_verified_at']) throw new ApiError(422, 'Tài khoản chưa xác nhận email. Hãy gửi lại email xác nhận hoặc xóa để đăng ký lại.');
+        db()->prepare("UPDATE users SET status=? WHERE id=? AND role='user'")->execute([$status,$id]);
+        audit($admin['id'],'user.status_changed','user',(string)$id,['status'=>$status]);
+        json_response(['message'=>'Trạng thái tài khoản đã được cập nhật.']);
+    }
+    if (preg_match('#^/admin/users/(\d+)$#',$path,$m) && $method==='DELETE') {
+        $admin = require_admin();
+        $id = valid_id($m[1]);
+        if ($id === $admin['id']) throw new ApiError(409, 'Không thể xóa tài khoản admin đang đăng nhập.');
+        rate_limit('admin_user_delete', is_local_development_origin() ? 100 : 20, 3600);
+        $password = (string)($body['admin_password'] ?? '');
+        $check = db()->prepare("SELECT password_hash FROM users WHERE id=? AND role='admin' LIMIT 1");
+        $check->execute([$admin['id']]);
+        if (!password_verify($password, (string)$check->fetchColumn())) throw new ApiError(401, 'Mật khẩu quản trị không đúng.');
+        $confirmedEmail = required_string($body, 'confirmation_email', 254);
+        delete_user_account($id, $admin['id'], 'user.deleted_by_admin', $confirmedEmail);
+        json_response(['message'=>'Tài khoản và dữ liệu liên quan đã được xóa. Email có thể đăng ký lại.']);
     }
     if ($path === '/admin/audit-logs' && $method === 'GET') {
         require_admin();$page=max(1,(int)($_GET['page']??1));$perPage=max(10,min(100,(int)($_GET['per_page']??50)));$search=trim((string)($_GET['q']??''));if(mb_strlen($search,'UTF-8')>100)throw new ApiError(422,'Từ khóa tìm kiếm quá dài.');$where='';$params=[];if($search!==''){$where=' WHERE a.action LIKE ? OR a.entity_type LIKE ? OR COALESCE(a.entity_id,\'\') LIKE ? OR COALESCE(u.name,\'\') LIKE ? OR COALESCE(u.email,\'\') LIKE ?';$needle='%'.$search.'%';$params=[$needle,$needle,$needle,$needle,$needle];}$count=db()->prepare('SELECT COUNT(*) FROM audit_logs a LEFT JOIN users u ON u.id=a.actor_id'.$where);$count->execute($params);$total=(int)$count->fetchColumn();$pages=max(1,(int)ceil($total/$perPage));$page=min($page,$pages);$offset=($page-1)*$perPage;$stmt=db()->prepare("SELECT a.id,a.actor_id,u.name AS actor_name,a.action,a.entity_type,a.entity_id,a.metadata,a.created_at FROM audit_logs a LEFT JOIN users u ON u.id=a.actor_id{$where} ORDER BY a.id DESC LIMIT {$perPage} OFFSET {$offset}");$stmt->execute($params);json_response(['data'=>$stmt->fetchAll(),'pagination'=>['page'=>$page,'per_page'=>$perPage,'total'=>$total,'pages'=>$pages]]);

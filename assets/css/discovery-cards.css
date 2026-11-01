@@ -1,0 +1,183 @@
+/* Live restaurant cards use real venue metadata for labels and stable color accents. */
+.w2e-live-place-card.w2e-live-place-card--discovery {
+  --place-accent: #8c6445;
+  --place-wash: #f5efe7;
+  --place-line: #e2d4c3;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 255px;
+  padding: 0 1.25rem 1rem;
+  overflow: hidden;
+  border: 1px solid var(--place-line);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--place-wash) 0, var(--place-wash) 5.4rem, #fff 5.4rem);
+  box-shadow: 0 5px 20px rgba(54, 35, 20, .055);
+  transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease;
+}
+
+.w2e-live-place-card--discovery::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: var(--place-accent);
+  content: '';
+}
+
+.w2e-live-place-card--discovery:hover,
+.w2e-live-place-card--discovery:focus-within {
+  transform: translateY(-4px);
+  border-color: var(--place-accent);
+  box-shadow: 0 14px 30px rgba(54, 35, 20, .12);
+}
+
+.w2e-live-place-card--discovery .w2e-live-place-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .7rem;
+  min-height: 3.4rem;
+  margin: 0 -1.25rem .35rem;
+  padding: .65rem 1.15rem .2rem;
+}
+
+.w2e-live-place-card--discovery .w2e-live-place-card__type {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.8rem;
+  padding: .35rem .62rem;
+  border: 1px solid var(--place-line);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, .75);
+  color: var(--place-accent);
+  font-size: .67rem;
+  font-weight: 600;
+  letter-spacing: .07em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.w2e-live-place-card--discovery .w2e-sponsored-label {
+  margin-left: auto;
+  border-radius: 4px;
+  background: #3c5c4a;
+  font-size: .65rem;
+  letter-spacing: .04em;
+}
+
+.w2e-live-place-card--discovery .w2e-live-place-card__name {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0 0 .45rem;
+  color: #30251d;
+  font-size: 1.08rem;
+  font-weight: 600;
+  line-height: 1.42;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.w2e-live-place-card--discovery .w2e-live-place-card__address {
+  display: -webkit-box;
+  overflow: hidden;
+  min-height: 2.8em;
+  margin: 0;
+  color: #76695f;
+  font-size: .8rem;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.w2e-live-place-card--discovery .w2e-live-place-card__meta {
+  margin: auto 0 0;
+  padding: .8rem 0 0;
+  border-top: 1px solid var(--place-line);
+  color: #817369;
+  font-size: .7rem;
+  line-height: 1.55;
+}
+
+.w2e-live-place-card--discovery .w2e-live-place-card__source {
+  align-self: flex-start;
+  margin-top: .65rem;
+  padding: .18rem 0;
+  border-bottom: 1px solid var(--place-accent);
+  color: var(--place-accent);
+  font-size: .76rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.w2e-live-place-card--discovery .w2e-live-place-card__source:hover,
+.w2e-live-place-card--discovery .w2e-live-place-card__source:focus-visible {
+  border-color: var(--place-accent);
+  color: var(--place-accent);
+}
+
+.w2e-live-place-card--discovery .w2e-live-place-card__source:focus-visible,
+.w2e-live-place-card--discovery .w2e-live-favorite:focus-visible {
+  outline: 3px solid var(--place-accent);
+  outline-offset: 3px;
+}
+
+.w2e-live-place-card--discovery .w2e-live-favorite--text {
+  flex: 0 0 auto;
+  width: auto;
+  height: auto;
+  min-height: 1.8rem;
+  padding: .36rem .66rem;
+  border: 1px solid var(--place-line);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, .8);
+  color: var(--place-accent);
+  font-family: var(--font);
+  font-size: .68rem;
+  font-weight: 600;
+  line-height: 1.1;
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease, border-color .18s ease;
+}
+
+.w2e-live-place-card--discovery .w2e-live-favorite--text:hover,
+.w2e-live-place-card--discovery .w2e-live-favorite--text.active {
+  border-color: var(--place-accent);
+  background: var(--place-accent);
+  color: #fff;
+}
+
+.w2e-live-place-card--discovery .w2e-verify-activity {
+  align-self: flex-start;
+  margin: .6rem 0 0;
+  border-color: var(--place-accent);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--place-accent);
+}
+
+.w2e-live-place-card--discovery .w2e-verify-activity:hover {
+  border-color: var(--place-accent);
+  background: var(--place-accent);
+  color: #fff;
+}
+
+@media (max-width: 575px) {
+  .w2e-live-place-card.w2e-live-place-card--discovery {
+    min-height: 230px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .w2e-live-place-card--discovery,
+  .w2e-live-place-card--discovery .w2e-live-favorite--text {
+    transition: none;
+  }
+
+  .w2e-live-place-card--discovery:hover,
+  .w2e-live-place-card--discovery:focus-within {
+    transform: none;
+  }
+}

@@ -1,65 +1,112 @@
 # What2Eat
 
-What2Eat là website khám phá quán ăn và ghi chép trải nghiệm ẩm thực. Các trang được xây dựng bằng PHP tại `index.php`, `pages/*.php` và `admin/*.php`; CSS và JavaScript đảm nhiệm giao diện, tương tác, còn Leaflet hiển thị bản đồ. API sử dụng PHP 8.1+ và MySQL 8 hoặc MariaDB tương thích. Bản đồ dùng dữ liệu OpenStreetMap, không cần khóa Google Maps API. Thông tin quán ăn đến từ OpenStreetMap hoặc do người dùng và quản trị viên cung cấp.
+What2Eat là ứng dụng web tiếng Việt giúp khám phá địa điểm ăn uống, lưu lại trải nghiệm qua **Food Note** và cùng bạn bè chọn quán qua **Food Plan**. Dự án ưu tiên dữ liệu có nguồn: địa điểm được lấy từ OpenStreetMap (OSM) hoặc do người dùng/quản trị viên cung cấp; thông tin chưa có nguồn được để trống thay vì tự tạo.
 
-## Chức năng đã triển khai
+## Tính năng
 
-- Khám phá quán ăn gần vị trí tìm kiếm, xem ghim bản đồ và trang chi tiết ngay trong What2Eat, lưu quán, xem quán lân cận và chọn ngẫu nhiên. Bản đồ vẫn ghi công OpenStreetMap.
-- Đăng ký có xác nhận email, đăng nhập, đăng xuất, đặt lại mật khẩu, quản lý hồ sơ và tải ảnh đại diện.
-- Tạo Food Note, lưu bản nháp trên máy chủ, khôi phục nội dung chưa gửi trên thiết bị, gắn nhãn, chấm điểm cá nhân, tải ảnh/video và chọn chế độ riêng tư, công khai hoặc chia sẻ bằng liên kết.
-- Tạo Food Plan, mời thành viên bằng liên kết, đề xuất địa điểm, bình chọn và chốt kết quả.
-- Quản trị người dùng, danh mục, quán ăn và Food Note công khai; xem nhật ký hoạt động.
-- Báo quán đóng cửa, chuyển địa chỉ hoặc sai thông tin. Quản trị viên có thể xem xét báo cáo, ẩn địa điểm khỏi Khám phá và khôi phục địa điểm OSM sau đó.
-- Quản lý vị trí tài trợ có thời hạn cho quán đã công khai. Vị trí tài trợ luôn có nhãn "Tài trợ" trên trang Khám phá, popup bản đồ và trang chi tiết. Thỏa thuận và thanh toán hiện được xử lý bên ngoài website.
-- Kiểm tra quyền truy cập ở máy chủ, bảo vệ CSRF, truy vấn SQL có tham số, giới hạn tần suất yêu cầu, lưu tệp riêng tư và kiểm duyệt nội dung.
+- **Khám phá địa điểm:** tìm quán quanh vị trí, xem bản đồ và trang chi tiết, lưu quán yêu thích, xem lựa chọn gần đó và chọn quán ngẫu nhiên theo khoảng cách/ngân sách. Bản đồ sử dụng Leaflet và dữ liệu OSM, có ghi công nguồn.
+- **Danh mục địa điểm:** dùng dữ liệu OSM trực tiếp và snapshot địa điểm TP. Hồ Chí Minh; lưu địa điểm OSM được phát hiện vào danh mục để hỗ trợ tìm kiếm, chi tiết và đóng góp. Địa chỉ, điện thoại, giờ mở cửa, giá và trạng thái hoạt động chỉ hiển thị khi có dữ liệu phù hợp. Địa điểm OSM không mặc định là đang hoạt động.
+- **Food Note:** tạo ghi chú món ăn, đánh giá và nhận xét; đính kèm ảnh/video; gắn thẻ, ghim, yêu thích; lưu nháp; chọn chế độ riêng tư, công khai hoặc chia sẻ bằng liên kết. Nội dung công khai và đóng góp địa điểm có thể cần quản trị viên duyệt.
+- **Food Plan:** lập kế hoạch ăn uống, mời thành viên bằng liên kết, đề xuất quán, bình chọn và đóng kế hoạch. Tạo liên kết mời mới sẽ vô hiệu liên kết cũ.
+- **Tài khoản:** đăng ký và xác minh email, đăng nhập bằng mật khẩu hoặc Google, đặt lại mật khẩu, quản lý hồ sơ và ảnh đại diện.
+- **Quản trị:** quản lý người dùng, danh mục, địa điểm, Food Note, báo cáo địa điểm, nội dung chờ duyệt, xác minh trạng thái hoạt động và xem nhật ký kiểm toán.
+- **Thông báo:** nhận thông báo về hoạt động liên quan đến kế hoạch và đề xuất địa điểm.
+- **PWA:** có manifest, service worker và trang ngoại tuyến cho trải nghiệm cài đặt/sử dụng cơ bản trên thiết bị hỗ trợ.
 
-Cơ sở dữ liệu không có tài khoản, quán ăn, đánh giá, giá hay thống kê mẫu sau khi khởi tạo. Quán công khai trên bản đồ được truy vấn từ OpenStreetMap; đề xuất của người dùng và bản ghi do quản trị viên nhập chỉ được lưu khi có người cung cấp. Trường nào chưa có dữ liệu sẽ được hiển thị là chưa có dữ liệu.
+## Công nghệ
 
-Khi phát triển bằng PHP trên máy cá nhân, đặt `W2E_ENV=development` và `W2E_BASE_URL` thành địa chỉ website cục bộ. Email xác nhận và đặt lại mật khẩu được ghi vào `storage/dev-mail.log`; website chặn truy cập trực tiếp thư mục `storage/`. Mở liên kết tương ứng trong tệp log bằng trình duyệt. Không dùng chế độ `development` cho website công khai.
+- PHP 8.1+, MySQL 8 hoặc MariaDB tương thích; API JSON cùng origin, xử lý ở `api/`.
+- Giao diện dùng PHP templates, HTML, CSS và JavaScript thuần; Leaflet hiển thị bản đồ.
+- PHPMailer gửi email qua SMTP. Google Identity Services cung cấp đăng nhập Google bằng ID token được xác minh phía máy chủ.
+- OpenStreetMap cung cấp dữ liệu bản đồ/địa điểm; công cụ nhập PBF dùng Python 3.12, PyOsmium và Shapely.
+- Kiểm thử hồi quy/integration dùng Node.js và PHP CLI.
 
-Chức năng tra tọa độ địa chỉ trong trang quản trị chỉ gửi yêu cầu tới OpenStreetMap Nominatim khi quản trị viên bấm tra cứu. Kết quả được lưu tạm 30 ngày; các yêu cầu chưa có trong bộ nhớ đệm được giãn cách tối thiểu một giây. Giao diện hiển thị thông tin ghi công và yêu cầu đối chiếu kết quả trước khi lưu. Có thể đặt `W2E_NOMINATIM_URL` để dùng dịch vụ tương thích hoặc máy chủ tự vận hành.
+## Cấu trúc dự án
 
-## Xem thử trên máy cá nhân
+```text
+admin/                 Trang quản trị
+api/                   API, schema và lệnh migration/import/vận hành
+assets/css/, assets/js/ Giao diện và logic phía trình duyệt
+includes/              Thành phần dùng chung cho trang PHP
+pages/                 Khám phá, tài khoản, Food Note và Food Plan
+scripts/               Công cụ tạo snapshot dữ liệu OSM
+storage/datasets/       Snapshot và báo cáo dữ liệu có nguồn
+tests/                 Kiểm thử API, đăng nhập Google, bản đồ và bộ lọc
+```
 
-Chạy `node server.js`, sau đó mở `http://127.0.0.1:4173/`. Máy chủ xem thử này phục vụ giao diện và chuyển tiếp yêu cầu bản đồ OSM. Nó **không chạy API PHP** cho tài khoản, Food Note, Food Plan hoặc trang quản trị. Muốn thử các chức năng đó cần PHP và MySQL theo hướng dẫn tại [`api/README.md`](api/README.md).
+Tài liệu chi tiết: [API và cấu hình](api/README.md), [triển khai](DEPLOYMENT.md), [thiết kế cơ sở dữ liệu ban đầu](database_design.md), [báo cáo hoàn thiện tính năng ngày 28/10/2026](COMPLETION-20261028.md). Schema triển khai thực tế nằm trong `api/schema.sql`.
 
-## Triển khai website
+## Chạy tại máy phát triển
 
-1. Chuẩn bị tên miền dùng HTTPS, PHP 8.1+ với `pdo_mysql`, `curl`, `fileinfo`, `mbstring`, `json` và session; cơ sở dữ liệu MySQL 8 hoặc MariaDB tương thích.
-2. Đặt thư mục gốc của website Apache tại thư mục dự án này và bật các module rewrite, headers. Tệp `.htaccess` đã cấu hình đường dẫn cho API và ảnh nền bản đồ.
-3. Sao chép `.env.example` thành `.env` trên máy chủ. Điền URL website thật, mã bí mật ứng dụng đủ mạnh, thông tin kết nối cơ sở dữ liệu, địa chỉ gửi email và email hỗ trợ. Giữ `.env` riêng tư, không đưa lên Git.
-4. Tạo cơ sở dữ liệu trống, rồi chạy `php api/bin/migrate.php` trong thư mục dự án. Khi cập nhật bản cài đặt cũ, chạy lại lệnh này để bổ sung các bảng mới.
-5. Tạo quản trị viên đầu tiên trong terminal đáng tin cậy: đặt `W2E_ADMIN_PASSWORD` thành mật khẩu dùng một lần, rồi chạy `php api/bin/create-admin.php admin@example.com`. Xóa mật khẩu tạm khỏi biến môi trường sau đó.
-6. Cấu hình dịch vụ gửi email và HTTPS, cấp quyền ghi vào `storage/uploads` cho PHP, rồi kiểm tra `/api/v1/health`.
+Ứng dụng đầy đủ cần PHP, MySQL/MariaDB và máy chủ web có hỗ trợ rewrite. Bản preview Node.js chỉ phục vụ giao diện và chuyển tiếp yêu cầu bản đồ; các luồng tài khoản, Food Note, Food Plan và quản trị cần API PHP.
 
-Máy chủ cần lưu trữ MySQL và tệp tải lên lâu dài, truy cập HTTPS ra ngoài cho OSM và một hệ thống gửi email hoạt động để xác nhận tài khoản, đặt lại mật khẩu. Các dịch vụ bản đồ cộng đồng có thể giới hạn yêu cầu hoặc tạm ngừng. API thử máy chủ Overpass khác và dùng dữ liệu đã lưu gần đây khi có thể.
+1. Cài PHP 8.1+ với `pdo_mysql`, `curl`, `fileinfo`, `mbstring`, `json` và session; cài Composer và MySQL/MariaDB.
+2. Tạo database rỗng và bản sao cấu hình:
 
-## Vị trí tài trợ
+   ```powershell
+   Copy-Item .env.example .env
+   ```
 
-Quản trị viên mở **Admin → Quản lý Quán ăn → Tài trợ** tại một quán đã công khai và có tọa độ. Nhập tên bên tài trợ, mã thỏa thuận nội bộ, thời gian bắt đầu/kết thúc, rồi kích hoạt. API công khai chỉ đánh dấu quán là tài trợ trong thời gian đã định; giao diện luôn hiển thị nhãn "Tài trợ". Tạm dừng vị trí sẽ gỡ nhãn và mức ưu tiên hiển thị ngay. Đây là quy trình quản lý thỏa thuận thủ công, **chưa phải cổng thanh toán** và không xác nhận rằng website đã nhận tiền.
+3. Điền `W2E_ENV=development`, `W2E_BASE_URL`, thông tin database, `W2E_APP_SECRET` và cấu hình mail trong `.env`. Cài thư viện PHP và tạo schema:
 
-## Kiểm thử tích hợp
+   ```powershell
+   composer install
+   php api/bin/migrate.php
+   ```
 
-Chạy `node tests/integration.mjs` để kiểm tra các luồng chính trên một cơ sở dữ liệu tạm. Máy cần có lệnh PHP và MySQL CLI, cùng quyền tạo/xóa cơ sở dữ liệu thử nghiệm. Nếu không dùng XAMPP, đặt các biến `W2E_TEST_PHP`, `W2E_TEST_MYSQL`, `W2E_TEST_DB_USER`, `W2E_TEST_DB_PASSWORD` và `W2E_TEST_DB_PORT` theo môi trường của bạn. Lệnh kiểm thử tự tạo và xóa cơ sở dữ liệu tạm sau khi chạy.
+4. Tạo quản trị viên đầu tiên từ terminal tin cậy. Đặt `W2E_ADMIN_PASSWORD` (tối thiểu 12 ký tự), tùy chọn `W2E_ADMIN_NAME`, sau đó chạy:
 
-## Tạo bộ dữ liệu OSM cho TP. Hồ Chí Minh
+   ```powershell
+   php api/bin/create-admin.php admin@example.com
+   ```
 
-Công cụ nhập tệp PBF tạo CSV, GeoJSON, bản tóm tắt và báo cáo chất lượng từ dữ liệu Geofabrik Việt Nam. Công cụ dùng ranh giới hành chính TP. Hồ Chí Minh có trong tệp trích xuất. Dữ liệu **không xác nhận quán còn hoạt động**: mọi bản ghi ban đầu có trạng thái `unverified`; các quán có khả năng trùng nhau ở khoảng cách gần được liệt kê để kiểm tra thủ công.
+   Xóa mật khẩu tạm khỏi môi trường sau khi tạo tài khoản.
+5. Để dùng Google Sign-In, cấu hình `W2E_GOOGLE_CLIENT_ID` và thêm đúng origin của ứng dụng vào Authorized JavaScript origins trong Google Cloud Console. Luồng hiện tại không cần Google Client Secret hay redirect URI.
+6. Mở ứng dụng qua máy chủ PHP/Apache đã cấu hình document root, rewrite và HTTPS phù hợp. `/api/v1/health` kiểm tra kết nối API/database.
 
-1. Tải `vietnam-latest.osm.pbf` từ [Geofabrik Việt Nam](https://download.geofabrik.de/asia/vietnam.html) vào `storage/imports/osm/`.
-2. Với Python 3.12, cài các gói trong `requirements-osm-import.txt` vào thư mục phục vụ nhập dữ liệu:
+Có thể chạy preview giao diện bằng `node server.js` tại `http://127.0.0.1:4173/`; preview này không thay thế môi trường PHP/MySQL.
+
+## Dữ liệu địa điểm OSM tại TP. Hồ Chí Minh
+
+Snapshot CSV và tài liệu nguồn/chất lượng nằm trong `storage/datasets/hcm-osm-food/`. Để dựng lại từ bản trích xuất Geofabrik:
+
+1. Tải `vietnam-latest.osm.pbf` vào `storage/imports/osm/`.
+2. Cài thư viện Python vào thư mục import cục bộ:
 
    ```powershell
    python -m pip install --target storage/imports/osm/vendor -r requirements-osm-import.txt
    ```
 
-3. Tìm quan hệ ranh giới TP. Hồ Chí Minh có `admin_level=4` trong tệp trích xuất, rồi tạo bộ dữ liệu:
+3. Liệt kê ranh giới hành chính rồi tạo snapshot theo relation TP. Hồ Chí Minh:
 
    ```powershell
    python scripts/build_hcm_food_dataset.py --list-boundaries
    python scripts/build_hcm_food_dataset.py --boundary-relation RELATION_ID
    ```
 
-Tệp kết quả nằm trong `storage/datasets/hcm-osm-food/`. Đọc `data_quality_report.md` và `sources_and_license.md` trước khi nhập hoặc phân phối lại dữ liệu. Dữ liệu có nguồn gốc OSM phải ghi công và tuân thủ [giấy phép ODbL](https://www.openstreetmap.org/copyright).
+4. Đọc `data_quality_report.md` và `sources_and_license.md` trước khi nhập hoặc phân phối dữ liệu. Dữ liệu OSM cần giữ ghi công và tuân thủ [ODbL](https://www.openstreetmap.org/copyright).
 
-Xem [`database_design.md`](database_design.md) để tham khảo thiết kế cơ sở dữ liệu ban đầu và [`api/README.md`](api/README.md) để biết thêm về môi trường chạy, API và vận hành.
+Lệnh `php api/bin/import-catalog.php` nhập danh mục từ snapshot đã chuẩn bị. Công cụ `php api/bin/enrich-addresses.php` bổ sung địa chỉ theo giới hạn và cache; cần kiểm tra kết quả từ dịch vụ địa lý trước khi sử dụng.
+
+## Bảo mật và vận hành
+
+- Không commit `.env`, mật khẩu, token, dữ liệu tải lên riêng tư, thư mục vendor hoặc bản sao làm việc trong `storage/backups/`.
+- Dùng HTTPS và secret riêng cho từng môi trường; giới hạn quyền database của ứng dụng. Tạo admin qua CLI, không có mật khẩu quản trị mặc định.
+- API dùng session cookie, CSRF token cho thao tác ghi, prepared statements, kiểm tra quyền theo vai trò, giới hạn tần suất và kiểm soát kích thước/tệp tải lên.
+- Email xác minh và đặt lại mật khẩu cần SMTP hoạt động. Chế độ ghi email ra log chỉ dành cho kiểm thử cục bộ khi được bật rõ ràng.
+- Cấu hình hosting để `.env` và `storage/` không truy cập trực tiếp qua web; duy trì backup database và vùng upload riêng tư.
+- Chạy `php api/bin/cleanup.php` định kỳ để dọn token/cache hết hạn và báo cáo media không còn được tham chiếu. Tùy chọn xóa media mồ côi cần xem báo cáo/backup trước.
+- Làm theo các bước trong [DEPLOYMENT.md](DEPLOYMENT.md) để cấu hình production, Google OAuth, mail, domain và kiểm tra trước khi mở đăng ký.
+
+## Kiểm thử
+
+Các kiểm thử hiện có:
+
+```powershell
+node tests/integration.mjs
+node tests/random-filters.mjs
+node tests/map-location.mjs
+php tests/google-auth.php
+```
+
+Integration test cần PHP/MySQL CLI và quyền tạo/xóa database tạm. Xem đầu file test hoặc [api/README.md](api/README.md) để biết biến môi trường tùy chọn cho môi trường không dùng XAMPP.

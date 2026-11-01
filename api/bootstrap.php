@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+$composerAutoloader = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php';
+if (is_file($composerAutoloader)) require_once $composerAutoloader;
+
 function load_app_env(): array
 {
     static $values = null;
@@ -244,10 +247,10 @@ function audit(?int $actorId, string $action, string $entity, ?string $entityId 
     $statement->execute([$actorId, $action, $entity, $entityId, $metadata ? json_encode($metadata, JSON_UNESCAPED_UNICODE) : null, client_ip_hash()]);
 }
 
-function send_app_mail(string $to, string $subject, string $html): bool
+function send_app_mail(string $to, string $subject, string $html, ?string $plainText = null): bool
 {
     if (!filter_var($to, FILTER_VALIDATE_EMAIL) || str_contains($subject, "\r") || str_contains($subject, "\n")) return false;
-    if (is_local_development_origin()) {
+    if (env_value('W2E_MAIL_TRANSPORT','smtp') === 'log' && is_local_development_origin()) {
         $storage = dirname(__DIR__) . '/storage';
         if (!is_dir($storage) || !is_writable($storage)) return false;
         $logName = (string)env_value('W2E_DEV_MAIL_LOG', 'dev-mail.log');
@@ -257,9 +260,44 @@ function send_app_mail(string $to, string $subject, string $html): bool
     }
     $from = env_value('W2E_MAIL_FROM');
     if (!$from || str_contains($from, "\r") || str_contains($from, "\n")) return false;
-    $headers = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\n";
-    $headers .= 'From: ' . $from . "\r\n";
-    return @mail($to, '=?UTF-8?B?' . base64_encode($subject) . '?=', $html, $headers);
+    if (!class_exists('PHPMailer\\PHPMailer\\PHPMailer')) {
+        error_log('[What2Eat] PHPMailer is not installed. Run composer install.');
+        return false;
+    }
+    $host=env_value('W2E_SMTP_HOST');$username=env_value('W2E_SMTP_USERNAME');$password=env_value('W2E_SMTP_PASSWORD');
+    if(!$host||!$username||!$password||!preg_match('/^[a-zA-Z0-9.-]+$/',$host)){error_log('[What2Eat] SMTP configuration missing');return false;}
+    $sender=preg_match('/<([^>]+)>/',$from,$match)?$match[1]:$from;
+    if(!filter_var($sender,FILTER_VALIDATE_EMAIL))return false;
+    $secure=env_value('W2E_SMTP_SECURITY','tls');$port=(int)env_value('W2E_SMTP_PORT',$secure==='ssl'?'465':'587');
+    if ($port < 1 || $port > 65535 || !in_array($secure, ['tls', 'ssl'], true)) return false;
+    try {
+        $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+        $mail->CharSet = 'UTF-8';
+        $mail->isSMTP();
+        $mail->Host = $host;
+        $mail->Port = $port;
+        $mail->SMTPAuth = true;
+        $mail->Username = $username;
+        $mail->Password = $password;
+        $mail->SMTPSecure = $secure === 'ssl'
+            ? \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS
+            : \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Timeout = 25;
+        $displayName = trim((string)preg_replace('/<[^>]+>/', '', $from));
+        $mail->setFrom($sender, $displayName !== '' ? $displayName : 'What2Eat');
+        $mail->addAddress($to);
+        $mail->Subject = $subject;
+        $mail->isHTML(true);
+        $mail->Body = $html;
+        $mail->AltBody = $plainText !== null
+            ? $plainText
+            : trim((string)preg_replace('/\s+/', ' ', strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>', '</div>'], "\n", $html))));
+        $mail->send();
+        return true;
+    } catch (\Throwable $error) {
+        error_log('[What2Eat] PHPMailer SMTP transport failed: ' . $error->getMessage());
+        return false;
+    }
 }
 
 function public_restaurant(array $row): array

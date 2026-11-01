@@ -1,7 +1,7 @@
 /* ============================================================
    What2Eat — Main Stylesheet
-   Design language: calm and typographic. One family
-   (Be Vietnam Pro), weight is the only axis of variation.
+   Design language: calm and typographic. Native SF Pro on
+   Apple platforms, Inter/Manrope fallbacks elsewhere.
    Colour is the project's own cream / brown / gold identity —
    what changed is the discipline around it, not the palette.
    ============================================================ */
@@ -23,9 +23,19 @@
    ============================================================ */
 :root {
   /* --- Type ------------------------------------------------ */
-  --font: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont,
-          "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue",
-          Arial, sans-serif;
+  --font: -apple-system, BlinkMacSystemFont,
+          "SF Pro Text", "SF Pro Display", "SF Pro", "SF Pro Vietnam",
+          "Inter", "Manrope", "Segoe UI", Roboto, "Helvetica Neue",
+          Arial, system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont,
+                  "SF Pro Display", "SF Pro", "SF Pro Vietnam",
+                  "Manrope", "Inter", "Segoe UI", Roboto,
+                  "Helvetica Neue", Arial, system-ui, sans-serif;
+  --type-h1: clamp(2.5rem, 5.4vw, 4.25rem);
+  --type-h2: clamp(2rem, 3.5vw, 2.5rem);
+  --type-h3: clamp(1.375rem, 2.25vw, 1.75rem);
+  --type-body: 1rem;
+  --type-caption: 0.75rem;
 
   /* --- Brand: gold ----------------------------------------- */
   --gold:        #D4A017;
@@ -176,10 +186,11 @@ body {
   font-family: var(--font);
   background-color: var(--bg);
   color: var(--text);
-  font-size: 0.9375rem;      /* 15px — the working size */
+  font-size: var(--type-body);
   font-weight: 400;
-  line-height: 1.6;
-  letter-spacing: -0.005em;  /* optical tightening for Be Vietnam Pro */
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  font-optical-sizing: auto;
   min-height: 100vh;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
@@ -240,14 +251,17 @@ ul, ol {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-weight: 500;
+  font-family: var(--font-display);
+  font-weight: 600;
   line-height: 1.2;
   letter-spacing: -0.02em;
   color: var(--ink);
 }
 
-/* Emphasis stays inside the scale: 600 is the loudest weight this
-   design uses, so <strong>/<b> no longer jump to the browser's 700. */
+h1 { font-size: var(--type-h1); font-weight: 700; line-height: 1.04; letter-spacing: -0.045em; }
+h2 { font-size: var(--type-h2); font-weight: 600; line-height: 1.12; letter-spacing: -0.03em; }
+h3 { font-size: var(--type-h3); font-weight: 600; line-height: 1.2; letter-spacing: -0.02em; }
+
 strong, b {
   font-weight: 600;
 }
@@ -277,13 +291,12 @@ hr {
 /* ============================================================
    TYPOGRAPHY
    ------------------------------------------------------------
-   Scale is set for large jumps and tight tracking at the top
-   end. Nothing above 600 — heavy weights read as shouting and
-   are the fastest way to lose the calm register.
+   Responsive sizes and stronger heading weights establish a
+   clear hierarchy while body copy remains quiet and readable.
    ============================================================ */
-.w2e-h1 { font-size: 2.5rem;    font-weight: 500; letter-spacing: -0.028em; line-height: 1.1; }
-.w2e-h2 { font-size: 1.875rem;  font-weight: 500; letter-spacing: -0.024em; line-height: 1.15; }
-.w2e-h3 { font-size: 1.375rem;  font-weight: 500; letter-spacing: -0.018em; line-height: 1.25; }
+.w2e-h1 { font-size: var(--type-h1); font-weight: 700; letter-spacing: -0.045em; line-height: 1.04; }
+.w2e-h2 { font-size: var(--type-h2); font-weight: 600; letter-spacing: -0.03em; line-height: 1.12; }
+.w2e-h3 { font-size: var(--type-h3); font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
 .w2e-h4 { font-size: 1.0625rem; font-weight: 500; letter-spacing: -0.012em; line-height: 1.35; }
 .w2e-h5 { font-size: 0.9375rem; font-weight: 500; letter-spacing: -0.008em; line-height: 1.4; }
 .w2e-h6 { font-size: 0.8125rem; font-weight: 500; line-height: 1.4; }
@@ -305,10 +318,14 @@ hr {
 .w2e-fw-400 { font-weight: 400; }
 .w2e-fw-500 { font-weight: 500; }
 .w2e-fw-600 { font-weight: 600; }
-/* Kept as aliases so existing markup does not break; both now
-   resolve to semibold, the heaviest weight in the system. */
-.w2e-fw-700 { font-weight: 600; }
-.w2e-fw-800 { font-weight: 600; }
+.w2e-fw-700 { font-weight: 700; }
+.w2e-fw-800 { font-weight: 800; }
+
+.caption, .footnote, .w2e-caption, .w2e-footnote, figcaption {
+  color: var(--gray);
+  font-size: var(--type-caption);
+  line-height: 1.4;
+}
 
 /* Eyebrow: the only place uppercase + wide tracking appears. */
 .w2e-eyebrow {

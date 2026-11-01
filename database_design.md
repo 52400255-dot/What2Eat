@@ -1,5 +1,7 @@
 # Thiết kế CSDL (ERD & Database Diagram) - What2Eat
 
+> Tài liệu này là bản thiết kế ban đầu. Schema triển khai hiện tại nằm ở `api/schema.sql`; bảng `restaurant_sponsorships` quản lý lịch tài trợ, `place_reports` và `osm_place_blocks` quản lý chất lượng địa điểm, còn `users.session_version` vô hiệu hóa phiên cũ sau khi đổi/đặt lại mật khẩu.
+
 Dưới đây là thiết kế chi tiết cơ sở dữ liệu (Database Schema) và sơ đồ quan hệ thực thể (ERD) cho nền tảng **What2Eat**, dựa trên cấu trúc các bảng đã được chuẩn hóa.
 
 ## 1. Entity-Relationship Diagram (ERD)

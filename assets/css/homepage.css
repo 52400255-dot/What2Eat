@@ -1,0 +1,231 @@
+/* Homepage feature panels: editorial layout built from type and rules, no icons. */
+.home-feature {
+  padding: clamp(3.5rem, 6vw, 5.5rem) 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.home-feature--note {
+  background: #fffdf8;
+}
+
+.home-feature--plan {
+  background: #f5eee1;
+}
+
+.home-feature__grid {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: clamp(2.5rem, 7vw, 7rem);
+}
+
+.home-feature__copy {
+  max-width: 31rem;
+}
+
+.home-feature__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin: 0 0 1.15rem;
+  color: var(--gold-dark);
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .12em;
+}
+
+.home-feature__number {
+  display: inline-grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 1px solid rgba(184, 134, 11, .38);
+  border-radius: 50%;
+  color: var(--brown);
+  letter-spacing: 0;
+}
+
+.home-feature__title {
+  margin: 0 0 1rem;
+  color: var(--brown);
+  font-size: clamp(1.8rem, 3.2vw, 2.65rem);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -.035em;
+}
+
+.home-feature__description {
+  max-width: 29rem;
+  margin: 0 0 1.6rem;
+  color: var(--gray);
+  font-size: .96rem;
+  line-height: 1.8;
+}
+
+.home-feature__action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.8rem;
+  padding: .72rem 1.2rem;
+  border: 1px solid var(--gold);
+  border-radius: 7px;
+  background: var(--gold);
+  color: #fff;
+  font-size: .86rem;
+  font-weight: 600;
+  transition: background .2s, border-color .2s, transform .2s;
+}
+
+.home-feature__action:hover,
+.home-feature__action:focus-visible {
+  border-color: var(--gold-dark);
+  background: var(--gold-dark);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.home-note-sheet {
+  position: relative;
+  padding: clamp(1.4rem, 3vw, 2.25rem);
+  border: 1px solid #e7dccb;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 14px 36px rgba(74, 44, 26, .07);
+}
+
+.home-note-sheet::before {
+  position: absolute;
+  top: 0;
+  left: 1.5rem;
+  width: 3.25rem;
+  height: 3px;
+  background: var(--gold);
+  content: '';
+}
+
+.home-note-sheet__header,
+.home-plan-board__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--hairline);
+  color: var(--gray-2);
+  font-size: .62rem;
+  font-weight: 600;
+  letter-spacing: .11em;
+}
+
+.home-note-sheet__title {
+  margin: 1.2rem 0 .65rem;
+  color: var(--brown);
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+
+.home-note-sheet__row {
+  display: grid;
+  grid-template-columns: 2.25rem 1fr;
+  gap: .8rem;
+  align-items: start;
+  padding: .95rem 0;
+  border-bottom: 1px solid var(--hairline-2);
+}
+
+.home-note-sheet__index {
+  padding-top: .13rem;
+  color: var(--gold-dark);
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+}
+
+.home-note-sheet__row strong,
+.home-plan-step strong {
+  display: block;
+  color: var(--brown);
+  font-size: .9rem;
+  font-weight: 600;
+}
+
+.home-note-sheet__row p,
+.home-plan-step p {
+  margin: .2rem 0 0;
+  color: var(--gray);
+  font-size: .79rem;
+  line-height: 1.55;
+}
+
+.home-note-sheet__foot,
+.home-plan-board__foot {
+  margin: 1rem 0 0;
+  color: var(--gray);
+  font-size: .72rem;
+}
+
+.home-plan-board {
+  padding: clamp(1.4rem, 3vw, 2.25rem);
+  border: 1px solid var(--brown);
+  border-radius: 12px;
+  background: var(--brown);
+  box-shadow: 0 16px 38px rgba(74, 44, 26, .14);
+}
+
+.home-plan-board__header {
+  border-color: rgba(255, 253, 248, .2);
+  color: rgba(255, 253, 248, .58);
+}
+
+.home-plan-step {
+  display: grid;
+  grid-template-columns: 3.25rem 1fr;
+  gap: .85rem;
+  align-items: start;
+  padding: 1.15rem 0;
+  border-bottom: 1px solid rgba(255, 253, 248, .16);
+}
+
+.home-plan-step__number {
+  color: var(--gold-soft);
+  font-size: 1.15rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.home-plan-step strong {
+  color: #fffdf8;
+}
+
+.home-plan-step p,
+.home-plan-board__foot {
+  color: rgba(255, 253, 248, .68);
+}
+
+@media (max-width: 767px) {
+  .home-feature {
+    padding: 3rem 0;
+  }
+
+  .home-feature__grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .home-feature__title {
+    font-size: 1.9rem;
+  }
+
+  .home-note-sheet,
+  .home-plan-board {
+    padding: 1.35rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-feature__action {
+    transition: none;
+  }
+}
+
+/* Slightly larger reading scale for the home page. */
+html { font-size: 17px; }

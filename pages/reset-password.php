@@ -9,9 +9,12 @@ $pageTitle = 'Đặt lại mật khẩu | What2Eat';
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= w2e_escape($pageTitle) ?></title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20261030-typography">
   <style>body{background:#fcfaf6}.reset-card{max-width:480px;margin:10vh auto;background:white;border:1px solid #eadfce;border-radius:18px;padding:clamp(24px,5vw,42px);box-shadow:0 12px 36px #3020100b}</style>
-  <link rel="stylesheet" href="../assets/css/live-data.css">
+  <link rel="stylesheet" href="../assets/css/live-data.css?v=20261028-activity">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
 </head>
 <body>
   <main class="reset-card">
@@ -27,6 +30,6 @@ $pageTitle = 'Đặt lại mật khẩu | What2Eat';
     </form>
   </main>
   <script src="../assets/js/app.js"></script>
-  <script src="../assets/js/site.js"></script>
+  <script src="../assets/js/site.js?v=20261028-activity"></script>
 </body>
 </html>

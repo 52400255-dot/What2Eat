@@ -13,7 +13,7 @@ $pageTitle = 'Dashboard Của Tôi – What2Eat';
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
   <!-- Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
 
@@ -24,7 +24,7 @@ $pageTitle = 'Dashboard Của Tôi – What2Eat';
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
   <!-- What2Eat Global CSS -->
-  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/style.css?v=20261030-typography" />
 
   <style>
     /* ===== DASHBOARD PAGE STYLES ===== */
@@ -364,7 +364,7 @@ $pageTitle = 'Dashboard Của Tôi – What2Eat';
       .w2e-page-header { padding: 1.5rem 0 1.2rem; }
     }
   </style>
-  <link rel="stylesheet" href="../assets/css/live-data.css">
+  <link rel="stylesheet" href="../assets/css/live-data.css?v=20261028-activity">
 </head>
 
 <body>
@@ -667,12 +667,12 @@ $pageTitle = 'Dashboard Của Tôi – What2Eat';
       scales: {
         x: {
           grid: { display: false },
-          ticks: { font: { family: "'Be Vietnam Pro', sans-serif", size: 12 }, color: '#6F6258' }
+          ticks: { font: { family: getComputedStyle(document.body).fontFamily, size: 12 }, color: '#6F6258' }
         },
         y: {
           grid: { color: 'rgba(0,0,0,0.05)' },
           ticks: {
-          font: { family: "'Be Vietnam Pro', sans-serif", size: 11 },
+          font: { family: getComputedStyle(document.body).fontFamily, size: 11 },
             color: '#6F6258',
             callback: function(v) {
               return (v / 1000) + 'K';
@@ -786,13 +786,13 @@ $pageTitle = 'Dashboard Của Tôi – What2Eat';
       scales: {
         x: {
           grid: { display: false },
-          ticks: { font: { family: "'Be Vietnam Pro', sans-serif", size: 11 }, color: '#6F6258' }
+          ticks: { font: { family: getComputedStyle(document.body).fontFamily, size: 11 }, color: '#6F6258' }
         },
         y: {
           grid: { color: 'rgba(0,0,0,0.05)' },
           beginAtZero: true,
           ticks: {
-          font: { family: "'Be Vietnam Pro', sans-serif", size: 11 },
+          font: { family: getComputedStyle(document.body).fontFamily, size: 11 },
             color: '#6F6258',
             stepSize: 3
           }
@@ -803,6 +803,6 @@ $pageTitle = 'Dashboard Của Tôi – What2Eat';
 })();
 
 </script>
-  <script src="../assets/js/site.js"></script>
+  <script src="../assets/js/site.js?v=20261028-activity"></script>
 </body>
 </html>

@@ -6,10 +6,9 @@
   <title>Food Plan – What2Eat</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
-  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/style.css?v=20261030-typography" />
   <style>
     /* ============================================================
        FOOD PLANS PAGE – CUSTOM STYLES
@@ -369,6 +368,7 @@
     .av-teal { background: #17A589; color: #fff; }
   </style>
   <link rel="stylesheet" href="../assets/css/live-data.css">
+  <link rel="stylesheet" href="../assets/css/food-plans-page.css?v=20261030-apple-type">
 </head>
 <body>
 
@@ -376,56 +376,68 @@
 <nav class="navbar navbar-expand-lg w2e-navbar">
   <div class="container">
     <a class="navbar-brand" href="../index.php">What<span>2</span>Eat</a>
-    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
+    <button class="navbar-toggler border-0 w2e-menu-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-label="Mở điều hướng">Menu</button>
     <div class="collapse navbar-collapse" id="mainNav">
       <ul class="navbar-nav ms-auto align-items-lg-center gap-1 mb-2 mb-lg-0">
-        <li class="nav-item"><a class="nav-link" href="../index.php"><i class="bi bi-house me-1"></i>Trang Chủ</a></li>
-        <li class="nav-item"><a class="nav-link" href="./discovery.php"><i class="bi bi-compass me-1"></i>Khám Phá</a></li>
-        <li class="nav-item"><a class="nav-link" href="./food-notes.php"><i class="bi bi-journal-text me-1"></i>Food Note</a></li>
-        <li class="nav-item"><a class="nav-link w2e-active" href="./food-plans.php"><i class="bi bi-calendar3 me-1"></i>Food Plan</a></li>
-        <li class="nav-item"><a class="nav-link" href="./dashboard.php"><i class="bi bi-grid me-1"></i>Dashboard</a></li>
-        <li class="nav-item ms-lg-2">
-          <button class="w2e-btn-primary" onclick="openCreateModal()">
-            <i class="bi bi-plus-lg"></i> Tạo Food Plan Mới
-          </button>
-        </li>
-      </ul>
+        <li class="nav-item"><a class="nav-link" href="../index.php">Trang Chủ</a></li>
+        <li class="nav-item"><a class="nav-link" href="./discovery.php">Khám Phá</a></li>
+        <li class="nav-item"><a class="nav-link" href="./food-notes.php">Food Note</a></li>
+        <li class="nav-item"><a class="nav-link w2e-active" href="./food-plans.php">Food Plan</a></li>
+        <li class="nav-item"><a class="nav-link" href="./dashboard.php">Dashboard</a></li>
+</ul>
     </div>
   </div>
 </nav>
 
 <!-- ===================== PAGE HEADER ===================== -->
-<div class="w2e-page-header">
-  <div class="container">
-    <div class="d-flex align-items-start align-items-md-center justify-content-between flex-column flex-md-row gap-3">
-      <div>
-      <h1 class="mb-1">Food Plan</h1>
-        <p>Lên kế hoạch ăn uống cùng bạn bè, vote quán và chốt địa điểm dễ dàng</p>
-      </div>
-      <button class="w2e-btn-primary" onclick="openCreateModal()">
-        <i class="bi bi-plus-lg"></i> Tạo Food Plan Mới
-      </button>
+<header class="w2e-page-header">
+  <div class="container-fluid w2e-page-shell">
+    <div class="w2e-hero-copy">
+      <p class="w2e-page-kicker">KẾT NỐI QUA NHỮNG BỮA ĂN</p>
+      <h1>Food Plan</h1>
+      <p>Lên lịch gặp nhau, gom ý kiến và chọn một nơi cả nhóm đều muốn đến.</p>
     </div>
+    <button class="w2e-btn-primary w2e-hero-action" type="button" onclick="openCreateModal()">Tạo kế hoạch mới</button>
+    <div class="w2e-hero-note"><span>WHAT2EAT / KẾ HOẠCH NHÓM</span><span>Từ một lời rủ đến cuộc hẹn thật</span></div>
   </div>
-</div>
+</header>
 
 <!-- ===================== MAIN CONTENT ===================== -->
-<div class="container mt-4">
-
-  <!-- ====== FOOD PLAN CARDS ====== -->
-  <div class="w2e-section-title">Danh Sách Food Plan</div>
-  <div class="row g-4 mb-4" id="foodPlanGrid" aria-live="polite">
-    <p class="text-secondary">Đang tải Food Plan của bạn…</p>
+<main class="container-fluid w2e-page-shell w2e-plan-main">
+  <div class="w2e-plan-layout">
+    <aside class="w2e-plan-overview" aria-label="Tổng quan Food Plan">
+      <p class="w2e-overview-kicker">TỔNG QUAN CỦA BẠN</p>
+      <h2>Hẹn nhau<br>qua một bữa ngon.</h2>
+      <p class="w2e-overview-copy">Mọi người cùng góp ý, cùng chọn quán — để cuộc hẹn dễ thành hiện thực hơn.</p>
+      <div class="w2e-overview-total"><strong id="planCount">0</strong><span>kế hoạch đang lưu</span></div>
+      <div class="w2e-overview-stats">
+        <div><strong id="openPlanCount">0</strong><span>đang bình chọn</span></div>
+        <div><strong id="planMemberCount">0</strong><span>lượt thành viên</span></div>
+      </div>
+      <div class="w2e-upcoming">
+        <p class="w2e-upcoming-label">CUỘC HẸN SẮP TỚI</p>
+        <strong id="nextEventName">Chưa có lịch hẹn</strong>
+        <span id="nextEventDate">Tạo kế hoạch và thêm thời gian dự kiến.</span>
+      </div>
+      <p class="w2e-overview-footnote">Một kế hoạch tốt bắt đầu từ việc chọn ngày.</p>
+    </aside>
+    <section class="w2e-plans-section" aria-labelledby="planListTitle">
+      <div class="w2e-list-heading">
+        <div><p class="w2e-list-kicker">NHỮNG CUỘC HẸN ĐANG LÊN LỊCH</p><h2 id="planListTitle">Kế hoạch của bạn</h2></div>
+        <span id="planCollectionCount">Đang tải...</span>
+      </div>
+      <div class="w2e-plan-grid" id="foodPlanGrid" aria-live="polite">
+        <p class="text-secondary">Đang tải Food Plan của bạn…</p>
+      </div>
+    </section>
   </div>
-</div><!-- /.container -->
+</main>
 <!-- ===================== MODAL: TẠO FOOD PLAN ===================== -->
 <div class="w2e-modal-overlay" id="createModal" onclick="closeModalOutside(event)">
   <div class="w2e-modal-box">
     <div class="w2e-modal-header">
     <div class="w2e-modal-title">Tạo Food Plan Mới</div>
-      <button class="w2e-modal-close" onclick="closeCreateModal()"><i class="bi bi-x-lg"></i></button>
+      <button class="w2e-modal-close" type="button" onclick="closeCreateModal()">Đóng</button>
     </div>
     <div class="w2e-modal-body">
 
@@ -467,20 +479,20 @@
     <div class="w2e-modal-footer">
       <button class="w2e-modal-cancel" onclick="closeCreateModal()">Hủy</button>
       <button class="w2e-btn-primary" onclick="createPlan()">
-        <i class="bi bi-plus-circle"></i> Tạo Nhóm
+        Tạo kế hoạch
       </button>
     </div>
   </div>
 </div>
 
 <!-- ===================== MOBILE BOTTOM NAV ===================== -->
-<nav class="w2e-bottom-nav">
+<nav class="w2e-bottom-nav" aria-label="Điều hướng nhanh">
   <div class="w2e-bottom-nav-inner">
-    <a class="w2e-bnav-item active" href="../index.php"><i class="bi bi-house"></i><span>Trang Chủ</span></a>
-    <a class="w2e-bnav-item" href="./discovery.php"><i class="bi bi-compass"></i><span>Khám Phá</span></a>
-    <a class="w2e-bnav-item" href="./food-notes.php"><i class="bi bi-journal-text"></i><span>Notes</span></a>
-    <a class="w2e-bnav-item" href="./food-plans.php"><i class="bi bi-calendar3"></i><span>Plans</span></a>
-    <a class="w2e-bnav-item" href="./dashboard.php"><i class="bi bi-person"></i><span>Cá Nhân</span></a>
+    <a class="w2e-bnav-item" href="../index.php"><span>Trang Chủ</span></a>
+    <a class="w2e-bnav-item" href="./discovery.php"><span>Khám Phá</span></a>
+    <a class="w2e-bnav-item" href="./food-notes.php"><span>Food Note</span></a>
+    <a class="w2e-bnav-item active" href="./food-plans.php" aria-current="page"><span>Food Plan</span></a>
+    <a class="w2e-bnav-item" href="./dashboard.php"><span>Cá Nhân</span></a>
   </div>
 </nav>
 

@@ -1,0 +1,13 @@
+{
+  "name": "what2eat/app",
+  "description": "What2Eat food discovery application",
+  "type": "project",
+  "require": {
+    "php": ">=8.1",
+    "phpmailer/phpmailer": "^7.1"
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {}
+  }
+}

@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const window={addEventListener(){}};
+vm.runInNewContext(fs.readFileSync(new URL('../assets/js/site.js',import.meta.url),'utf8'),{window,document:{addEventListener(){}},location:{pathname:'/index.php',href:'http://what2eat.local/index.php'},URL,URLSearchParams,console});
+const state=window.W2EApp;
+state.center={lat:10.7769,lon:106.7009};
+const venue=(id,lat,cuisine,price)=>({type:'node',id,lat,lon:106.7009,tags:{name:'Fixture '+id,cuisine,...(price?{price_range:price}:{})}});
+state.places=[venue(1,10.777,'vietnamese','45000'),venue(2,10.777,'coffee_shop','45000'),venue(3,10.81,'vietnamese','45000'),venue(4,10.777,'vietnamese','150000'),venue(5,10.777,'vietnamese',null)];
+for(let i=0;i<30;i++)assert.equal(window.getRandomNearbyPlace({type:'viet',distance:'0.5',budget:'30000:60000',unknown:false}).name,'Fixture 1');
+assert.equal(window.getRandomNearbyPlace({type:'japanese',distance:'0.5',budget:'30000:60000',unknown:false}),null);
+state.places=[venue(5,10.777,'vietnamese',null)];
+assert.equal(window.getRandomNearbyPlace({budget:'30000:60000',unknown:false}),null);
+assert.equal(window.getRandomNearbyPlace({budget:'30000:60000',unknown:true}).name,'Fixture 5');
+console.log('Random filters passed: cuisine, distance, budget, unknown prices and empty result.');

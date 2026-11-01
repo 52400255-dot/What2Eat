@@ -13,7 +13,7 @@ $pageTitle = 'Food Note được chia sẻ | What2Eat';
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <style>body{background:#fcfaf6;color:#30261e}.share-shell{max-width:760px;margin:7vh auto;padding:clamp(22px,5vw,48px);background:#fff;border:1px solid #eadfce;border-radius:20px;box-shadow:0 12px 36px #3020100b}.share-shell h1{font-size:clamp(1.5rem,4vw,2.2rem)}.shared-food-note-media{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:22px}.shared-food-note-media img,.shared-food-note-media video{width:100%;border-radius:12px}</style>
-  <link rel="stylesheet" href="../assets/css/live-data.css">
+  <link rel="stylesheet" href="../assets/css/live-data.css?v=20261028-activity">
 </head>
 <body>
   <main class="share-shell">
@@ -22,6 +22,6 @@ $pageTitle = 'Food Note được chia sẻ | What2Eat';
     <section id="sharedFoodNote" aria-live="polite">Đang tải Food Note được chia sẻ…</section>
   </main>
   <script src="../assets/js/app.js"></script>
-  <script src="../assets/js/site.js"></script>
+  <script src="../assets/js/site.js?v=20261028-activity"></script>
 </body>
 </html>

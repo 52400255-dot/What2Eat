@@ -11,12 +11,12 @@ $pageTitle = 'Admin Dashboard – What2Eat';
   <title><?= w2e_escape($pageTitle) ?></title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"/>
-  <link rel="stylesheet" href="../assets/css/style.css"/>
+  <link rel="stylesheet" href="../assets/css/style.css?v=20261030-typography"/>
   <link rel="stylesheet" href="../assets/css/admin.css"/>
-  <link rel="stylesheet" href="../assets/css/live-data.css">
+  <link rel="stylesheet" href="../assets/css/live-data.css?v=20261028-activity">
 </head>
 <body class="admin-body">
 
@@ -235,6 +235,6 @@ new Chart(notesCtx, {
   options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#f0ebe3' } }, x: { grid: { display: false } } } }
 });
 </script>
-  <script src="../assets/js/site.js"></script>
+  <script src="../assets/js/site.js?v=20261028-activity"></script>
 </body>
 </html>

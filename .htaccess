@@ -13,6 +13,8 @@ DirectoryIndex index.php index.html
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
+  RewriteCond %{HTTP_HOST} ^what2eat\.local(?::80)?$ [NC]
+  RewriteRule ^ http://what2eat.localhost%{REQUEST_URI} [R=302,L,NE]
   RewriteRule (^|/)\. - [F,L]
   RewriteRule ^api/index\.php$ - [L]
   RewriteRule ^api(?:/.*)?$ api/index.php [QSA,L]

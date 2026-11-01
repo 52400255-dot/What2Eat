@@ -15,10 +15,10 @@ $pageTitle = 'What2Eat – Hôm nay ăn gì?';
   <link rel="icon" href="/assets/img/what2eat.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/style.css?v=20261030-typography">
 
   <style>
     /* ===== DESIGN TOKENS ===== */
@@ -444,7 +444,8 @@ $pageTitle = 'What2Eat – Hôm nay ăn gì?';
       .cat-icon { font-size: 1.8rem; }
     }
   </style>
-  <link rel="stylesheet" href="./assets/css/live-data.css">
+  <link rel="stylesheet" href="./assets/css/live-data.css?v=20261028-activity">
+  <link rel="stylesheet" href="./assets/css/homepage.css?v=20261030-home-type">
 </head>
 <body>
 
@@ -607,39 +608,66 @@ $pageTitle = 'What2Eat – Hôm nay ăn gì?';
 </section>
 
 <!-- ======== FOOD NOTE INTRO ======== -->
-<section class="section" style="background:var(--bg);">
+<section class="home-feature home-feature--note" aria-labelledby="homeNoteTitle">
   <div class="container">
-    <div class="row align-items-center g-5">
-      <div class="col-lg-6">
-        <p class="section-sub">Food Note</p>
-        <h2 class="section-title">Lưu lại trải nghiệm do chính bạn ghi nhận</h2>
-        <p class="text-secondary">Thêm món ăn, thời gian, chi phí, ảnh và nhận xét từ trải nghiệm thật. Mỗi ghi chú thuộc tài khoản của bạn và có thể đặt riêng tư hoặc chia sẻ.</p>
-        <a href="./pages/create-food-note.php" class="btn-primary-w2e">Tạo Food Note</a>
+    <div class="home-feature__grid">
+      <div class="home-feature__copy">
+        <p class="home-feature__eyebrow"><span class="home-feature__number">01</span> FOOD NOTE</p>
+        <h2 class="home-feature__title" id="homeNoteTitle">Một bữa ăn ngon<br>đáng để nhớ lại.</h2>
+        <p class="home-feature__description">Ghi lại món đã thử, nơi bạn ghé, chi phí và cảm nhận của riêng mình. Mỗi ghi chú được tạo từ trải nghiệm thật của bạn.</p>
+        <a href="./pages/create-food-note.php" class="home-feature__action">Tạo Food Note</a>
       </div>
-      <div class="col-lg-6">
-        <div class="p-4 rounded-4 bg-white shadow-sm h-100">
-          <h3 class="h5">Ghi chú của bạn</h3>
-          <p class="text-secondary mb-0">Chưa có nội dung mẫu. Food Note chỉ xuất hiện sau khi bạn tự tạo.</p>
+      <div class="home-note-sheet" aria-label="Các thông tin có thể lưu trong Food Note">
+        <div class="home-note-sheet__header">
+          <span>GHI CHÚ CỦA RIÊNG BẠN</span>
+          <span>WHAT2EAT / 01</span>
         </div>
+        <h3 class="home-note-sheet__title">Nhớ lại theo cách của bạn</h3>
+        <div class="home-note-sheet__row">
+          <span class="home-note-sheet__index">01</span>
+          <div><strong>Món ăn &amp; địa điểm</strong><p>Tên món và quán bạn đã ghé</p></div>
+        </div>
+        <div class="home-note-sheet__row">
+          <span class="home-note-sheet__index">02</span>
+          <div><strong>Ngày ăn &amp; chi phí</strong><p>Thêm thông tin bạn muốn lưu</p></div>
+        </div>
+        <div class="home-note-sheet__row">
+          <span class="home-note-sheet__index">03</span>
+          <div><strong>Ảnh &amp; cảm nhận</strong><p>Đánh giá bằng lời của chính bạn</p></div>
+        </div>
+        <p class="home-note-sheet__foot">Riêng tư hoặc chia sẻ — bạn tự chọn.</p>
       </div>
     </div>
   </div>
 </section>
 <!-- ======== FOOD PLAN ======== -->
-<section class="section section-alt">
+<section class="home-feature home-feature--plan" aria-labelledby="homePlanTitle">
   <div class="container">
-    <div class="row align-items-center g-5">
-      <div class="col-lg-5">
-        <div class="p-4 rounded-4 bg-white shadow-sm">
-          <p class="plan-title mb-2">Food Plan nhóm</p>
-          <p class="text-secondary">Tạo kế hoạch, mời thành viên, thêm địa điểm có nguồn và cùng bình chọn. Thành viên và kết quả chỉ xuất hiện sau khi nhóm tạo dữ liệu thật.</p>
-          <a href="./pages/food-plans.php" class="btn-primary-w2e">Tạo Food Plan</a>
-        </div>
+    <div class="home-feature__grid home-feature__grid--plan">
+      <div class="home-feature__copy">
+        <p class="home-feature__eyebrow"><span class="home-feature__number">02</span> FOOD PLAN</p>
+        <h2 class="home-feature__title" id="homePlanTitle">Cả nhóm cùng chọn,<br>cuộc hẹn dễ chốt hơn.</h2>
+        <p class="home-feature__description">Rủ bạn vào cùng một kế hoạch, thêm những địa điểm có nguồn rõ ràng rồi bình chọn cùng nhau.</p>
+        <a href="./pages/food-plans.php" class="home-feature__action">Tạo Food Plan</a>
       </div>
-      <div class="col-lg-7">
-        <p class="section-sub">Food Plan</p>
-        <h2 class="section-title">Đi ăn cùng bạn bè?</h2>
-        <p class="text-secondary">Chia sẻ liên kết mời, đề xuất địa điểm từ OpenStreetMap hoặc danh sách đã được duyệt, rồi bình chọn trong cùng một kế hoạch.</p>
+      <div class="home-plan-board" aria-label="Ba bước lên kế hoạch ăn uống cùng bạn bè">
+        <div class="home-plan-board__header">
+          <span>MỘT CUỘC HẸN</span>
+          <span>BA BƯỚC CÙNG CHỌN</span>
+        </div>
+        <div class="home-plan-step">
+          <span class="home-plan-step__number">01</span>
+          <div><strong>Mời mọi người</strong><p>Chia sẻ liên kết tham gia kế hoạch</p></div>
+        </div>
+        <div class="home-plan-step">
+          <span class="home-plan-step__number">02</span>
+          <div><strong>Thêm địa điểm</strong><p>Đề xuất quán để cả nhóm cân nhắc</p></div>
+        </div>
+        <div class="home-plan-step">
+          <span class="home-plan-step__number">03</span>
+          <div><strong>Cùng bình chọn</strong><p>Thống nhất nơi mọi người muốn đến</p></div>
+        </div>
+        <p class="home-plan-board__foot">Kế hoạch và lựa chọn chỉ hiện khi nhóm tạo.</p>
       </div>
     </div>
   </div>
@@ -740,6 +768,6 @@ async function randomFood(){
 }
 
 </script>
-  <script src="./assets/js/site.js"></script>
+  <script src="./assets/js/site.js?v=20261028-activity"></script>
 </body>
 </html>
