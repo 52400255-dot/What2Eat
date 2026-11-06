@@ -5,6 +5,7 @@
   const DEFAULT_CENTER = [10.7769, 106.7009];
   const SEARCH_RADIUS_METERS = 2000;
   const REQUEST_TIMEOUT_MS = 12000;
+  const PUBLIC_SNAPSHOT_URL = '/assets/data/hcm-food-places.json';
 
   document.addEventListener('DOMContentLoaded', () => {
     const mapElement = document.getElementById('map-container');
@@ -70,6 +71,7 @@
     let lastScannedAccuracy = Infinity;
     let pickingLocation = false;
     let activeController;
+    let publicSnapshotRequest;
 
     const tileLayer = L.tileLayer('/tiles/{z}/{x}/{y}.png', {
       maxZoom: 19,
@@ -128,7 +130,7 @@
         || tags['disused:shop'] || tags['abandoned:shop'] || tags['demolished:shop'];
     }
 
-    function statusForData(osmCount, managedCount) {
+    function statusForData(osmCount, managedCount, importedCount, verifiedImportCount) {
       if (osmErrorMessage) {
         return `${osmErrorMessage}${managedCount ? ` Đang hiển thị thêm ${managedCount} quán What2Eat đã được duyệt.` : ''}`;
       }
@@ -143,11 +145,14 @@
       const cacheAt = currentOsmData.cache_updated_at
         ? new Date(`${String(currentOsmData.cache_updated_at).replace(' ', 'T')}Z`).toLocaleString('vi-VN') : '';
       const snapshotNotice = currentOsmData.snapshot
-        ? ` Overpass không phản hồi; đang dùng snapshot OSM ngày ${currentOsmData.snapshot_date || 'không rõ'}. Trạng thái quán chưa được xác minh ngoài thực tế.`
+        ? currentOsmData.static_fallback
+          ? ` Đang dùng dữ liệu địa điểm lưu trên website; OSM đến ${currentOsmData.snapshot_date || 'không rõ'}, dữ liệu bổ sung nhập ngày ${currentOsmData.imported_at || 'không rõ'} và chờ xác minh.`
+          : ` Overpass không phản hồi; đang dùng snapshot OSM ngày ${currentOsmData.snapshot_date || 'không rõ'}. Trạng thái quán chưa được xác minh ngoài thực tế.`
         : currentOsmData.stale
           ? ` Máy chủ OSM không phản hồi; đang dùng dữ liệu lưu lúc ${cacheAt}.`
           : currentOsmData.cached ? ` Kết quả OSM lưu tại máy chủ lúc ${cacheAt}. Bấm “Tải lại” để làm mới.` : '';
-      const sources = [osmCount ? `${osmCount} địa điểm OSM` : '', managedCount ? `${managedCount} quán What2Eat đã duyệt` : ''].filter(Boolean).join(' và ');
+      const sourceCount = Math.max(0, osmCount - importedCount);
+      const sources = [sourceCount ? `${sourceCount} địa điểm OSM` : '', importedCount ? `${importedCount} địa điểm nhập bổ sung${verifiedImportCount ? `, ${verifiedImportCount} đã xác minh` : ', đang chờ xác minh'}` : '', managedCount ? `${managedCount} quán What2Eat đã duyệt` : ''].filter(Boolean).join(' và ');
       return `${total ? `Hiển thị ${total} địa điểm (${sources}) trong khu vực tìm kiếm.` : 'Không tìm thấy địa điểm ăn uống trong khu vực tìm kiếm.'}${updatedAt}${snapshotNotice}`;
     }
 
@@ -157,6 +162,8 @@
       osmMarkerById.clear();
       managedMarkerById.clear();
       let osmCount = 0;
+      let importedCount = 0;
+      let verifiedImportCount = 0;
       let managedCount = 0;
       (currentOsmData?.elements || []).forEach((element) => {
         const tags = element.tags || {};
@@ -168,6 +175,10 @@
         const marker = L.marker(coords).bindPopup(popupFor(element)).addTo(markers);
         osmMarkerById.set(id, marker);
         osmCount += 1;
+        if (element.import_id) {
+          importedCount += 1;
+          if (element.verification_status === 'verified_active') verifiedImportCount += 1;
+        }
       });
       managedRestaurants.forEach((restaurant) => {
         const lat = Number(restaurant.latitude), lon = Number(restaurant.longitude);
@@ -192,7 +203,7 @@
         managedMarkerById.set(id, marker);
         managedCount += 1;
       });
-      setStatus(statusForData(osmCount, managedCount), osmIsLoading);
+      setStatus(statusForData(osmCount, managedCount, importedCount, verifiedImportCount), osmIsLoading);
     }
 
     function coordinatesOf(element) {
@@ -206,6 +217,14 @@
     function popupFor(element) {
       const tags = element.tags || {};
       const popup = document.createElement('div');
+      const line = (label, value) => {
+        if (!value) return;
+        const row = document.createElement('div');
+        const title = document.createElement('strong');
+        title.textContent = `${label}: `;
+        row.append(title, document.createTextNode(String(value)));
+        popup.appendChild(row);
+      };
       const name = document.createElement('strong');
       name.textContent = tags.name || 'Địa điểm ăn uống chưa có tên trong OpenStreetMap';
       popup.appendChild(name);
@@ -217,11 +236,30 @@
         address.textContent = addressText;
         popup.appendChild(address);
       }
-      const type = tags.cuisine || tags.amenity || element.category;
-      if (type) {
-        const detail = document.createElement('small');
-        detail.textContent = `Loại: ${type}`;
-        popup.appendChild(detail);
+      line('Danh mục', element.category || tags['w2e:category'] || tags.amenity);
+      line('Món / loại hình', tags.cuisine);
+      line('Khoảng giá', tags.price_range);
+      line('Giờ mở cửa', tags.opening_hours);
+      line('Điện thoại', tags.phone || tags['contact:phone']);
+      line('Nguồn dữ liệu', element.data_source || 'OpenStreetMap');
+      line('Ngày cập nhật nguồn', element.source_updated_at);
+      line('Trạng thái', element.verification_status === 'verified_active' ? 'Đã xác minh hoạt động' : element.verification_status === 'reported_closed' ? 'Đã báo đóng cửa' : element.import_id ? 'Chờ xác minh' : 'Chưa xác minh hoạt động');
+      const websiteUrl = tags.website || tags['contact:website'];
+      if (websiteUrl && /^https?:\/\//i.test(websiteUrl)) {
+        const website = document.createElement('a');
+        website.href = websiteUrl;
+        website.target = '_blank';
+        website.rel = 'noopener noreferrer';
+        website.textContent = 'Website';
+        popup.append(document.createElement('div'), website);
+      }
+      if (element.source_url && /^https?:\/\//i.test(element.source_url)) {
+        const source = document.createElement('a');
+        source.href = element.source_url;
+        source.target = '_blank';
+        source.rel = 'noopener noreferrer';
+        source.textContent = 'Mở nguồn dữ liệu';
+        popup.append(document.createElement('div'), source);
       }
       if (Array.isArray(element.public_food_names) && element.public_food_names.length) {
         const dishes = document.createElement('small');
@@ -255,6 +293,28 @@
       renderMarkers();
     });
 
+    async function publicSnapshotPlaces(center) {
+      if (!publicSnapshotRequest) {
+        publicSnapshotRequest = fetch(PUBLIC_SNAPSHOT_URL, { cache: 'no-store' }).then(async (response) => {
+          if (!response.ok) throw new Error(`Không tải được dữ liệu dự phòng (HTTP ${response.status}).`);
+          const data = await response.json();
+          if (!Array.isArray(data.elements)) throw new Error('Dữ liệu dự phòng không hợp lệ.');
+          return data;
+        }).catch((error) => {
+          publicSnapshotRequest = null;
+          throw error;
+        });
+      }
+      const data = await publicSnapshotRequest;
+      const elements = data.elements.map((element) => ({
+        element,
+        distance: distanceMeters(center, [Number(element.lat), Number(element.lon)]),
+      })).filter((place) => place.distance <= SEARCH_RADIUS_METERS)
+        .sort((first, second) => first.distance - second.distance)
+        .slice(0, 5000).map((place) => place.element);
+      return { elements, snapshot: true, snapshot_date: data.snapshot_date, imported_at: data.import_summary?.imported_at, source: data.source, static_fallback: true };
+    }
+
     async function loadPlaces(center = [map.getCenter().lat, map.getCenter().lng], forceRefresh = false) {
       searchCenter = center;
       if (activeController) activeController.abort();
@@ -265,7 +325,6 @@
         timedOut = true;
         controller.abort();
       }, REQUEST_TIMEOUT_MS);
-
       osmIsLoading = true;
       setStatus(forceRefresh ? 'Đang yêu cầu dữ liệu OSM mới…' : 'Đang truy vấn OpenStreetMap…', true);
       try {
@@ -276,10 +335,39 @@
         if (!response.ok) throw new Error(data.error || `Máy chủ cục bộ trả về HTTP ${response.status}`);
         if (!Array.isArray(data.elements)) throw new Error('Phản hồi dữ liệu OSM không hợp lệ.');
         if (activeController !== controller) return;
+        if (!data.static_fallback) {
+          try {
+            const snapshot = await publicSnapshotPlaces(center);
+            if (activeController !== controller) return;
+            const merged = new Map(snapshot.elements.map((place) => [`${place.type}:${place.id}`, place]));
+            for (const place of data.elements) merged.set(`${place.type}:${place.id}`, place);
+            data.elements = Array.from(merged.values()).map((place) => ({
+              place,
+              distance: distanceMeters(center, coordinatesOf(place)),
+            })).filter((entry) => entry.distance <= SEARCH_RADIUS_METERS)
+              .sort((first, second) => first.distance - second.distance)
+              .slice(0, 5000)
+              .map(({ place }) => place);
+          } catch (snapshotError) {
+            console.warn('Không gộp được dữ liệu địa điểm lưu trên website:', snapshotError);
+          }
+        }
         drawPlaces(data);
       } catch (error) {
         if (controller.signal.aborted && activeController !== controller) return;
+        window.clearTimeout(timeoutId);
         console.error('Không lấy được địa điểm OSM:', error);
+        try {
+          const snapshot = await publicSnapshotPlaces(center);
+          if (activeController !== controller) return;
+          if (snapshot.elements.length) {
+            drawPlaces(snapshot);
+            return;
+          }
+        } catch (snapshotError) {
+          console.warn('Không tải được dữ liệu OSM lưu trên website:', snapshotError);
+        }
+        if (activeController !== controller) return;
         const message = timedOut
           ? `Máy chủ dữ liệu chưa phản hồi sau ${REQUEST_TIMEOUT_MS / 1000} giây.`
           : (error.message === 'Failed to fetch' || error instanceof TypeError

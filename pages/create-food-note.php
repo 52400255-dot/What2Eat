@@ -727,6 +727,6 @@ $pageTitle = 'Tạo Food Note – What2Eat';
   // DRAFT / PUBLISH
   // ============================================================
 </script>
-  <script src="../assets/js/site.js?v=20261028-activity"></script>
+  <script src="../assets/js/site.js?v=20261106-map-fallback"></script>
 </body>
 </html>

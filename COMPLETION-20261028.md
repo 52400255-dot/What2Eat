@@ -65,3 +65,4 @@ Bản sao các tệp chính trước khi sửa và các script chỉnh sửa m�
 Nguyên nhân ảnh chụp vẫn có dòng “chưa xác minh hoạt động” là snapshot OSM gán mặc định `verified_status=unverified`; dữ liệu OSM không phải bằng chứng quán đang mở. Đã thêm cột `verification_status` và hàng đợi quản trị. Admin mở **Admin → Quản lý Quán ăn → Xác minh hoạt động OSM**, đối chiếu một nguồn thực tế, nhập nguồn kiểm tra và ghi chú, rồi bấm **Xác minh đang hoạt động**. Chỉ bản ghi có trạng thái `verified_active` mới hiện “Đã xác minh hoạt động”; trạng thái `reported_closed` ghi rõ đã báo đóng cửa.
 
 Không tự đánh dấu toàn bộ OSM là đang hoạt động vì đó là kết luận không có bằng chứng. API kiểm thử thêm đã xác nhận user thường không thể xác minh, admin xác minh thành công và trang chi tiết nhận đúng trạng thái. Cache asset đã nâng lên v6/`20261028-activity` để trình duyệt không dùng JavaScript cũ.
+

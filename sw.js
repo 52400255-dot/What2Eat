@@ -1,7 +1,7 @@
 /* Cache only the public app shell. Never cache PHP pages, API responses, uploads or map data. */
 'use strict';
 
-const CACHE_NAME = 'what2eat-shell-v6';
+const CACHE_NAME = 'what2eat-shell-v7-district-import';
 const STATIC_PATHS = new Set([
   '/manifest.json',
   '/offline.html',

@@ -15,7 +15,7 @@ $pageTitle = 'Khám Phá Quán Ăn – What2Eat';
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link href="../assets/css/style.css?v=20261030-typography" rel="stylesheet" />
+  <link href="../assets/css/style.css?v=20261103-mobile-nav" rel="stylesheet" />
   <style>
     /* ===== DISCOVERY PAGE SPECIFIC STYLES ===== */
     body {
@@ -878,9 +878,10 @@ $pageTitle = 'Khám Phá Quán Ăn – What2Eat';
 
   <!-- ===== SCRIPTS ===== -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../assets/js/mobile-nav.js?v=20261103"></script>
   <script src="../assets/js/app.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="../assets/js/restaurant-map.js?v=20261101-gps9"></script>
-  <script src="../assets/js/site.js?v=20261101-location"></script>
+  <script src="../assets/js/restaurant-map.js?v=20261103-district-import"></script>
+  <script src="../assets/js/site.js?v=20261103-district-import"></script>
 </body>
 </html>

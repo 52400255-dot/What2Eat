@@ -13,8 +13,12 @@ $pageTitle = 'Food Plan – What2Eat';
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link rel="stylesheet" href="../assets/css/style.css?v=20261030-typography" />
+  <link rel="stylesheet" href="../assets/css/style.css?v=20261103-mobile-nav" />
   <style>
+    :root {
+      --font: Roboto, "Noto Sans", Arial, sans-serif;
+      --font-display: Roboto, "Noto Sans", Arial, sans-serif;
+    }
     /* ============================================================
        FOOD PLANS PAGE – CUSTOM STYLES
     ============================================================ */
@@ -377,7 +381,7 @@ $pageTitle = 'Food Plan – What2Eat';
     .av-teal { background: #17A589; color: #fff; }
   </style>
   <link rel="stylesheet" href="../assets/css/live-data.css?v=20261028-activity">
-  <link rel="stylesheet" href="../assets/css/food-plans-page.css?v=20261030-apple-type">
+  <link rel="stylesheet" href="../assets/css/food-plans-page.css?v=20261104-contrast">
 </head>
 <body>
 
@@ -506,6 +510,7 @@ $pageTitle = 'Food Plan – What2Eat';
 </nav>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../assets/js/mobile-nav.js?v=20261103"></script>
 <script>
   // CREATE MODAL
   // ============================================================
@@ -523,6 +528,6 @@ $pageTitle = 'Food Plan – What2Eat';
 
 
 </script>
-  <script src="../assets/js/site.js?v=20261030-editorial"></script>
+  <script src="../assets/js/site.js?v=20261103-district-import"></script>
 </body>
 </html>

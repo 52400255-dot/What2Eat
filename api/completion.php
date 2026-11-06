@@ -25,6 +25,31 @@ function catalog_enrich(array $p): array {
     foreach($q as $r)foreach(json_decode($r['fields'],true) as $key=>$value){if($key==='address')$p['address']=$value;else $p['tags'][$key]=$value;}
     return $p;
 }
+function catalog_enrich_many(array $places): array {
+    if(!$places)return [];
+    $sources=[];
+    foreach($places as $place)if(isset($place['type'],$place['id']))$sources[]=$place['type'].':'.$place['id'];
+    $sources=array_values(array_unique($sources));
+    if(!$sources)return $places;
+    $marks=implode(',',array_fill(0,count($sources),'?'));
+    $q=db()->prepare("SELECT * FROM place_catalog WHERE source_id IN ({$marks})");$q->execute($sources);
+    $saved=[];foreach($q as $row)$saved[$row['source_id']]=$row;
+    $q=db()->prepare("SELECT source_id,fields FROM place_corrections WHERE status='approved' AND source_id IN ({$marks}) ORDER BY id");$q->execute($sources);
+    $corrections=[];foreach($q as $row){$fields=json_decode($row['fields'],true);if(is_array($fields))$corrections[$row['source_id']][]=$fields;}
+    foreach($places as &$place){
+        if(!isset($place['type'],$place['id']))continue;
+        $source=$place['type'].':'.$place['id'];
+        if(isset($saved[$source])){
+            $catalog=catalog_place($saved[$source]);
+            $place['tags']=array_merge($catalog['tags']??[],$place['tags']??[]);
+            if(empty($place['address']))$place['address']=$catalog['address'];
+            foreach(['verification_status','verification_source','verification_note','verified_at'] as $key)$place[$key]=$catalog[$key]??null;
+        }elseif(empty($place['verification_status']))$place['verification_status']='unverified';
+        foreach($corrections[$source]??[] as $fields)foreach($fields as $key=>$value){if($key==='address')$place['address']=$value;else $place['tags'][$key]=$value;}
+    }
+    unset($place);
+    return $places;
+}
 function reverse_address(array $p): array {
     if(!empty($p['address'])||!empty($p['tags']['addr:street'])||!empty($p['tags']['addr:full']))return $p;
     $lat=$p['lat']??$p['center']['lat']??null;$lon=$p['lon']??$p['center']['lon']??null;
@@ -63,7 +88,7 @@ function completion_routes(string $path,string $method,array $body): void {
         if(!preg_match('/^(node|way|relation):[1-9]\d{0,17}$/',$source))throw new ApiError(422,'Mã OSM không hợp lệ.');
         $status=(string)($body['status']??'');if(!in_array($status,['verified_active','reported_closed'],true))throw new ApiError(422,'Trạng thái xác minh không hợp lệ.');
         $evidence=required_string($body,'verification_source',255,5);$note=required_string($body,'verification_note',1000,10);
-        $q=db()->prepare('SELECT source_id FROM place_catalog WHERE source_id=?');$q->execute([$source]);if(!$q->fetchColumn())throw new ApiError(404,'Chưa có bản ghi OSM này trong danh mục. Hãy tải khu vực đó trước.');
+        $q=db()->prepare('SELECT source_id FROM place_catalog WHERE source_id=?');$q->execute([$source]);if(!$q->fetchColumn()){$place=function_exists('public_snapshot_place_by_id')?public_snapshot_place_by_id($source):null;if(!$place)throw new ApiError(404,'Chưa có bản ghi OSM này trong danh mục. Hãy tải khu vực đó trước.');catalog_store([$place]);}
         db()->prepare('UPDATE place_catalog SET verification_status=?,verification_source=?,verification_note=?,verified_by=?,verified_at=UTC_TIMESTAMP() WHERE source_id=?')->execute([$status,$evidence,$note,$admin['id'],$source]);
         audit($admin['id'],'osm_place.activity_verified','osm_place',$source,['status'=>$status,'source'=>$evidence]);
         json_response(['message'=>$status==='verified_active'?'Đã ghi nhận quán đang hoạt động.':'Đã ghi nhận quán được báo đóng cửa.','verification_status'=>$status,'verified_at'=>gmdate('Y-m-d H:i:s').' UTC']);
@@ -79,7 +104,13 @@ function completion_routes(string $path,string $method,array $body): void {
         $term=trim((string)($_GET['q']??''));if(mb_strlen($term)<2)json_response(['data'=>[]]);
         $u=current_user(false);$q=db()->prepare("SELECT * FROM restaurants WHERE (status='published' OR (created_by=? AND status='pending')) AND name LIKE ? ORDER BY name LIMIT 25");$q->execute([$u['id']??0,'%'.$term.'%']);$rows=[];
         foreach($q as $r)$rows[]=['managed_record'=>true,'source'=>$r['source'],'id'=>(int)$r['id'],'lat'=>(float)$r['latitude'],'lon'=>(float)$r['longitude'],'tags'=>['name'=>$r['name']],'restaurant'=>public_restaurant($r)];
-        $q=db()->prepare('SELECT c.* FROM place_catalog c LEFT JOIN osm_place_blocks b ON b.source_id=c.source_id WHERE c.name LIKE ? AND b.source_id IS NULL ORDER BY c.name LIMIT 25');$q->execute(['%'.$term.'%']);foreach($q as $r)$rows[]=catalog_enrich(catalog_place($r));json_response(['data'=>$rows]);
+        $q=db()->prepare('SELECT c.* FROM place_catalog c LEFT JOIN osm_place_blocks b ON b.source_id=c.source_id WHERE c.name LIKE ? AND b.source_id IS NULL ORDER BY c.name LIMIT 25');$q->execute(['%'.$term.'%']);$knownSourceIds=[];foreach($q as $r){$knownSourceIds[]=$r['source_id'];$rows[]=catalog_enrich(catalog_place($r));}
+        if(count($rows)<50){
+            $blocked=db()->query('SELECT source_id FROM osm_place_blocks')->fetchAll(PDO::FETCH_COLUMN);
+            $remaining=max(0,50-count($rows));
+            foreach(public_snapshot_search($term,array_merge($knownSourceIds,$blocked),$remaining) as $place)$rows[]=$place;
+        }
+        json_response(['data'=>array_slice($rows,0,50)]);
     }
     if($path==='/restaurants/dishes' && $method==='GET'){
         $u=current_user();$id=(string)($_GET['id']??'');$managed=($_GET['source']??'')==='managed';

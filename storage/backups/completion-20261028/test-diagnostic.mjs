@@ -1,0 +1,1 @@
+import fs from 'node:fs';const f='D:/WEB_VER CODEX/what2eat/tests/integration.mjs';let s=fs.readFileSync(f,'utf8');s=s.replace("? await response.json() : null;","? await response.text().then(raw=>{try{return JSON.parse(raw);}catch{throw new Error(`${method} ${route}: ${raw.slice(0,2000)}`);}}) : null;");fs.writeFileSync(f,s);

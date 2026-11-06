@@ -24,7 +24,7 @@ $pageTitle = 'Dashboard Của Tôi – What2Eat';
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
   <!-- What2Eat Global CSS -->
-  <link rel="stylesheet" href="../assets/css/style.css?v=20261030-typography" />
+  <link rel="stylesheet" href="../assets/css/style.css?v=20261103-mobile-nav" />
 
   <style>
     /* ===== DASHBOARD PAGE STYLES ===== */
@@ -125,10 +125,12 @@ $pageTitle = 'Dashboard Của Tôi – What2Eat';
       font-size: 2rem;
       font-weight: 600;
       margin-bottom: 0.3rem;
+      color: #fffaf1;
     }
     .w2e-page-header p {
       font-size: 0.95rem;
-      opacity: 0.8;
+      color: rgba(255, 250, 241, 0.92);
+      opacity: 1;
       margin-bottom: 0;
     }
     .w2e-date-range-label {
@@ -609,6 +611,7 @@ $pageTitle = 'Dashboard Của Tôi – What2Eat';
 
 <!-- Bootstrap 5 JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../assets/js/mobile-nav.js?v=20261103"></script>
 
 <!-- Dashboard JS -->
 
@@ -803,6 +806,6 @@ $pageTitle = 'Dashboard Của Tôi – What2Eat';
 })();
 
 </script>
-  <script src="../assets/js/site.js?v=20261028-activity"></script>
+  <script src="../assets/js/site.js?v=20261103-mobile-nav"></script>
 </body>
 </html>

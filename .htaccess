@@ -13,17 +13,17 @@ DirectoryIndex index.php index.html
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteCond %{HTTP_HOST} ^what2eat\.local(?::80)?$ [NC]
+  RewriteCond %{HTTP_HOST} ^what2eat[.]local(?::80)?$ [NC]
   RewriteRule ^ http://what2eat.localhost%{REQUEST_URI} [R=302,L,NE]
-  RewriteRule (^|/)\. - [F,L]
-  RewriteRule ^api/index\.php$ - [L]
+  RewriteRule (^|/)[.] - [F,L]
+  RewriteRule ^api/index[.]php$ - [L]
   RewriteRule ^api(?:/.*)?$ api/index.php [QSA,L]
-  RewriteRule ^tiles/(\d{1,2})/(\d{1,8})/(\d{1,8})\.png$ api/index.php?tile=$1/$2/$3 [QSA,L]
-  RewriteRule ^offline\.html$ - [L]
-  RewriteRule ^(.+)\.html$ /$1.php [R=302,L,NE]
+  RewriteRule ^tiles/([0-9]{1,2})/([0-9]{1,8})/([0-9]{1,8})[.]png$ api/index.php?tile=$1/$2/$3 [QSA,L]
+  RewriteRule ^offline[.]html$ - [L]
+  RewriteRule ^(.+)[.]html$ /$1.php [R=302,L,NE]
 </IfModule>
 
-<FilesMatch "^(?:\.env|\.env\..*|database_design\.md|README\.md|.*\.sql|.*\.log)$">
+<FilesMatch "^(?:[.]env|[.]env[.].*|database_design[.]md|README[.]md|.*[.]sql|.*[.]log)$">
   Require all denied
 </FilesMatch>
 

@@ -21,7 +21,7 @@ $pageTitle = 'Hồ Sơ Cá Nhân – What2Eat';
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
   <!-- What2Eat Global CSS -->
-  <link rel="stylesheet" href="../assets/css/style.css?v=20261030-typography" />
+  <link rel="stylesheet" href="../assets/css/style.css?v=20261103-mobile-nav" />
 
   <style>
     /* ===== PROFILE PAGE STYLES ===== */
@@ -578,7 +578,7 @@ $pageTitle = 'Hồ Sơ Cá Nhân – What2Eat';
     }
   </style>
   <link rel="stylesheet" href="../assets/css/live-data.css?v=20261028-activity">
-  <link rel="stylesheet" href="../assets/css/profile-page.css?v=20261030-activity-redesign">
+  <link rel="stylesheet" href="../assets/css/profile-page.css?v=20261104-contrast">
 </head>
 
 <body>
@@ -1238,7 +1238,8 @@ $pageTitle = 'Hồ Sơ Cá Nhân – What2Eat';
 
 <!-- Bootstrap 5 JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../assets/js/mobile-nav.js?v=20261103"></script>
 
-  <script src="../assets/js/site.js?v=20261030-profile-activity"></script>
+  <script src="../assets/js/site.js?v=20261103-mobile-nav"></script>
 </body>
 </html>

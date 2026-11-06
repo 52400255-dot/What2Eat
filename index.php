@@ -768,6 +768,6 @@ async function randomFood(){
 }
 
 </script>
-  <script src="./assets/js/site.js?v=20261028-activity"></script>
+  <script src="./assets/js/site.js?v=20261103-district-import"></script>
 </body>
 </html>

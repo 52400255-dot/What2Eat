@@ -2,7 +2,7 @@
 body { padding-bottom: 0; background: #f4eee3; }
 .w2e-navbar { box-shadow: none; background: #fffdf8; }
 .w2e-navbar .container { max-width: 1420px; }
-.w2e-navbar .navbar-brand { font-size: 1.22rem; letter-spacing: -.06em; }
+.w2e-navbar .navbar-brand { font-size: 1.5rem; letter-spacing: 0; }
 .w2e-navbar .nav-link { font-size: .82rem; letter-spacing: .01em; }
 .w2e-navbar .nav-link.w2e-active { color: #4a2c1a !important; background: #f4e8c8; }
 .w2e-menu-toggle { color: #4a2c1a; font: 500 .82rem var(--font); padding: .45rem .65rem; border: 1px solid #e5d9c9 !important; border-radius: 6px; }
@@ -37,14 +37,14 @@ body { padding-bottom: 0; background: #f4eee3; }
   font-weight: 600;
   letter-spacing: .16em;
 }
-.w2e-page-kicker { color: #e7bb57; }
+.w2e-page-kicker { color: #ffdf75; }
 .w2e-hero-copy h1 {
   margin: 0 0 7px;
   color: #fffaf1;
-  font: 700 clamp(3rem, 4.6vw, 4.25rem)/1.08 var(--font-display);
-  letter-spacing: -.045em;
+  font: 600 2.45rem/1.12 var(--font-display);
+  letter-spacing: 0;
 }
-.w2e-hero-copy > p:last-child { margin: 0; max-width: 760px; color: #eadbc8; font-size: 1.05rem; }
+.w2e-hero-copy > p:last-child { margin: 0; max-width: 760px; color: #fff2df; font-size: 1.05rem; }
 .w2e-btn-primary.w2e-hero-action {
   align-self: center;
   padding: .85rem 1.35rem;
@@ -62,7 +62,7 @@ body { padding-bottom: 0; background: #f4eee3; }
   justify-content: space-between;
   padding-top: 17px;
   border-top: 1px solid rgba(255,250,241,.18);
-  color: #d6c2ac;
+  color: #f1e4d5;
   font-size: .76rem;
   letter-spacing: .07em;
 }
@@ -171,7 +171,7 @@ body { padding-bottom: 0; background: #f4eee3; }
   .w2e-page-header { padding-top: 35px; }
   .w2e-page-header::before { left: 17px; top: 35px; bottom: 70px; }
   .w2e-page-header .w2e-page-shell { grid-template-columns: 1fr; padding-left: 20px; gap: 18px; }
-  .w2e-hero-copy h1 { font-size: 2.5rem; }
+  .w2e-hero-copy h1 { font-size: 2rem; }
   .w2e-hero-action { justify-self: start; }
   .w2e-hero-note { padding-top: 12px; font-size: .57rem; }
   .w2e-plan-main { padding-top: 26px; }

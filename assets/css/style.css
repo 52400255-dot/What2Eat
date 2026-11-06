@@ -520,6 +520,88 @@ hr {
   color: var(--primary);
 }
 
+/* Bootstrap navigation used by the account pages must grow with its mobile menu. */
+@media (max-width: 991.98px) {
+  nav.navbar.navbar-expand-lg.w2e-navbar {
+    height: auto;
+    min-height: var(--navbar-height);
+    align-items: stretch;
+    background: #fff;
+  }
+
+  nav.navbar.navbar-expand-lg.w2e-navbar > .container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    min-height: var(--navbar-height);
+  }
+
+  nav.navbar.navbar-expand-lg.w2e-navbar .navbar-collapse {
+    flex: 0 0 100%;
+    width: 100%;
+    background: #fff;
+    border-top: 1px solid #e7dfd3;
+    padding: 8px 0 14px;
+  }
+
+  nav.navbar.navbar-expand-lg.w2e-navbar .navbar-collapse.show {
+    max-height: calc(100dvh - var(--navbar-height) - 12px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  nav.navbar.navbar-expand-lg.w2e-navbar .navbar-nav {
+    width: 100%;
+    margin: 0 !important;
+    gap: 2px !important;
+  }
+
+  nav.navbar.navbar-expand-lg.w2e-navbar .nav-link {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 10px 12px !important;
+    color: #3d3329 !important;
+    font-size: 0.95rem;
+    background: #fff;
+  }
+
+  nav.navbar.navbar-expand-lg.w2e-navbar .nav-link:is(.active, .w2e-active) {
+    color: #76500a !important;
+    background: #f5e9c8;
+  }
+
+  nav.navbar.navbar-expand-lg.w2e-navbar .navbar-nav .w2e-btn-create {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    margin-top: 8px;
+  }
+
+  nav.navbar.navbar-expand-lg.w2e-navbar .navbar-collapse > .dropdown,
+  nav.navbar.navbar-expand-lg.w2e-navbar .navbar-collapse > .w2e-topbar-notify {
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  nav.navbar.navbar-expand-lg.w2e-navbar .navbar-collapse .w2e-avatar-btn,
+  nav.navbar.navbar-expand-lg.w2e-navbar .navbar-collapse > .w2e-topbar-notify {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid #e7dfd3;
+    border-radius: 8px;
+    background: #f9f7f2;
+    color: #3d3329;
+  }
+
+  nav.navbar.navbar-expand-lg.w2e-navbar .navbar-collapse .w2e-avatar-btn {
+    width: 100%;
+  }
+}
+
 /* Dropdown menu */
 .w2e-dropdown {
   position: relative;

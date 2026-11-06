@@ -9,4 +9,3 @@
 *.log
 *.sql.gz
 /vendor/
-/storage/backups/

@@ -13,8 +13,12 @@ $pageTitle = 'Food Note Của Tôi – What2Eat';
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link rel="stylesheet" href="../assets/css/style.css?v=20261030-typography" />
+  <link rel="stylesheet" href="../assets/css/style.css?v=20261103-mobile-nav" />
   <style>
+    :root {
+      --font: Roboto, "Noto Sans", Arial, sans-serif;
+      --font-display: Roboto, "Noto Sans", Arial, sans-serif;
+    }
     /* ============================================================
        FOOD NOTES PAGE – CUSTOM STYLES
     ============================================================ */
@@ -442,7 +446,7 @@ $pageTitle = 'Food Note Của Tôi – What2Eat';
     .w2e-stat-chip strong { color: var(--w2e-text); }
   </style>
   <link rel="stylesheet" href="../assets/css/live-data.css?v=20261028-activity">
-  <link rel="stylesheet" href="../assets/css/food-notes-page.css?v=20261030-apple-type">
+  <link rel="stylesheet" href="../assets/css/food-notes-page.css?v=20261103-full-width">
 </head>
 <body class="w2e-food-notes-page">
 
@@ -488,14 +492,6 @@ $pageTitle = 'Food Note Của Tôi – What2Eat';
 
 <!-- ===================== MAIN CONTENT ===================== -->
 <main class="container mt-0 w2e-notes-main">
-
-  <aside hidden class="w2e-notes-rail w2e-notes-rail--recent" aria-label="Ghi chú gần đây">
-    <p class="w2e-notes-rail__eyebrow">SỔ GHI CHÉP</p>
-    <p class="w2e-notes-rail__count"><strong id="noteRailCount">—</strong><span>ghi chú đã lưu</span></p>
-    <div class="w2e-notes-rail__rule"></div>
-    <p class="w2e-notes-rail__label">MỚI CẬP NHẬT</p>
-    <div id="noteRecentList" class="w2e-notes-rail__list"><span>Đang tải ghi chú...</span></div>
-  </aside>
   <div class="w2e-notes-content">
 
   <!-- TOOLBAR -->
@@ -572,14 +568,6 @@ $pageTitle = 'Food Note Của Tôi – What2Eat';
     </a>
   </div>
   </div>
-  <aside hidden class="w2e-notes-rail w2e-notes-rail--latest" aria-label="Food Note mới nhất">
-    <p class="w2e-notes-rail__eyebrow">GHI CHÚ MỚI NHẤT</p>
-    <p class="w2e-notes-rail__date" id="noteLatestDate">Chưa có ngày</p>
-    <h2 id="noteLatestName">Đang tải...</h2>
-    <p class="w2e-notes-rail__restaurant" id="noteLatestRestaurant"></p>
-    <p class="w2e-notes-rail__review" id="noteLatestReview"></p>
-    <a id="noteLatestLink" href="#gridView">Đến ghi chú</a>
-  </aside>
 </main><!-- /.w2e-notes-main -->
 
 <!-- ===================== MOBILE BOTTOM NAV ===================== -->
@@ -594,6 +582,7 @@ $pageTitle = 'Food Note Của Tôi – What2Eat';
 </nav>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../assets/js/mobile-nav.js?v=20261103"></script>
 <script>
   // ---- VIEW TOGGLE ----
   function setView(mode) {
@@ -625,6 +614,6 @@ $pageTitle = 'Food Note Của Tôi – What2Eat';
   }
 
 </script>
-  <script src="../assets/js/site.js?v=20261030-food-notes-2"></script>
+  <script src="../assets/js/site.js?v=20261103-utf8-notes"></script>
 </body>
 </html>

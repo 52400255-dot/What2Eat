@@ -72,6 +72,7 @@ function db(): PDO
             PDO::ATTR_EMULATE_PREPARES => false,
             PDO::MYSQL_ATTR_INIT_COMMAND => "SET time_zone = '+00:00'",
         ]);
+        $pdo->exec('SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci');
     } catch (Throwable $error) {
         error_log('[What2Eat] database connection failed: ' . $error->getMessage());
         throw new ApiError(503, 'Chưa kết nối được cơ sở dữ liệu.');
@@ -118,6 +119,7 @@ function json_body(): array
     if ($length > 1_048_576) throw new ApiError(413, 'Yêu cầu quá lớn.');
     $raw = file_get_contents('php://input');
     if ($raw === false || $raw === '') return [];
+    if (!mb_check_encoding($raw, 'UTF-8')) throw new ApiError(400, 'Nội dung phải được gửi bằng UTF-8.');
     $data = json_decode($raw, true);
     if (!is_array($data)) throw new ApiError(400, 'Nội dung JSON không hợp lệ.');
     return $data;

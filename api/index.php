@@ -318,6 +318,53 @@ function public_notes_for_place(?int $restaurantId, ?string $osmId): array
 
 function osm_snapshot_places(float $lat, float $lon, int $radius): ?array
 {
+    $publicSnapshotFile = dirname(__DIR__) . '/assets/data/hcm-food-places.json';
+    if (is_file($publicSnapshotFile) && is_readable($publicSnapshotFile)) {
+        $raw = @file_get_contents($publicSnapshotFile);
+        $publicSnapshot = is_string($raw) ? json_decode($raw, true) : null;
+        if (is_array($publicSnapshot) && is_array($publicSnapshot['elements'] ?? null)) {
+            $snapshotDate = (string)($publicSnapshot['snapshot_date'] ?? gmdate('Y-m-d', filemtime($publicSnapshotFile)));
+            $earthRadius = 6371000.0;
+            $latRad = deg2rad($lat);
+            $elements = [];
+            foreach ($publicSnapshot['elements'] as $place) {
+                $type = (string)($place['type'] ?? '');
+                $id = (string)($place['id'] ?? '');
+                $placeLat = $place['lat'] ?? $place['center']['lat'] ?? null;
+                $placeLon = $place['lon'] ?? $place['center']['lon'] ?? null;
+                if (!in_array($type, ['node', 'way', 'relation'], true)
+                    || !preg_match('/^[1-9]\d{0,17}$/', $id)
+                    || !is_numeric($placeLat) || !is_numeric($placeLon)
+                    || (float)$placeLat < -90 || (float)$placeLat > 90
+                    || (float)$placeLon < -180 || (float)$placeLon > 180
+                    || trim((string)($place['tags']['name'] ?? '')) === '') continue;
+                $placeLat = (float)$placeLat;
+                $placeLon = (float)$placeLon;
+                $deltaLat = deg2rad($placeLat - $lat);
+                $deltaLon = deg2rad($placeLon - $lon);
+                $a = sin($deltaLat / 2) ** 2 + cos($latRad) * cos(deg2rad($placeLat)) * sin($deltaLon / 2) ** 2;
+                $distance = 2 * $earthRadius * asin(min(1.0, sqrt($a)));
+                if ($distance > $radius) continue;
+                $place['lat'] = $placeLat;
+                $place['lon'] = $placeLon;
+                $place['_distance'] = $distance;
+                $elements[] = $place;
+            }
+            usort($elements, static fn(array $a, array $b): int => $a['_distance'] <=> $b['_distance']);
+            $elements = array_slice($elements, 0, 5000);
+            foreach ($elements as &$element) unset($element['_distance']);
+            unset($element);
+            return [
+                'elements' => $elements,
+                'snapshot' => true,
+                'static_fallback' => true,
+                'snapshot_date' => $snapshotDate,
+                'imported_at' => $publicSnapshot['import_summary']['imported_at'] ?? null,
+                'source' => (string)($publicSnapshot['source'] ?? 'OpenStreetMap and What2Eat community data'),
+            ];
+        }
+    }
+
     $snapshotFile = dirname(__DIR__) . '/storage/datasets/hcm-osm-food/hcm_food_places.geojson';
     if (!is_file($snapshotFile) || !is_readable($snapshotFile)) return null;
     $raw = @file_get_contents($snapshotFile);
@@ -364,7 +411,7 @@ function osm_snapshot_places(float $lat, float $lon, int $radius): ?array
         ];
     }
     usort($elements, static fn(array $a, array $b): int => $a['_distance'] <=> $b['_distance']);
-    $elements = array_slice($elements, 0, 250);
+    $elements = array_slice($elements, 0, 5000);
     foreach ($elements as &$element) unset($element['_distance']);
     unset($element);
 
@@ -374,6 +421,61 @@ function osm_snapshot_places(float $lat, float $lon, int $radius): ?array
         'snapshot_date' => $snapshotDate,
         'source' => 'OpenStreetMap via Geofabrik Vietnam snapshot',
     ];
+}
+
+function public_snapshot_place_by_id(string $sourceId): ?array
+{
+    if (!preg_match('/^(node|way|relation):([1-9]\d{0,17})$/', $sourceId, $match)) return null;
+    $file = dirname(__DIR__) . '/assets/data/hcm-food-places.json';
+    if (!is_file($file) || !is_readable($file)) return null;
+    $raw = @file_get_contents($file);
+    $snapshot = is_string($raw) ? json_decode($raw, true) : null;
+    if (!is_array($snapshot) || !is_array($snapshot['elements'] ?? null)) return null;
+    foreach ($snapshot['elements'] as $place) {
+        if (($place['type'] ?? '') === $match[1] && (string)($place['id'] ?? '') === $match[2] && !empty($place['import_id'])) return $place;
+    }
+    return null;
+}
+
+function public_snapshot_search(string $term, array $excludedSourceIds = [], int $limit = 25): array
+{
+    $file = dirname(__DIR__) . '/assets/data/hcm-food-places.json';
+    if (!is_file($file) || !is_readable($file)) return [];
+    $raw = @file_get_contents($file);
+    $snapshot = is_string($raw) ? json_decode($raw, true) : null;
+    if (!is_array($snapshot) || !is_array($snapshot['elements'] ?? null)) return [];
+
+    $normalize = static function (string $value): string {
+        $value = strtr(mb_strtolower($value, 'UTF-8'), ['đ' => 'd']);
+        if (function_exists('iconv')) {
+            $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+            if (is_string($ascii)) $value = $ascii;
+        }
+        return trim(preg_replace('/[^a-z0-9]+/i', ' ', $value) ?? $value);
+    };
+    $query = $normalize($term);
+    $terms = array_values(array_filter(explode(' ', $query), static fn(string $part): bool => $part !== ''));
+    if (!$terms) return [];
+
+    $excluded = array_fill_keys($excludedSourceIds, true);
+    $matches = [];
+    foreach ($snapshot['elements'] as $place) {
+        if (!is_array($place) || !isset($place['type'], $place['id'])) continue;
+        $sourceId = (string)$place['type'] . ':' . (string)$place['id'];
+        if (isset($excluded[$sourceId])) continue;
+        $name = trim((string)($place['tags']['name'] ?? $place['tags']['name:vi'] ?? ''));
+        if ($name === '') continue;
+        $normalizedName = $normalize($name);
+        $matchesAllTerms = true;
+        foreach ($terms as $part) {
+            if (!str_contains($normalizedName, $part)) { $matchesAllTerms = false; break; }
+        }
+        if (!$matchesAllTerms) continue;
+        $matches[] = ['place' => $place, 'rank' => str_starts_with($normalizedName, $query) ? 0 : 1, 'name' => $normalizedName];
+    }
+
+    usort($matches, static fn(array $a, array $b): int => ($a['rank'] <=> $b['rank']) ?: strcmp($a['name'], $b['name']));
+    return array_column(array_slice($matches, 0, max(1, $limit)), 'place');
 }
 
 function osm_places(float $lat, float $lon, int $radius, bool $forceRefresh = false): array
@@ -393,6 +495,9 @@ function osm_places(float $lat, float $lon, int $radius, bool $forceRefresh = fa
         if ($snapshot = osm_snapshot_places($lat, $lon, $radius)) return $snapshot;
         throw new ApiError(503, 'Dữ liệu bản đồ tạm thời không khả dụng.');
     }
+    // Use available local places immediately; remote Overpass remains the source outside the snapshot area.
+    $snapshot = osm_snapshot_places($lat, $lon, $radius);
+    if ($snapshot && $snapshot['elements']) return $snapshot;
     try {
         $cached = db()->prepare('SELECT body,cached_at,expires_at FROM api_cache WHERE cache_key=? LIMIT 1');
         $cached->execute([$key]);
@@ -602,6 +707,15 @@ function handle_request(): never
             $place['public_food_names'] = $foodNames[$place['type'] . ':' . $place['id']] ?? [];
         }
         unset($place);
+        if (!empty($data['snapshot'])) {
+            try {
+                $data['elements'] = catalog_enrich_many($elements);
+            } catch (Throwable $error) {
+                error_log('[What2Eat] Snapshot locations could not be enriched with verification data.');
+                $data['elements'] = $elements;
+            }
+            json_response($data);
+        }
         catalog_store($elements);
         $data['elements'] = array_map('catalog_enrich',$elements);
         json_response($data);
