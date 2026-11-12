@@ -882,6 +882,6 @@ $pageTitle = 'Khám Phá Quán Ăn – What2Eat';
   <script src="../assets/js/app.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="../assets/js/restaurant-map.js?v=20261103-district-import"></script>
-  <script src="../assets/js/site.js?v=20261103-district-import"></script>
+  <script src="../assets/js/site.js?v=20261110-proposal-map-picker-3"></script>
 </body>
 </html>
