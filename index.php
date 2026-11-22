@@ -581,6 +581,7 @@ $pageTitle = 'What2Eat – Hôm nay ăn gì?';
               </div>
               <div class="d-flex gap-2">
                 <a href="./pages/discovery.php" id="rLink" class="btn-primary-w2e" style="font-size:.85rem;padding:8px 18px;">Xem chi tiết</a>
+                <a href="#" id="rOsmDirectionsLink" class="btn-outline-w2e" hidden>Chỉ đường trên OSM ↗</a>
                 <button class="btn-outline-w2e" style="font-size:.85rem;padding:8px 18px;" onclick="randomFood()">Chọn lại</button>
               </div>
             </div>
@@ -768,6 +769,6 @@ async function randomFood(){
 }
 
 </script>
-  <script src="./assets/js/site.js?v=20261103-district-import"></script>
+  <script src="./assets/js/site.js?v=20261122-nearby-radius-osm"></script>
 </body>
 </html>

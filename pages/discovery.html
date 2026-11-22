@@ -200,6 +200,7 @@
       padding: 10px 0 14px;
       flex-wrap: wrap;
     }
+    .w2e-distance-label { margin: 0; color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; }
     .w2e-filter-select {
       padding: 7px 14px;
       border: 1px solid var(--border);
@@ -688,7 +689,7 @@
   <header class="w2e-page-header">
     <div class="container text-center">
       <h1><i class="bi bi-compass me-2"></i>Khám Phá Quán Ăn</h1>
-      <p>Tìm quán phù hợp với khẩu vị và ngân sách của bạn</p>
+      <p>Tìm quán theo tên, món ăn và khoảng cách quanh bạn</p>
       <div class="w2e-search-box">
         <i class="bi bi-search w2e-search-icon"></i>
         <input
@@ -710,50 +711,17 @@
       <!-- Category tabs -->
       <div class="w2e-category-tabs" id="categoryTabs"><button class="w2e-cat-tab active" data-filter="">Tất cả</button></div>
 
-      <!-- Filter row -->
+      <!-- Keep the initial search radius small to reduce load on mobile devices. -->
       <div class="w2e-filter-row">
-        <!-- Price -->
-        <select class="w2e-filter-select" id="priceFilter" aria-label="Lọc theo giá">
-        <option value="">Mức giá</option>
-          <option value="cheap">Dưới 100k</option>
-          <option value="mid">100k – 200k</option>
-          <option value="high">Trên 200k</option>
-        </select>
-
-        <!-- Rating -->
-        <select class="w2e-filter-select" id="ratingFilter" aria-label="Lọc theo đánh giá">
-        <option value="">Đánh giá</option>
-          <option value="4.5">4.5+ sao</option>
-          <option value="4.0">4.0+ sao</option>
-          <option value="3.5">3.5+ sao</option>
-        </select>
-
-        <!-- Distance -->
-        <select class="w2e-filter-select" id="distanceFilter" aria-label="Lọc theo khoảng cách">
-        <option value="">Khoảng cách</option>
-          <option value="0.5">Dưới 0.5km</option>
+        <label class="w2e-distance-label" for="distanceFilter">Khoảng cách:</label>
+        <select class="w2e-filter-select" id="distanceFilter" aria-label="Khoảng cách tìm kiếm">
+          <option value="0.5" selected>Dưới 0.5km</option>
           <option value="1">Dưới 1km</option>
+          <option value="1.5">Dưới 1.5km</option>
           <option value="2">Dưới 2km</option>
+          <option value="3">Dưới 3km</option>
           <option value="5">Dưới 5km</option>
         </select>
-
-        <!-- Sort -->
-        <select class="w2e-filter-select" id="sortFilter" aria-label="Sắp xếp">
-        <option value="relevant">Phù hợp nhất</option>
-        <option value="rating">Đánh giá cao</option>
-        <option value="distance">Gần nhất</option>
-        <option value="price">Giá thấp</option>
-        </select>
-
-        <!-- Open toggle -->
-        <button class="w2e-toggle-open" id="openToggle" >
-          <i class="bi bi-clock"></i> Đang mở
-        </button>
-
-        <!-- Clear -->
-        <button class="w2e-clear-btn" onclick="window.clearDiscoveryFilters?.()">
-          <i class="bi bi-x-circle me-1"></i>Xóa bộ lọc
-        </button>
       </div>
     </div>
   </section>
@@ -865,7 +833,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="../assets/js/app.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="../assets/js/restaurant-map.js?v=20261103-district-import"></script>
-  <script src="../assets/js/site.js?v=20261103-district-import"></script>
+  <script src="../assets/js/restaurant-map.js?v=20261122-nearby-radius-osm"></script>
+  <script src="../assets/js/site.js?v=20261122-nearby-radius-osm"></script>
 </body>
 </html>
