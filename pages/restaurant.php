@@ -60,6 +60,6 @@ $pageTitle = 'Địa điểm | What2Eat';
   </dialog>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="../assets/js/app.js"></script>
-  <script src="../assets/js/site.js?v=20261103-district-import"></script>
+  <script src="../assets/js/site.js?v=20261122-nearby-radius-osm"></script>
 </body>
 </html>

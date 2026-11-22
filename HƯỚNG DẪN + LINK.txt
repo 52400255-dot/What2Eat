@@ -1,0 +1,86 @@
+Link web đã deploy: https://what2eat.click/
+
+Link Google Drive (slide_Giới thiệu đề tài, Kỹ thuật công nghệ được chọn): (https://drive.google.com/file/d/1F3wU4x5uOF6MmsdKhRMUinzN4uCf3xuD/view?usp=sharing)
+
+Link YouTube (demo): em xin phép thầy up lên YouTube vì em hết dung lượng của drive để up thêm (https://youtu.be/qkeNlzecrto?si=ATKCRmSAPd2Vo-G0)
+
+
+
+
+
+
+
+
+
+HƯỚNG DẪN CHẠY LOCALHOST
+====================================================================
+
+Công nghệ: PHP 8 + MySQL, giao diện HTML/CSS/JavaScript.
+
+1. YÊU CẦU
+--------------------------------------------------------------------
+- PHP 8.1 trở lên, bật các extension: pdo_mysql, curl, fileinfo,
+  mbstring, json, session.
+- MySQL 8.0+ hoặc MariaDB 10.4+.
+- Composer (nếu chưa có thư mục vendor/).
+- Node.js 18+ (chỉ dùng khi tạo lại dữ liệu hoặc chạy kiểm thử).
+- Kết nối Internet để tải bản đồ OpenStreetMap.
+- Cổng 8000 không bị chiếm.
+
+2. CÁC BƯỚC CHẠY
+--------------------------------------------------------------------
+Bước 1. Mở terminal tại thư mục gốc dự án.
+
+Bước 2. Cài thư viện PHP (bỏ qua nếu đã có vendor/):
+        composer install
+
+Bước 3. Tạo cơ sở dữ liệu:
+        C:\xampp\mysql\bin\mysql.exe -u root -e "CREATE DATABASE IF NOT EXISTS what2eat CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+Bước 4. Tạo file cấu hình:
+        copy .env.example .env
+        Mở .env và sửa các giá trị chính:
+          W2E_ENV=development
+          W2E_BASE_URL=http://localhost:8000
+          W2E_APP_SECRET=<chuỗi hex ngẫu nhiên, tối thiểu 64 ký tự>
+          W2E_DB_NAME=what2eat
+          W2E_DB_USER=root
+          W2E_DB_PASSWORD=<mật khẩu MySQL, XAMPP mặc định để trống>
+          W2E_MAIL_TRANSPORT=log
+          W2E_GOOGLE_CLIENT_ID=<client ID nếu dùng đăng nhập Google>
+
+Bước 5. Khởi tạo bảng dữ liệu:
+        php api/bin/migrate.php
+
+Bước 6. (Tùy chọn) Nạp dữ liệu địa điểm TP.HCM:
+        php api/bin/import-catalog.php
+
+Bước 7. Tạo tài khoản quản trị (mật khẩu tạm tối thiểu 12 ký tự):
+        set W2E_ADMIN_PASSWORD=MatKhauTam123456
+        php api/bin/create-admin.php admin@example.com
+        set W2E_ADMIN_PASSWORD=
+
+Bước 8. Khởi động server:
+        php -S 127.0.0.1:8000 -t . local-router.php
+
+Bước 9. Mở trình duyệt truy cập: http://localhost:8000
+
+3. KIỂM TRA
+--------------------------------------------------------------------
+- http://localhost:8000/api/v1/health
+  Kết quả mong đợi: database connected.
+- http://localhost:8000/api/v1/site-info
+  Trả về đúng Google Client ID đang sử dụng.
+
+4. GHI CHÚ
+--------------------------------------------------------------------
+- Phải chạy qua local-router.php vì PHP built-in server không đọc
+  .htaccess; router này xử lý /api/*, /tiles/* và chặn truy cập
+  storage/, vendor/, .env.
+- Đăng nhập Google: thêm http://localhost:8000 vào Authorized
+  JavaScript origins của OAuth Client.
+- Email xác thực khi chạy local được ghi vào storage/dev-mail.log
+  (do W2E_MAIL_TRANSPORT=log).
+- Dự án không có mật khẩu quản trị mặc định; tài khoản admin phải tạo
+  bằng Bước 7.
+- Không chia sẻ hoặc đưa file .env lên kho mã nguồn.

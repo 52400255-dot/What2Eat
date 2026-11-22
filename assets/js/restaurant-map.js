@@ -3,7 +3,7 @@
   'use strict';
 
   const DEFAULT_CENTER = [10.7769, 106.7009];
-  const SEARCH_RADIUS_METERS = 2000;
+  const DEFAULT_SEARCH_RADIUS_METERS = 500;
   const REQUEST_TIMEOUT_MS = 12000;
   const PUBLIC_SNAPSHOT_URL = '/assets/data/hcm-food-places.json';
 
@@ -60,6 +60,7 @@
     legend.append(osmLegend, managedLegend);
     mapElement.appendChild(legend);
     let searchCenter = initialCenter;
+    let searchRadiusMeters = DEFAULT_SEARCH_RADIUS_METERS;
     let userMarker;
     let accuracyCircle;
     let locating = false;
@@ -199,6 +200,11 @@
         }
         const link = document.createElement('a'); link.href = `./restaurant.php?id=${encodeURIComponent(restaurant.id)}`; link.textContent = 'Xem thông tin đã duyệt';
         popup.append(document.createElement('br'), link);
+        const directions = document.createElement('a');
+        if (window.setW2EOsmDirectionsLink) window.setW2EOsmDirectionsLink(directions, [lat, lon]);
+        else { const url = new URL('https://www.openstreetmap.org/directions'); url.searchParams.set('to', `${lat},${lon}`); directions.href = url.href; directions.target = '_blank'; directions.rel = 'noopener noreferrer'; }
+        directions.textContent = 'Chỉ đường trên OSM ↗';
+        popup.append(document.createElement('br'), directions);
         const marker = L.circleMarker([lat, lon], { radius: 9, color: '#fff', weight: 3, fillColor: '#c58b00', fillOpacity: 1 }).bindPopup(popup).addTo(managedMarkers);
         managedMarkerById.set(id, marker);
         managedCount += 1;
@@ -272,6 +278,11 @@
       link.href = `./restaurant.php?${query}`;
       link.textContent = 'Xem chi tiết trên What2Eat';
       popup.append(document.createElement('br'), link);
+      const directions = document.createElement('a');
+      if (window.setW2EOsmDirectionsLink) window.setW2EOsmDirectionsLink(directions, coords);
+      else { const url = new URL('https://www.openstreetmap.org/directions'); url.searchParams.set('to', `${coords[0]},${coords[1]}`); directions.href = url.href; directions.target = '_blank'; directions.rel = 'noopener noreferrer'; }
+      directions.textContent = 'Chỉ đường trên OSM ↗';
+      popup.append(document.createElement('br'), directions);
       return popup;
     }
 
@@ -309,7 +320,7 @@
       const elements = data.elements.map((element) => ({
         element,
         distance: distanceMeters(center, [Number(element.lat), Number(element.lon)]),
-      })).filter((place) => place.distance <= SEARCH_RADIUS_METERS)
+      })).filter((place) => place.distance <= searchRadiusMeters)
         .sort((first, second) => first.distance - second.distance)
         .slice(0, 5000).map((place) => place.element);
       return { elements, snapshot: true, snapshot_date: data.snapshot_date, imported_at: data.import_summary?.imported_at, source: data.source, static_fallback: true };
@@ -328,7 +339,7 @@
       osmIsLoading = true;
       setStatus(forceRefresh ? 'Đang yêu cầu dữ liệu OSM mới…' : 'Đang truy vấn OpenStreetMap…', true);
       try {
-        const params = new URLSearchParams({ lat: center[0], lon: center[1], radius: SEARCH_RADIUS_METERS });
+        const params = new URLSearchParams({ lat: center[0], lon: center[1], radius: searchRadiusMeters });
         if (forceRefresh) params.set('refresh', '1');
         const response = await fetch(`/api/restaurants?${params}`, { signal: controller.signal });
         const data = await response.json();
@@ -341,17 +352,18 @@
             if (activeController !== controller) return;
             const merged = new Map(snapshot.elements.map((place) => [`${place.type}:${place.id}`, place]));
             for (const place of data.elements) merged.set(`${place.type}:${place.id}`, place);
-            data.elements = Array.from(merged.values()).map((place) => ({
-              place,
-              distance: distanceMeters(center, coordinatesOf(place)),
-            })).filter((entry) => entry.distance <= SEARCH_RADIUS_METERS)
-              .sort((first, second) => first.distance - second.distance)
-              .slice(0, 5000)
-              .map(({ place }) => place);
+            data.elements = Array.from(merged.values());
           } catch (snapshotError) {
             console.warn('Không gộp được dữ liệu địa điểm lưu trên website:', snapshotError);
           }
         }
+        data.elements = data.elements.map((place) => ({
+          place,
+          distance: distanceMeters(center, coordinatesOf(place)),
+        })).filter((entry) => entry.distance <= searchRadiusMeters)
+          .sort((first, second) => first.distance - second.distance)
+          .slice(0, 5000)
+          .map(({ place }) => place);
         drawPlaces(data);
       } catch (error) {
         if (controller.signal.aborted && activeController !== controller) return;
@@ -380,6 +392,13 @@
         window.clearTimeout(timeoutId);
       }
     }
+
+    window.addEventListener('w2e:discovery-radius', (event) => {
+      const radius = Number(event.detail?.radius);
+      if (!Number.isFinite(radius) || radius < 500 || radius > 5000 || radius === searchRadiusMeters) return;
+      searchRadiusMeters = radius;
+      loadPlaces(searchCenter);
+    });
 
     function stopLocating() {
       if (locationWatch !== null) navigator.geolocation.clearWatch(locationWatch);

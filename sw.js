@@ -14,6 +14,8 @@ const STATIC_PATHS = new Set([
   '/assets/js/site.js',
   '/assets/js/app.js',
   '/assets/js/restaurant-map.js',
+  // Public restaurant snapshot needed to show saved places while offline.
+  '/assets/data/hcm-food-places.json',
 ]);
 
 self.addEventListener('install', (event) => {
@@ -42,8 +44,11 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (!STATIC_PATHS.has(url.pathname)) return;
-  event.respondWith(fetch(request).then((response) => {
-    if (response.ok) caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
+  event.respondWith(fetch(request).then(async (response) => {
+    if (response.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      await cache.put(request, response.clone());
+    }
     return response;
   }).catch(async () => (await caches.match(request)) || Response.error()));
 });

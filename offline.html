@@ -4,12 +4,103 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#c58b00">
-  <title>What2Eat – Ngoại tuyến</title>
+  <title>What2Eat – Quán ăn đã lưu</title>
   <style>
-    body{min-height:100vh;margin:0;display:grid;place-items:center;background:#fffdf8;color:#34281d;font:16px/1.6 system-ui,sans-serif}
-    main{max-width:34rem;margin:1.5rem;padding:2rem;border:1px solid #eadfce;border-radius:1.25rem;background:#fff;box-shadow:0 12px 40px #34281d12}
-    h1{margin-top:0;color:#8b6100;font-size:1.6rem}a{color:#775710;font-weight:600}
+    :root{color-scheme:light;--ink:#34281d;--muted:#77685d;--line:#eadfce;--gold:#8b6100;--paper:#fffdf8}
+    *{box-sizing:border-box}body{min-height:100vh;margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+    header{background:#fff;border-bottom:1px solid var(--line);padding:22px max(20px,calc((100% - 900px)/2))}
+    header a{color:var(--gold);font-weight:700;text-decoration:none}.status{display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:5px 11px;border-radius:20px;background:#fff3d6;color:#775710;font-size:.84rem;font-weight:650}
+    .dot{width:8px;height:8px;border-radius:50%;background:#d48a00}main{max-width:900px;margin:28px auto;padding:0 20px 48px}h1{margin:0;color:var(--gold);font-size:clamp(1.55rem,4vw,2.1rem)}.intro{color:var(--muted);margin:8px 0 20px}
+    .tools{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}.tools input{flex:1;min-width:220px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff;color:var(--ink)}button{padding:11px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font:inherit;font-weight:600;cursor:pointer}button:hover{border-color:#c58b00}
+    #summary{color:var(--muted);font-size:.9rem;margin:10px 0}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:12px}.card{padding:15px;border:1px solid var(--line);border-radius:13px;background:#fff}.card h2{margin:0 0 6px;font-size:1rem}.card p{margin:4px 0;color:var(--muted);font-size:.88rem}.card a{display:inline-block;margin-top:7px;color:var(--gold);font-size:.85rem;font-weight:650;text-decoration:none}.empty{padding:18px;border:1px dashed var(--line);border-radius:12px;background:#fff;color:var(--muted)}.foot{margin-top:18px;color:var(--muted);font-size:.82rem}
+    @media(max-width:520px){header{padding:18px 20px}main{margin-top:22px}.tools{display:grid}.tools input{min-width:0;width:100%}.tools button{width:100%}}
   </style>
 </head>
-<body><main><h1>Bạn đang ngoại tuyến</h1><p>What2Eat cần kết nối mạng để tải tài khoản, bản đồ và dữ liệu mới. Hãy kết nối lại rồi thử mở trang này lần nữa.</p><p><a href="/">Về trang chủ</a></p></main></body>
+<body>
+  <header><a href="/">What2Eat</a><br><span class="status"><span class="dot"></span>Đang ngoại tuyến · Quán đã lưu trên thiết bị</span></header>
+  <main>
+    <h1>Khám phá quán ăn</h1>
+    <p class="intro">Đây là dữ liệu địa điểm công khai đã tải trước đó. Dữ liệu có thể cũ; đăng nhập, bản đồ trực tuyến và thao tác lưu vẫn cần mạng.</p>
+    <div class="tools"><input id="search" type="search" placeholder="Tìm tên quán, món ăn hoặc địa chỉ…" aria-label="Tìm quán"><button id="nearby" type="button">Sắp xếp quán gần tôi</button></div>
+    <p id="summary" role="status">Đang mở dữ liệu đã lưu…</p>
+    <section id="places" class="grid" aria-live="polite"></section>
+    <p class="foot">Danh sách hiển thị tối đa 60 kết quả mỗi lần tìm.</p>
+  </main>
+  <script>
+    (() => {
+      const search = document.getElementById('search');
+      const list = document.getElementById('places');
+      const summary = document.getElementById('summary');
+      const nearbyButton = document.getElementById('nearby');
+      let places = [];
+      let userLocation = null;
+      const text = (value) => typeof value === 'string' ? value.trim() : '';
+      const escapeText = (value) => text(value);
+      const distance = (a, b) => {
+        const rad = (value) => value * Math.PI / 180;
+        const dLat = rad(b[0] - a[0]);
+        const dLon = rad(b[1] - a[1]);
+        const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a[0])) * Math.cos(rad(b[0])) * Math.sin(dLon / 2) ** 2;
+        return 6371000 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+      };
+      const render = () => {
+        const query = search.value.trim().toLocaleLowerCase('vi');
+        const matches = places.filter((place) => !query || place.search.includes(query));
+        if (userLocation) matches.sort((a, b) => a.distance - b.distance);
+        const shown = matches.slice(0, 60);
+        summary.textContent = `${matches.length.toLocaleString('vi-VN')} quán phù hợp${shown.length < matches.length ? ` · đang hiển thị ${shown.length}` : ''}`;
+        list.replaceChildren();
+        if (!shown.length) {
+          const empty = document.createElement('p'); empty.className = 'empty'; empty.textContent = 'Không tìm thấy quán phù hợp trong dữ liệu đã lưu.'; list.append(empty); return;
+        }
+        const fragment = document.createDocumentFragment();
+        for (const place of shown) {
+          const card = document.createElement('article'); card.className = 'card';
+          const title = document.createElement('h2'); title.textContent = escapeText(place.name || 'Quán chưa có tên'); card.append(title);
+          const detail = [place.cuisine, place.category].filter(Boolean).join(' · ');
+          if (detail) { const p = document.createElement('p'); p.textContent = detail; card.append(p); }
+          if (place.address) { const p = document.createElement('p'); p.textContent = place.address; card.append(p); }
+          if (userLocation && Number.isFinite(place.distance)) { const p = document.createElement('p'); p.textContent = place.distance < 1000 ? `${Math.round(place.distance)} m từ bạn` : `${(place.distance / 1000).toFixed(1)} km từ bạn`; card.append(p); }
+          if (place.source_url) { const a = document.createElement('a'); a.href = place.source_url; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = 'Xem trên OpenStreetMap'; card.append(a); }
+          fragment.append(card);
+        }
+        list.append(fragment);
+      };
+      search.addEventListener('input', render);
+      nearbyButton.addEventListener('click', () => {
+        if (!navigator.geolocation) { summary.textContent = 'Thiết bị không hỗ trợ lấy vị trí. Bạn vẫn có thể tìm quán bằng ô tìm kiếm.'; return; }
+        nearbyButton.disabled = true; nearbyButton.textContent = 'Đang lấy vị trí…';
+        navigator.geolocation.getCurrentPosition(({ coords }) => {
+          userLocation = [coords.latitude, coords.longitude];
+          for (const place of places) place.distance = distance(userLocation, [place.lat, place.lon]);
+          nearbyButton.textContent = 'Đang hiển thị quán gần nhất'; nearbyButton.disabled = false; render();
+        }, () => {
+          nearbyButton.textContent = 'Sắp xếp quán gần tôi'; nearbyButton.disabled = false;
+          summary.textContent = 'Không lấy được vị trí. Hãy cho phép truy cập vị trí hoặc tìm quán bằng ô tìm kiếm.';
+        }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
+      });
+      fetch('/assets/data/hcm-food-places.json').then((response) => {
+        if (!response.ok) throw new Error('Không tìm thấy dữ liệu quán đã lưu trên thiết bị.');
+        return response.json();
+      }).then((data) => {
+        if (!Array.isArray(data.elements)) throw new Error('Dữ liệu quán đã lưu không đúng định dạng.');
+        places = data.elements.map((item) => {
+          const tags = item.tags || {};
+          const name = text(tags.name || item.name);
+          const cuisine = text(tags.cuisine || item.cuisine).replaceAll(';', ', ');
+          const category = text(item.category || tags.amenity || tags.shop || 'Địa điểm ăn uống');
+          const address = text(item.address || [tags['addr:street'], tags['addr:city']].filter(Boolean).join(', '));
+          const lat = Number(item.lat); const lon = Number(item.lon);
+          return { name, cuisine, category, address, lat, lon, source_url: text(item.source_url), distance: Infinity, search: [name, cuisine, category, address].join(' ').toLocaleLowerCase('vi') };
+        }).filter((place) => place.name);
+        const date = text(data.snapshot_date);
+        summary.textContent = `${places.length.toLocaleString('vi-VN')} quán đã sẵn sàng${date ? ` · dữ liệu cập nhật ${date}` : ''}`;
+        render();
+      }).catch((error) => {
+        summary.textContent = error.message;
+        const empty = document.createElement('p'); empty.className = 'empty'; empty.textContent = 'Hãy mở app khi có mạng ít nhất một lần để tải dữ liệu quán vào thiết bị.'; list.append(empty);
+      });
+    })();
+  </script>
+</body>
 </html>
